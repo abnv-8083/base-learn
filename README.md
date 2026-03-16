@@ -7,7 +7,6 @@ This repository is pre-structured for a 3-member development team to ensure clea
 
 ## 📂 Project Structure
 ```text
-/e-learning-portals/
 ├── assets/             # Shared assets across all portals
 │   ├── css/            # global.css (central variables & resets)
 │   └── img/            # Shared images and icons
