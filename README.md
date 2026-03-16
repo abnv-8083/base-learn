@@ -1,34 +1,72 @@
-# E-Learning Platform Portals
+# 🎓 LearnGo: Unified E-Learning Platform
 
-A modern, responsive e-learning platform featuring four distinct portals: Student, Instructor, Admin, and Faculty.
+LearnGo is a high-performance, scalable E-Learning system featuring four distinct portals for Students, Instructors, Faculty, and Administrators. This project is architected for maximum speed, modern aesthetics, and seamless team collaboration.
 
-## 🚀 Team Collaboration
-This repository is pre-structured for a 3-member development team to ensure clean code separation and consistent styling across all portals.
+---
+
+## 🏗️ Architecture: Micro-Frontend x Shared Design System
+LearnGo follows a **Shared-Asset Micro-Frontend** pattern. Each portal in the `apps/` directory is an independent application that shares a common Design System.
+
+- **Frontend**: Lightweight Vanilla HTML/CSS for sub-second load times.
+- **Backend**: Node.js/Express API foundation ready for database integration.
+- **Design System**: Atomic CSS principles with central HSL color tokens.
+
+---
 
 ## 📂 Project Structure
 ```text
-├── assets/             # Shared assets across all portals
-│   ├── css/            # global.css (central variables & resets)
-│   └── img/            # Shared images and icons
-├── apps/               # The 4 main platform portals
-│   ├── student/        # Student experience portal
-│   ├── admin/          # Administration & System Health
-│   ├── instructor/     # Class & Resource management
-│   └── faculty/        # Departmental & Curriculum dashboard
-├── docs/               # Technical documentation
-└── backend/            # Placeholder for future API services
+├── apps/               # Main Platform Applications
+│   ├── student/        # Learning Dashboard & Progress Tracking
+│   ├── instructor/     # Live Class & Resource Management
+│   ├── admin/          # Platform Metrics & System Health
+│   └── faculty/        # Curriculum & Departmental Governance
+├── assets/             # Shared Global Assets
+│   ├── css/            # global.css (Design System & CSS Variables)
+│   └── img/            # Optimized shared media and logos
+├── backend/            # Express.js API Foundation
+├── docs/               # Architecture & Setup Guides
+├── README.md           # Main project overview
+└── .gitignore          # Repository cleanliness configuration
 ```
 
-## 🛠️ Getting Started
-1. **Clone the repo**: `git clone <repo-url>`
-2. **Open a Portal**: Double-click any `.html` file inside the `apps/` folders to view it in your browser.
-3. **Shared Styles**: All dashboards inherit styles from `/assets/css/global.css`. Edit this file for global design changes.
-4. **Run the Backend**:
-    - `cd backend`
-    - `npm install`
-    - `npm start`
-    - Verify: `curl http://localhost:5000/api/v1/status`
+---
+
+## 🚀 Getting Started
+
+### 1. View the Front-End Portals
+No complex setup required for the UI. Navigate to any folder in `apps/` and open the `.html` file:
+- [Student Portal](apps/student/student-portal.html)
+- [Admin Portal](apps/admin/admin-portal.html)
+- [Instructor Portal](apps/instructor/instructor-portal.html)
+- [Faculty Portal](apps/faculty/faculty-portal.html)
+
+### 2. Run the API Backend
+The backend provides the logic layer for authentication and data management.
+```bash
+cd backend
+npm install
+npm start
+```
+*Verify API Status*: Visit `http://localhost:5000/api/v1/status`
+
+---
 
 ## 🧑‍💻 Technical Stack
-- **Frontend**: HTML5, CSS3 (Vanilla), Phosphor Icons.
-- **Design System**: Atomic CSS principles, HSL-based color tokens, and rounded geometry.
+| Layer | Technologies |
+| :--- | :--- |
+| **Frontend** | HTML5, CSS3, Phosphor Icons (CDN) |
+| **Backend** | Node.js, Express, Helmet (Security), Morgan (Logging) |
+| **Architecture** | Micro-Frontend, Atomic CSS, REST API |
+| **Tooling** | Git, GitHub, Dotenv |
+
+---
+
+## 🤝 Team Collaboration Policy
+This repository is pre-configured for a **3-member team**:
+1. **Consistency**: Always use variables from `assets/css/global.css` for colors and spacing.
+2. **Branching**: Follow the standard feature-branch workflow (`feature/name`).
+3. **Icons**: Use the [Phosphor Icons](https://phosphoricons.com) library exclusively.
+
+---
+
+**Developed for Scalability and Performance.**
