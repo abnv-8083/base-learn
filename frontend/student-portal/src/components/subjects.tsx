@@ -22,35 +22,35 @@ const subjects = [
 
 export function SubjectCards() {
   return (
-    <section className="py-24 bg-black">
+    <section className="py-24 bg-slate-50/50">
       <div className="container mx-auto px-4">
         <div className="text-center mb-16">
-          <Badge className="mb-4 bg-zinc-900 border-zinc-800 text-zinc-400 px-4 py-1">Our Subjects</Badge>
-          <h2 className="text-3xl md:text-5xl font-bold text-white tracking-tight">
-            Master every concept with ease
+          <Badge className="mb-4 bg-blue-50 border-blue-100 text-blue-600 hover:bg-blue-100 px-4 py-1 font-bold">Our Subjects</Badge>
+          <h2 className="text-4xl md:text-6xl font-black text-slate-900 tracking-tight">
+            Master every concept
           </h2>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-8">
           {subjects.map((subject, i) => (
             <motion.div
               key={i}
-              whileHover={{ y: -10 }}
-              className="group relative h-64 perspective-1000"
+              whileHover={{ y: -12 }}
+              className="group relative h-72 perspective-1000"
             >
-              <div className="relative w-full h-full transition-all duration-500 preserve-3d group-hover:rotate-y-180">
+              <div className="relative w-full h-full transition-all duration-700 preserve-3d group-hover:rotate-y-180">
                 {/* Front */}
-                <div className="absolute inset-0 backface-hidden rounded-3xl border border-zinc-800 bg-zinc-900/50 p-6 flex flex-col items-center justify-center text-center gap-4">
-                  <div className={`p-4 rounded-2xl bg-gradient-to-br ${subject.color} shadow-[0_0_20px_rgba(0,0,0,0.5)]`}>
-                    <subject.icon className="w-8 h-8 text-white" />
+                <div className="absolute inset-0 backface-hidden rounded-[2.5rem] border border-slate-200 bg-white p-6 shadow-xl shadow-slate-200/50 flex flex-col items-center justify-center text-center gap-6">
+                  <div className={`p-5 rounded-3xl bg-gradient-to-br ${subject.color} shadow-lg shadow-black/10`}>
+                    <subject.icon className="w-10 h-10 text-white" />
                   </div>
-                  <h3 className="text-lg font-bold text-white">{subject.name}</h3>
+                  <h3 className="text-xl font-black text-slate-800">{subject.name}</h3>
                 </div>
 
                 {/* Back */}
-                <div className="absolute inset-0 backface-hidden rounded-3xl bg-gradient-to-br from-zinc-800 to-zinc-900 p-6 flex flex-col items-center justify-center text-center rotate-y-180">
-                   <h3 className="text-sm font-bold text-zinc-400 mb-2 uppercase tracking-tighter">Topics</h3>
-                   <p className="text-white font-medium text-sm leading-relaxed">
+                <div className="absolute inset-0 backface-hidden rounded-[2.5rem] bg-slate-900 p-8 flex flex-col items-center justify-center text-center rotate-y-180">
+                   <h3 className="text-xs font-black text-blue-400 mb-4 uppercase tracking-[0.2em]">Syllabus</h3>
+                   <p className="text-white font-medium text-sm leading-loose">
                      {subject.topics}
                    </p>
                 </div>
