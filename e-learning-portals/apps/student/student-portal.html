@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Portal - LearnGo</title>
+    <!-- Phosphor Icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <link rel="stylesheet" href="../../assets/css/global.css">
+    <link rel="stylesheet" href="student-portal.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <i class="ph-fill ph-book-open"></i>
+                    <span>LearnGo</span>
+                </div>
+            </div>
+            
+            <div class="sidebar-section">
+                <div class="role-selector">
+                    <p class="text-xs text-muted mb-2 font-semibold">VIEWING AS</p>
+                    <select>
+                        <option>Student</option>
+                        <option>Instructor</option>
+                    </select>
+                </div>
+            </div>
+
+            <nav class="sidebar-nav">
+                <span class="section-title">Menu</span>
+                <ul>
+                    <li class="active"><a href="#"><i class="ph ph-squares-four"></i> Dashboard</a></li>
+                    <li><a href="#"><i class="ph ph- graduation-cap"></i> My Courses</a></li>
+                    <li><a href="#"><i class="ph ph-chart-line-up"></i> Progress</a></li>
+                    <li><a href="#"><i class="ph ph-calendar"></i> Schedule</a></li>
+                    <li><a href="#"><i class="ph ph-chat-centered-text"></i> Messages</a></li>
+                </ul>
+            </nav>
+            
+            <div class="sidebar-footer">
+                <div class="user-profile">
+                    <img src="https://i.pravatar.cc/150?img=11" alt="Student" class="avatar avatar-md">
+                    <div class="user-info">
+                        <span class="user-name">Alex Johnson</span>
+                        <span class="user-id">ID: 24589</span>
+                    </div>
+                </div>
+                <button class="logout-btn"><i class="ph ph-sign-out"></i></button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="top-header">
+                <div class="search-bar">
+                    <i class="ph ph-magnifying-glass"></i>
+                    <input type="text" placeholder="Search courses, lessons...">
+                </div>
+                
+                <div class="header-actions">
+                    <div class="lang-selector">
+                        <span>🇺🇸 EN</span>
+                    </div>
+                    <button class="icon-btn">
+                        <i class="ph ph-bell"></i>
+                        <span class="notification-dot">3</span>
+                    </button>
+                    <img src="https://i.pravatar.cc/150?img=11" alt="Avatar" class="avatar avatar-sm">
+                </div>
+            </header>
+            
+            <div class="content-area">
+                <div class="welcome-banner">
+                    <div class="welcome-text">
+                        <h1>Welcome back, Alex! 👋</h1>
+                        <p>You have completed 75% of your weekly goals. Keep it up!</p>
+                    </div>
+                    <img src="https://img.icons8.com/fluency/96/000000/learning.png" alt="Learning" style="width: 80px;">
+                </div>
+                
+                <!-- Stats Grid -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="icon-wrapper blue">
+                            <i class="ph-fill ph-book"></i>
+                        </div>
+                        <div>
+                            <span class="stat-label">Enrolled</span>
+                            <span class="stat-value">6</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="icon-wrapper green">
+                            <i class="ph-fill ph-check-circle"></i>
+                        </div>
+                        <div>
+                            <span class="stat-label">Completed</span>
+                            <span class="stat-value">12</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="icon-wrapper orange">
+                            <i class="ph-fill ph-clock"></i>
+                        </div>
+                        <div>
+                            <span class="stat-label">Hours Spent</span>
+                            <span class="stat-value">48h</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="icon-wrapper purple">
+                            <i class="ph-fill ph-certificate"></i>
+                        </div>
+                        <div>
+                            <span class="stat-label">Certificates</span>
+                            <span class="stat-value">3</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="dashboard-grid">
+                    <!-- Continue Learning -->
+                    <div class="bg-white rounded-lg shadow-sm border p-6">
+                        <div class="section-header">
+                            <h2>Continue Learning</h2>
+                            <a href="#" class="text-sm text-blue font-semibold hover-underline">View All</a>
+                        </div>
+                        
+                        <div class="course-list">
+                            <div class="course-item">
+                                <div class="course-img skeleton"></div>
+                                <div class="course-details">
+                                    <div class="course-meta">
+                                        <span class="tag tag-blue">Frontend</span>
+                                        <span class="text-xs text-muted">Lesson 12 of 20</span>
+                                    </div>
+                                    <h3>Advanced React Patterns</h3>
+                                    <div class="progress-container">
+                                        <div class="progress-fill" style="width: 60%;"></div>
+                                    </div>
+                                    <div class="course-footer">
+                                        <span class="text-xs text-muted">60% Complete</span>
+                                        <button class="text-sm text-blue font-bold">Resume</button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="course-item">
+                                <div class="course-img skeleton" style="background: linear-gradient(90deg, #1C1F2E 0%, #3D4263 100%);"></div>
+                                <div class="course-details">
+                                    <div class="course-meta">
+                                        <span class="tag tag-orange">Design</span>
+                                        <span class="text-xs text-muted">Lesson 3 of 10</span>
+                                    </div>
+                                    <h3>UI/UX Masterclass 2024</h3>
+                                    <div class="progress-container">
+                                        <div class="progress-fill orange" style="width: 30%;"></div>
+                                    </div>
+                                    <div class="course-footer">
+                                        <span class="text-xs text-muted">30% Complete</span>
+                                        <button class="text-sm text-blue font-bold">Resume</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Upcoming Tasks -->
+                    <div class="bg-white rounded-lg shadow-sm border p-6">
+                        <div class="section-header">
+                            <h2>Upcoming Tasks</h2>
+                            <button class="icon-btn text-base"><i class="ph ph-plus"></i></button>
+                        </div>
+                        
+                        <div class="task-list">
+                            <div class="task-item">
+                                <div class="task-icon bg-blue-light text-blue"><i class="ph-fill ph-file-text"></i></div>
+                                <div class="task-details">
+                                    <h4>Final Project Submission</h4>
+                                    <p class="text-xs text-muted">React Course • Dec 20, 2024</p>
+                                    <span class="badge badge-warning">High Priority</span>
+                                </div>
+                            </div>
+                            
+                            <div class="task-item">
+                                <div class="task-icon bg-green-light text-green"><i class="ph-fill ph-pencil-simple"></i></div>
+                                <div class="task-details">
+                                    <h4>Weekly UX Quiz</h4>
+                                    <p class="text-xs text-muted">Design Systems • Today, 6:00 PM</p>
+                                    <span class="badge badge-primary">Academy</span>
+                                </div>
+                            </div>
+
+                            <div class="task-item">
+                                <div class="task-icon bg-red-light text-red"><i class="ph-fill ph-video-camera"></i></div>
+                                <div class="task-details">
+                                    <h4>Live Q&A Session</h4>
+                                    <p class="text-xs text-muted">Career Growth • Dec 22, 2024</p>
+                                    <span class="badge badge-success">Join Link</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</body>
+</html>

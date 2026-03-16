@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Faculty Portal - LearnGo</title>
+    <!-- Phosphor Icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <link rel="stylesheet" href="../../assets/css/global.css">
+    <link rel="stylesheet" href="faculty-portal.css">
+</head>
+<body>
+    <div class="app-container flex-col bg-app">
+        <!-- Hybrid Header Nav -->
+        <header class="faculty-header shadow-sm border-bottom bg-white relative z-10">
+            <div class="header-container flex justify-between items-center py-4 px-6">
+                <!-- Brand & Main Nav -->
+                <div class="flex items-center gap-8">
+                    <div class="brand flex items-center gap-2 font-bold text-xl text-dark">
+                        <i class="ph-fill ph-chalkboard-teacher text-blue text-2xl"></i>
+                        <span>LearnGo <span class="text-sm font-medium text-muted ml-1">Faculty</span></span>
+                    </div>
+                    
+                    <nav class="desktop-nav">
+                        <ul class="flex gap-6">
+                            <li><a href="#" class="nav-link active">Dashboard</a></li>
+                            <li><a href="#" class="nav-link">My Classes</a></li>
+                            <li><a href="#" class="nav-link">Curriculum</a></li>
+                            <li><a href="#" class="nav-link">Grades & Tasks</a></li>
+                        </ul>
+                    </nav>
+                </div>
+
+                <!-- Right Tools -->
+                <div class="flex items-center gap-5">
+                    <div class="search-box bg-gray rounded-full px-3 py-1 flex items-center gap-2">
+                        <i class="ph ph-magnifying-glass text-muted"></i>
+                        <input type="text" placeholder="Search students, resources..." class="bg-transparent border-none outline-none text-sm w-48">
+                    </div>
+                    
+                    <button class="relative text-muted hover-dark text-xl">
+                        <i class="ph ph-envelope-simple"></i>
+                        <span class="badge-dot bg-red"></span>
+                    </button>
+                    
+                    <button class="relative text-muted hover-dark text-xl">
+                        <i class="ph ph-bell"></i>
+                    </button>
+                    
+                    <div class="profile-menu border-left pl-5 ml-2 flex items-center gap-3 cursor-pointer">
+                        <div class="text-right hidden sm-block">
+                            <p class="text-sm font-semibold text-dark">Prof. Elena Rostova</p>
+                            <p class="text-xs text-muted">Computer Science Dept.</p>
+                        </div>
+                        <img src="https://i.pravatar.cc/150?img=47" alt="Profile" class="avatar avatar-md border-2 border-blue">
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content Layout -->
+        <main class="faculty-main flex-1 p-6">
+            <div class="max-w-7xl mx-auto">
+                <!-- Welcome & Actions Row -->
+                <div class="flex-row-between mb-8 flex-wrap gap-4">
+                    <div>
+                        <h1 class="text-2xl font-bold text-dark mb-1">Good Morning, Elena</h1>
+                        <p class="text-muted text-sm">You have pending items that require your attention today.</p>
+                    </div>
+                    <div class="flex gap-3">
+                        <button class="btn-outline bg-white shadow-sm border-gray"><i class="ph ph-calendar-plus text-lg"></i> Schedule Meeting</button>
+                        <button class="btn-primary shadow-sm"><i class="ph ph-plus text-lg"></i> Create Assignment</button>
+                    </div>
+                </div>
+
+                <!-- Three Column Layout -->
+                <div class="faculty-grid grid gap-6">
+                    
+                    <!-- Middle/Left Col: Stats & Priority Classes -->
+                    <div class="col-span-2 flex flex-col gap-6">
+                        
+                        <!-- Quick Stats -->
+                        <div class="grid grid-cols-3 gap-4">
+                            <div class="stat-box bg-white p-4 rounded-md border shadow-sm flex items-center gap-4 hover-lift">
+                                <div class="icon-circle bg-blue-light text-blue"><i class="ph-fill ph-users"></i></div>
+                                <div>
+                                    <p class="text-xs text-muted font-medium uppercase tracking-wide">Total Students</p>
+                                    <p class="text-xl font-bold text-dark">142</p>
+                                </div>
+                            </div>
+                            <div class="stat-box bg-white p-4 rounded-md border shadow-sm flex items-center gap-4 hover-lift">
+                                <div class="icon-circle bg-orange-light text-orange"><i class="ph-fill ph-tray"></i></div>
+                                <div>
+                                    <p class="text-xs text-muted font-medium uppercase tracking-wide">To Grade</p>
+                                    <p class="text-xl font-bold text-dark">28</p>
+                                </div>
+                            </div>
+                            <div class="stat-box bg-white p-4 rounded-md border shadow-sm flex items-center gap-4 hover-lift">
+                                <div class="icon-circle bg-green-light text-green"><i class="ph-fill ph-check-square-offset"></i></div>
+                                <div>
+                                    <p class="text-xs text-muted font-medium uppercase tracking-wide">Avg Attendance</p>
+                                    <p class="text-xl font-bold text-dark">94%</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Priority Classes -->
+                        <div class="bg-white rounded-md border shadow-sm p-5">
+                            <div class="flex justify-between items-center mb-5">
+                                <h2 class="text-lg font-semibold text-dark">Today's Classes</h2>
+                                <a href="#" class="text-sm font-medium text-blue hover-underline">View Full Schedule</a>
+                            </div>
+
+                            <div class="class-list flex flex-col gap-3">
+                                <!-- Class Item -->
+                                <div class="class-row border rounded-md p-4 flex justify-between items-center bg-gray-50 border-left-blue">
+                                    <div class="flex gap-4 items-center">
+                                        <div class="time-block text-center pr-4 border-right">
+                                            <p class="text-sm font-bold text-dark">10:00</p>
+                                            <p class="text-xs text-muted">AM</p>
+                                        </div>
+                                        <div>
+                                            <h3 class="font-semibold text-dark">CS101: Intro to Programming</h3>
+                                            <p class="text-xs text-muted mt-1 flex items-center gap-1"><i class="ph ph-map-pin"></i> Virtual Room A &bull; 45 Students</p>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center gap-3">
+                                        <div class="avatar-group flex">
+                                            <img src="https://i.pravatar.cc/150?img=1" class="avatar avatar-sm border-2 border-white -mr-2 relative z-30">
+                                            <img src="https://i.pravatar.cc/150?img=2" class="avatar avatar-sm border-2 border-white -mr-2 relative z-20">
+                                            <div class="avatar avatar-sm border-2 border-white bg-gray text-xs font-semibold flex items-center justify-center relative z-10 text-muted">+42</div>
+                                        </div>
+                                        <button class="btn-primary py-1.5 px-3 text-sm rounded"><i class="ph-fill ph-video-camera"></i> Start</button>
+                                    </div>
+                                </div>
+
+                                <!-- Class Item -->
+                                <div class="class-row border rounded-md p-4 flex justify-between items-center hover-bg">
+                                    <div class="flex gap-4 items-center">
+                                        <div class="time-block text-center pr-4 border-right">
+                                            <p class="text-sm font-bold text-dark">14:30</p>
+                                            <p class="text-xs text-muted">PM</p>
+                                        </div>
+                                        <div>
+                                            <h3 class="font-semibold text-dark">CS304: Data Structures</h3>
+                                            <p class="text-xs text-muted mt-1 flex items-center gap-1"><i class="ph ph-map-pin"></i> Hall 3B &bull; 97 Students</p>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center gap-3">
+                                        <button class="btn-outline py-1.5 px-3 text-sm rounded"><i class="ph ph-file-text"></i> Prep Notes</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- Right Col: Tasks & Inbox -->
+                    <div class="col-span-1 flex flex-col gap-6">
+                        
+                        <!-- Action Items -->
+                        <div class="bg-white rounded-md border shadow-sm p-5">
+                            <h2 class="text-base font-semibold text-dark mb-4 pb-2 border-bottom">Pending Action Items</h2>
+                            <ul class="task-list-sm flex flex-col gap-3">
+                                <li class="flex items-start gap-3 p-2 hover-bg rounded-md cursor-pointer transition">
+                                    <div class="mt-0.5 text-orange"><i class="ph-fill ph-file-arrow-down text-lg"></i></div>
+                                    <div>
+                                        <p class="text-sm font-medium text-dark line-clamp-1">Review Mid-term Syllabus</p>
+                                        <p class="text-xs text-muted mt-0.5">Due Tomorrow</p>
+                                    </div>
+                                </li>
+                                <li class="flex items-start gap-3 p-2 hover-bg rounded-md cursor-pointer transition">
+                                    <div class="mt-0.5 text-blue"><i class="ph-fill ph-tray-arrow-down text-lg"></i></div>
+                                    <div>
+                                        <p class="text-sm font-medium text-dark line-clamp-1">Grade Assignment #4 (CS101)</p>
+                                        <p class="text-xs text-muted mt-0.5">28 pending submissions</p>
+                                    </div>
+                                </li>
+                                <li class="flex items-start gap-3 p-2 hover-bg rounded-md cursor-pointer transition">
+                                    <div class="mt-0.5 text-green"><i class="ph-fill ph-user-plus text-lg"></i></div>
+                                    <div>
+                                        <p class="text-sm font-medium text-dark line-clamp-1">Approve Late Enrollments</p>
+                                        <p class="text-xs text-muted mt-0.5">3 student requests</p>
+                                    </div>
+                                </li>
+                            </ul>
+                        </div>
+
+                        <!-- Department Announcement -->
+                        <div class="bg-blue-light rounded-md border border-blue-200 p-5 relative overflow-hidden">
+                            <div class="absolute -right-4 -top-4 text-blue" style="font-size: 8rem; opacity: 0.1;">
+                                <i class="ph-fill ph-megaphone"></i>
+                            </div>
+                            <h3 class="text-blue font-bold text-sm mb-2 flex items-center gap-2 relative z-10"><i class="ph-fill ph-megaphone"></i> Dept. Announcement</h3>
+                            <p class="text-sm text-dark font-medium relative z-10">Faculty Meeting Moved</p>
+                            <p class="text-xs text-muted mt-1 mb-3 relative z-10">The monthly CS department meeting has been rescheduled to Friday at 2:00 PM in the main conference room.</p>
+                            <button class="text-xs font-semibold text-blue hover-underline relative z-10">Acknowledge</button>
+                        </div>
+
+                    </div>
+                    
+                </div>
+            </div>
+        </main>
+    </div>
+</body>
+</html>
