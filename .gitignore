@@ -10,7 +10,18 @@ Desktop.ini
 # Local logs
 *.log
 
-# Build artifacts (if any in future)
+# Build artifacts
 dist/
 build/
 node_modules/
+.next/
+.turbo/
+out/
+
+# Environment files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.env
