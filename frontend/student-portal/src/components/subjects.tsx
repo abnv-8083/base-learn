@@ -1,64 +1,74 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { 
-  Calculator, 
-  Atom, 
-  FlaskConical, 
-  Dna, 
-  Languages, 
-  Globe2 
-} from "lucide-react";
-import { Badge } from "@repo/ui/components/badge";
+import { Plus, Minus, Triangle, Square, Circle, ArrowRight } from "lucide-react";
+import Link from "next/link";
 
 const subjects = [
-  { name: "Math", icon: Calculator, color: "from-blue-500 to-cyan-500", topics: "Calculus, Algebra, Geometry" },
-  { name: "Physics", icon: Atom, color: "from-purple-500 to-indigo-500", topics: "Dynamics, Energy, Optics" },
-  { name: "Chemistry", icon: FlaskConical, color: "from-pink-500 to-rose-500", topics: "Organic, Atoms, Reactions" },
-  { name: "Biology", icon: Dna, color: "from-emerald-500 to-teal-500", topics: "Genetics, Cells, Ecology" },
-  { name: "English", icon: Languages, color: "from-orange-500 to-yellow-500", topics: "Grammar, Literature, Writing" },
-  { name: "Social Studies", icon: Globe2, color: "from-red-500 to-orange-500", topics: "History, Civics, Geography" },
+  {
+    name: "Mathematics",
+    description: "Calculus, Algebra & Geometry",
+    icon: Triangle,
+    color: "bg-primary",
+    lightColor: "bg-primary/5",
+    textColor: "text-primary"
+  },
+  {
+    name: "Science",
+    description: "Physics, Chemistry & Biology",
+    icon: Circle,
+    color: "bg-indigo-600",
+    lightColor: "bg-indigo-50",
+    textColor: "text-indigo-600"
+  },
+  {
+    name: "English",
+    description: "Literature & Grammar",
+    icon: Square,
+    color: "bg-sky-500",
+    lightColor: "bg-sky-50",
+    textColor: "text-sky-600"
+  },
+  {
+    name: "Social Studies",
+    description: "History & Geography",
+    icon: Plus,
+    color: "bg-blue-600",
+    lightColor: "bg-blue-50",
+    textColor: "text-blue-600"
+  }
 ];
 
 export function SubjectCards() {
   return (
-    <section className="py-24 bg-slate-50/50">
-      <div className="container mx-auto px-4">
-        <div className="text-center mb-16">
-          <Badge className="mb-4 bg-blue-50 border-blue-100 text-blue-600 hover:bg-blue-100 px-4 py-1 font-bold">Our Subjects</Badge>
-          <h2 className="text-4xl md:text-6xl font-black text-slate-900 tracking-tight">
-            Master every concept
-          </h2>
-        </div>
-
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-8">
-          {subjects.map((subject, i) => (
-            <motion.div
-              key={i}
-              whileHover={{ y: -12 }}
-              className="group relative h-72 perspective-1000"
-            >
-              <div className="relative w-full h-full transition-all duration-700 preserve-3d group-hover:rotate-y-180">
-                {/* Front */}
-                <div className="absolute inset-0 backface-hidden rounded-[2.5rem] border border-slate-200 bg-white p-6 shadow-xl shadow-slate-200/50 flex flex-col items-center justify-center text-center gap-6">
-                  <div className={`p-5 rounded-3xl bg-gradient-to-br ${subject.color} shadow-lg shadow-black/10`}>
-                    <subject.icon className="w-10 h-10 text-white" />
-                  </div>
-                  <h3 className="text-xl font-black text-slate-800">{subject.name}</h3>
-                </div>
-
-                {/* Back */}
-                <div className="absolute inset-0 backface-hidden rounded-[2.5rem] bg-slate-900 p-8 flex flex-col items-center justify-center text-center rotate-y-180">
-                   <h3 className="text-xs font-black text-blue-400 mb-4 uppercase tracking-[0.2em]">Syllabus</h3>
-                   <p className="text-white font-medium text-sm leading-loose">
-                     {subject.topics}
-                   </p>
-                </div>
-              </div>
-            </motion.div>
-          ))}
-        </div>
-      </div>
-    </section>
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+      {subjects.map((subject, i) => (
+        <motion.div
+          key={i}
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ delay: i * 0.1 }}
+          className="soft-card p-10 group cursor-pointer relative overflow-hidden"
+        >
+          <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-transparent to-primary/5 -mr-16 -mt-16 rounded-full group-hover:scale-150 transition-transform duration-700" />
+          
+          <div className={`w-16 h-16 rounded-2xl ${subject.lightColor} flex items-center justify-center mb-8 relative z-10 transition-all duration-500 group-hover:scale-110 group-hover:rotate-3`}>
+            <subject.icon className={`w-9 h-9 ${subject.textColor}`} />
+          </div>
+          <h3 className="text-2xl font-black text-slate-900 mb-3 relative z-10 tracking-tight">{subject.name}</h3>
+          <p className="text-slate-500 font-bold mb-10 relative z-10 opacity-70">
+            {subject.description}
+          </p>
+          <Link 
+            href="/courses" 
+            className={`inline-flex items-center text-xs font-black uppercase tracking-widest ${subject.textColor} hover:translate-x-2 transition-transform relative z-10`}
+          >
+            Explore Course
+            <ArrowRight className="ml-2 w-4 h-4" />
+          </Link>
+        </motion.div>
+      ))}
+    </div>
   );
 }

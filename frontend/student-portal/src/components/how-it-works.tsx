@@ -1,58 +1,59 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { UserPlus, BookOpen, Trophy } from "lucide-react";
-
-const steps = [
-  {
-    title: "Sign Up",
-    description: "Create your account in seconds and join our learning community.",
-    icon: UserPlus,
-    color: "bg-blue-500",
-  },
-  {
-    title: "Pick Subject",
-    description: "Choose from our wide range of grade-specific comprehensive courses.",
-    icon: BookOpen,
-    color: "bg-indigo-500",
-  },
-  {
-    title: "Watch & Score",
-    description: "Learn with 3D visuals, take quizzes, and watch your grades soar.",
-    icon: Trophy,
-    color: "bg-blue-600",
-  },
-];
+import { Search, PlayCircle, Trophy } from "lucide-react";
 
 export function HowItWorks() {
+  const steps = [
+    {
+      title: "Choose Your Path",
+      id: "01",
+      description: "Select your grade and subjects you want to master.",
+      icon: Search
+    },
+    {
+      title: "Learn Interactively",
+      id: "02",
+      description: "Join live sessions and watch 3D visual modules.",
+      icon: PlayCircle
+    },
+    {
+      title: "Reach Your Goals",
+      id: "03",
+      description: "Ace your exams with personalized test series.",
+      icon: Trophy
+    }
+  ];
+
   return (
-    <section className="py-24 bg-white">
-      <div className="container mx-auto px-4 text-center">
-        <h2 className="text-4xl md:text-6xl font-black text-slate-900 mb-20 tracking-tight">How It Works</h2>
-        
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-16 md:gap-8 max-w-5xl mx-auto relative">
-          {/* Connecting Line (Desktop) */}
-          <div className="hidden md:block absolute top-[60px] left-[15%] right-[15%] h-1 bg-slate-100 -z-10" />
-          
+    <section id="how-it-works" className="py-24 bg-slate-50/50">
+      <div className="container mx-auto px-6">
+        <div className="text-center mb-20">
+          <div className="badge mb-4">The Process</div>
+          <h2 className="text-4xl md:text-5xl font-black mb-4 text-gradient">Your Path to Mastery</h2>
+          <p className="text-slate-500 text-lg font-medium opacity-70">Your journey to academic excellence simplified.</p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-12 max-w-6xl mx-auto relative">
           {steps.map((step, i) => (
-            <motion.div 
+            <motion.div
               key={i}
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ delay: i * 0.2 }}
-              className="flex flex-col items-center"
+              transition={{ delay: i * 0.1 }}
+              className="relative z-10 p-12 bg-white rounded-[2.5rem] border border-slate-100 shadow-xl shadow-primary-glow/5 text-center flex flex-col items-center group hover:-translate-y-2 transition-all duration-500"
             >
-              <div className={`w-[120px] h-[120px] rounded-full ${step.color} shadow-2xl shadow-blue-200 flex items-center justify-center mb-8 relative border-8 border-white`}>
-                <step.icon className="w-10 h-10 text-white" />
-                <div className="absolute -top-2 -right-2 w-10 h-10 rounded-full bg-white shadow-lg flex items-center justify-center font-black text-blue-600 text-lg">
-                  {i + 1}
-                </div>
+              <div className="w-20 h-20 rounded-3xl bg-primary text-white flex items-center justify-center mb-8 shadow-xl shadow-primary-glow transition-all duration-500 group-hover:rotate-6 group-hover:scale-110">
+                <step.icon className="w-10 h-10" />
               </div>
-              <h3 className="text-2xl font-black text-slate-800 mb-4">{step.title}</h3>
-              <p className="text-slate-500 leading-loose max-w-[250px]">
-                {step.description}
-              </p>
+              <div className="text-[10px] font-black text-primary uppercase tracking-[0.2em] mb-3">Step {step.id}</div>
+              <h3 className="text-2xl font-black mb-4 text-slate-900 tracking-tight">{step.title}</h3>
+              <p className="text-slate-500 font-bold leading-relaxed opacity-70">{step.description}</p>
+              
+              {i < 2 && (
+                <div className="hidden md:block absolute top-[20%] -right-8 w-16 h-0.5 bg-gradient-to-r from-primary/20 to-transparent" />
+              )}
             </motion.div>
           ))}
         </div>

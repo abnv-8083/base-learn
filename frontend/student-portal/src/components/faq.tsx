@@ -6,20 +6,20 @@ import { Plus, Minus } from "lucide-react";
 
 const faqs = [
   {
-    question: "Is there a free trial available?",
-    answer: "Yes! You can start learning for free with access to sample videos and practice tests for every subject.",
+    question: "Which grades do you support?",
+    answer: "We currently provide comprehensive curriculum for Grades 8, 9, and 10 across all major boards including CBSE and ICSE.",
   },
   {
-    question: "Which grades do you cover?",
-    answer: "We currently provide comprehensive curriculum-based content for Grade 8, 9, and 10 students.",
+    question: "How do live classes work?",
+    answer: "Live classes are conducted by expert teachers with interactive tools. If you miss one, recordings are available instantly.",
   },
   {
-    question: "Are the classes live or recorded?",
-    answer: "Both! We provide a vast library of high-quality recorded lessons and regular live doubt-clearing sessions.",
+    question: "Is there a free trial?",
+    answer: "Yes! You can explore the first few chapters of every subject absolutely free.",
   },
   {
-    question: "Can I use Antigravity on my tablet?",
-    answer: "Absolutely. Our platform is fully responsive and works perfectly on smartphones, tablets, and laptops.",
+    question: "Can I ask doubts during class?",
+    answer: "Absolutely. Our live chat and dedicated 'Doubt Vault' ensure no question goes unanswered.",
   },
 ];
 
@@ -27,20 +27,26 @@ export function FAQ() {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
 
   return (
-    <section className="py-24 bg-white">
-      <div className="container mx-auto px-4 max-w-4xl">
-        <h2 className="text-4xl md:text-5xl font-black text-slate-900 text-center mb-16 tracking-tight">Common Questions</h2>
-        
+    <section className="py-24 bg-slate-50/50" id="faq">
+      <div className="container mx-auto px-6 max-w-4xl">
+        <div className="text-center mb-16">
+          <div className="badge mb-4">Support</div>
+          <h2 className="text-4xl md:text-5xl font-black mb-4 text-gradient">Common Questions</h2>
+          <p className="text-slate-500 text-lg font-medium opacity-70">Everything you need to know to get started.</p>
+        </div>
+
         <div className="space-y-4">
           {faqs.map((faq, i) => (
-            <div key={i} className={`rounded-3xl border transition-all duration-300 ${openIndex === i ? "border-blue-500 bg-blue-50/30" : "border-slate-100 bg-slate-50/50"}`}>
+            <div key={i} className="soft-card !rounded-[2rem] overflow-hidden border-primary/5 shadow-sm">
               <button
                 onClick={() => setOpenIndex(openIndex === i ? null : i)}
-                className="w-full p-8 flex items-center justify-between text-left"
+                className="w-full px-8 py-8 flex items-center justify-between text-left group hover:bg-primary/5 transition-colors"
               >
-                <span className="text-xl font-black text-slate-800">{faq.question}</span>
-                <div className={`p-2 rounded-xl ${openIndex === i ? "bg-blue-600 text-white" : "bg-white text-slate-400 border border-slate-100"}`}>
-                  {openIndex === i ? <Minus className="w-5 h-5" /> : <Plus className="w-5 h-5" />}
+                <span className={`text-xl font-black tracking-tight transition-colors ${openIndex === i ? 'text-primary' : 'text-slate-800'}`}>
+                  {faq.question}
+                </span>
+                <div className={`w-10 h-10 rounded-2xl flex items-center justify-center transition-all shadow-lg ${openIndex === i ? 'bg-primary text-white shadow-primary-glow rotate-45' : 'bg-slate-50 text-slate-400 group-hover:bg-primary/10 group-hover:text-primary shadow-none'}`}>
+                  <Plus className="w-6 h-6" />
                 </div>
               </button>
               
@@ -50,10 +56,9 @@ export function FAQ() {
                     initial={{ height: 0, opacity: 0 }}
                     animate={{ height: "auto", opacity: 1 }}
                     exit={{ height: 0, opacity: 0 }}
-                    transition={{ duration: 0.3 }}
-                    className="overflow-hidden"
+                    transition={{ duration: 0.3, ease: "easeInOut" }}
                   >
-                    <div className="p-8 pt-0 text-slate-600 leading-loose text-lg font-medium">
+                    <div className="px-8 pb-8 text-slate-500 font-bold text-lg leading-relaxed opacity-80 bg-gradient-to-b from-primary/5 to-transparent">
                       {faq.answer}
                     </div>
                   </motion.div>
