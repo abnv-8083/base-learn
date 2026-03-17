@@ -1,123 +1,152 @@
 @import "tailwindcss";
 
 :root {
-  /* Core Palette - Modern Blue & White */
-  --background: #FFFFFF;
-  --foreground: #0F172A;
+  /* Antigravity Design System - Ocean & Frost */
+  --color-primary: #0066FF;
+  --color-primary-dark: #004DCF;
+  --color-primary-light: #E6F0FF;
   
-  --primary: #0066FF;
-  --primary-glow: rgba(0, 102, 255, 0.15);
+  --color-bg-white: #FFFFFF;
+  --color-bg-soft: #F8FAFC;
   
-  --secondary: #F8FAFC;
-  --accent: #E0E7FF;
+  --color-text-main: #0F172A;
+  --color-text-muted: #64748B;
   
-  --muted: #F1F5F9;
-  --muted-foreground: #64748B;
+  --color-border: #E2E8F0;
+  --color-border-soft: rgba(226, 232, 240, 0.5);
   
-  --border: #E2E8F0;
-  --border-hover: #CBD5E1;
+  --radius-button: 8px;
+  --radius-card: 12px;
+  --radius-input: 8px;
   
-  --card: #FFFFFF;
-  --card-foreground: #0F172A;
+  --shadow-ocean: 0 10px 15px -3px rgba(0, 102, 255, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.02);
+  --glass-bg: rgba(255, 255, 255, 0.8);
+  --glass-blur: 10px;
   
-  --radius-lg: 1.5rem;
-  --radius-xl: 2.5rem;
+  --transition-standard: 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-smooth: 300ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-primary: var(--primary);
-  --color-primary-glow: var(--primary-glow);
-  --color-secondary: var(--secondary);
-  --color-accent: var(--accent);
-  --color-muted: var(--muted);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-border: var(--border);
-  --color-border-hover: var(--border-hover);
+  --color-background: var(--color-bg-white);
+  --color-foreground: var(--color-text-main);
   
-  --font-sans: var(--font-outfit);
+  --color-primary: var(--color-primary);
+  --color-primary-dark: var(--color-primary-dark);
+  --color-primary-light: var(--color-primary-light);
   
-  --radius-lg: var(--radius-lg);
-  --radius-xl: var(--radius-xl);
+  --color-bg-soft: var(--color-bg-soft);
+  --color-text-muted: var(--color-text-muted);
+  --color-border-main: var(--color-border);
+  
+  --font-sans: "Inter", sans-serif;
+  --font-display: "Outfit", "Inter", sans-serif;
+  
+  --radius-btn: var(--radius-button);
+  --radius-card: var(--radius-card);
+  
+  --animate-float: float 3s ease-in-out infinite;
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-5px); }
+  }
 }
 
+/* Base Styles */
 html {
-  font-size: 112.5%; /* Upscale base typography (18px base) */
+  font-size: 16px;
+  scroll-behavior: smooth;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-outfit), sans-serif;
+  background: var(--color-bg-soft);
+  color: var(--color-text-main);
+  font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   line-height: 1.6;
 }
 
-h1, h2, h3, h4 {
-  font-weight: 900;
-  letter-spacing: -0.04em;
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-display);
+  color: var(--color-text-main);
   line-height: 1.1;
-  color: #0F172A;
+  letter-spacing: -0.02em;
 }
 
-h1 { font-size: 3.5rem; }
-h2 { font-size: 2.75rem; }
-h3 { font-size: 2rem; }
-h4 { font-size: 1.5rem; }
+h1 { font-size: 3.5rem; font-weight: 700; line-height: 1.1; }
+h2 { font-size: 2.25rem; font-weight: 600; line-height: 1.2; }
+h3 { font-size: 1.5rem; font-weight: 500; line-height: 1.4; }
 
-/* Premium Design Components */
+/* Design System Components */
 
 .soft-card {
-  background: white;
-  border: 1px solid #F1F5F9;
-  border-radius: var(--radius-lg);
-  box-shadow: 0 10px 30px -10px rgba(0, 102, 255, 0.05);
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  background: var(--color-bg-white);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-ocean);
+  transition: var(--transition-smooth);
 }
 
 .soft-card:hover {
-  transform: translateY(-6px);
-  border-color: #E2E8F0;
-  box-shadow: 0 20px 40px -15px rgba(0, 102, 255, 0.12);
+  transform: translateY(-2px);
+  box-shadow: 0 20px 25px -5px rgba(0, 102, 255, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
 }
 
 .glass-panel {
-  background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(12px);
-  border-bottom: 1px solid rgba(0, 102, 255, 0.05);
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
-.primary-gradient {
-  background: linear-gradient(135deg, #0066FF 0%, #0044CC 100%);
+.btn-primary {
+  background-color: var(--color-primary);
+  color: white;
+  padding: 0.75rem 1.5rem;
+  border-radius: var(--radius-button);
+  font-weight: 600;
+  transition: var(--transition-standard);
 }
 
-.secondary-gradient {
-  background: linear-gradient(135deg, #F8FAFC 0%, #EFF6FF 100%);
+.btn-primary:hover {
+  background-color: var(--color-primary-dark);
+  transform: scale(1.02);
 }
 
-.text-gradient {
-  background: linear-gradient(135deg, #0F172A 0%, #0066FF 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
+.input-field {
+  background-color: var(--color-bg-soft);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-input);
+  padding: 0.75rem 1rem;
+  transition: var(--transition-standard);
+}
+
+.input-field:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  border-width: 2px;
 }
 
 .badge {
   display: inline-flex;
   align-items: center;
-  padding: 0.375rem 1rem;
+  padding: 0.25rem 0.75rem;
   border-radius: 9999px;
-  font-size: 0.75rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  background: #EFF6FF;
-  color: #0066FF;
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+  font-size: 0.875rem;
+  font-weight: 600;
 }
 
-/* Custom Selection */
-::selection {
-  background-color: rgba(0, 102, 255, 0.1);
-  color: #0066FF;
+.text-gradient {
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
+
+::selection {
+  background-color: var(--color-primary-light);
+  color: var(--color-primary);
+}
+

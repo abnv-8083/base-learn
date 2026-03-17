@@ -87,28 +87,31 @@ export default function MyCourses() {
   });
 
   return (
-    <div className="p-6 md:p-10 space-y-10">
+    <div className="space-y-10 animate-in fade-in duration-500">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-8">
-        <div>
+        <motion.div
+           initial={{ opacity: 0, x: -20 }}
+           animate={{ opacity: 1, x: 0 }}
+        >
           <div className="badge mb-4">
-             <GraduationCap className="w-3 h-3 mr-2" />
+             <GraduationCap className="w-3.5 h-3.5 mr-2" />
              My Learning Journey
           </div>
-          <h1 className="text-4xl md:text-5xl font-black text-slate-900 tracking-tighter mb-2">My <span className="text-gradient">Courses</span></h1>
-          <p className="text-slate-500 font-bold">You have 4 active courses in progress.</p>
-        </div>
+          <h1 className="text-display mb-1">My <span className="text-gradient">Courses</span></h1>
+          <p className="text-text-muted font-medium">You have 4 active courses in progress.</p>
+        </motion.div>
         
         <div className="flex items-center gap-4">
           <div className="relative hidden md:block w-72">
-             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
              <input 
                type="text" 
                placeholder="Search my courses..." 
-               className="w-full h-14 bg-white border border-slate-100 rounded-2xl pl-12 pr-4 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-4 focus:ring-primary/5 focus:border-primary/20 transition-all font-bold shadow-sm"
+               className="w-full h-11 bg-white border border-border-main rounded-btn pl-12 pr-4 text-sm text-foreground placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary transition-all font-medium shadow-sm"
              />
           </div>
-          <Button variant="outline" className="h-14 px-6 rounded-2xl border-slate-100 bg-white text-slate-500 font-black text-xs uppercase tracking-widest hover:bg-slate-50 hover:text-primary transition-all shadow-sm">
-             <Filter className="w-4 h-4 mr-2" />
+          <Button variant="outline" className="h-11 px-6 rounded-btn border-border-main bg-white text-text-muted font-bold text-[10px] uppercase tracking-widest hover:bg-primary-light hover:text-primary transition-all shadow-sm">
+             <Filter className="w-3.5 h-3.5 mr-2" />
              Filters
           </Button>
         </div>
@@ -116,14 +119,14 @@ export default function MyCourses() {
 
       {/* Categories & Subjects */}
       <div className="space-y-6">
-        <div className="flex items-center gap-2 p-2 bg-white border border-slate-100 rounded-2xl w-fit shadow-sm">
+        <div className="flex items-center gap-1.5 p-1.5 bg-bg-soft border border-border-main rounded-lg w-fit shadow-sm">
            {categories.map((cat) => (
              <button
                key={cat}
                onClick={() => setActiveCategory(cat)}
                className={cn(
-                 "px-8 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all duration-300",
-                 activeCategory === cat ? "bg-primary text-white shadow-lg shadow-primary-glow" : "text-slate-400 hover:text-primary hover:bg-primary/5"
+                 "px-6 py-2 rounded-md text-[10px] font-bold uppercase tracking-widest transition-all duration-300",
+                 activeCategory === cat ? "bg-white text-primary shadow-sm border border-border-main" : "text-text-muted hover:text-primary hover:bg-primary-light"
                )}
              >
                {cat}
@@ -131,16 +134,16 @@ export default function MyCourses() {
            ))}
         </div>
 
-        <div className="flex flex-wrap gap-3">
+        <div className="flex flex-wrap gap-2">
            {subjects.map((sub) => (
              <button
                key={sub}
                onClick={() => setSelectedSubject(selectedSubject === sub ? null : sub)}
                className={cn(
-                 "px-6 py-2.5 rounded-2xl border text-[10px] font-black uppercase tracking-[0.15em] transition-all",
+                 "px-5 py-2 rounded-btn border text-[10px] font-bold uppercase tracking-wider transition-all",
                  selectedSubject === sub 
-                   ? "bg-primary border-primary text-white shadow-lg shadow-primary-glow" 
-                   : "bg-white border-slate-100 text-slate-400 hover:border-primary/20 hover:text-primary shadow-sm"
+                   ? "bg-primary border-primary text-white shadow-md shadow-primary/10" 
+                   : "bg-white border-border-main text-text-muted hover:border-primary/20 hover:text-primary shadow-sm"
                )}
              >
                {sub}
@@ -150,16 +153,16 @@ export default function MyCourses() {
       </div>
 
       {/* Course Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
         {filteredCourses.map((course, i) => (
           <motion.div
             key={course.id}
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.1 }}
+            transition={{ delay: i * 0.05 }}
           >
-            <Card className="soft-card group p-2 relative overflow-hidden flex flex-col border-2 border-transparent hover:border-primary/10">
-              <div className="relative aspect-[16/10] rounded-2xl bg-slate-100 overflow-hidden">
+            <Card className="soft-card group p-1.5 relative overflow-hidden flex flex-col border border-border-main hover:border-primary">
+              <div className="relative aspect-[16/10] rounded-md bg-bg-soft overflow-hidden">
                  <img 
                     src={`https://images.unsplash.com/photo-${[
                        '1635070041078-e363dbe005cb',
@@ -167,75 +170,75 @@ export default function MyCourses() {
                        '1603126857599-f6e157fa2fe6',
                        '1532094349884-543bc11b234d'
                     ][i % 4]}?q=80&w=1000&auto=format&fit=crop`}
-                    className="w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-700"
+                    className="w-full h-full object-cover opacity-90 group-hover:scale-105 transition-transform duration-700"
                     alt={course.title}
                  />
-                 <div className="absolute inset-0 bg-gradient-to-t from-slate-900/40 via-transparent to-transparent" />
+                 <div className="absolute inset-0 bg-foreground/10 group-hover:bg-transparent transition-colors" />
                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                    <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-2xl scale-90 group-hover:scale-100 transition-transform duration-500">
-                      <PlayCircle className="w-10 h-10 text-primary fill-primary/10" />
+                    <div className="w-14 h-14 bg-white rounded-full flex items-center justify-center shadow-2xl scale-90 group-hover:scale-100 transition-transform duration-500">
+                      <PlayCircle className="w-8 h-8 text-primary fill-primary/10" />
                     </div>
                  </div>
-                 <div className="absolute top-4 left-4 flex gap-2">
-                    <span className="badge !bg-white/20 !text-white backdrop-blur-md border border-white/30">
+                 <div className="absolute top-3 left-3 flex gap-2">
+                    <span className="badge !bg-white/20 !text-white backdrop-blur-md border border-white/30 text-[10px]">
                        {course.subject}
                     </span>
                     {course.status === "Completed" && (
-                       <span className="badge !bg-emerald-500 !text-white border-none shadow-lg shadow-emerald-500/20">
+                       <span className="badge !bg-emerald-500 !text-white border-none shadow-md shadow-emerald-500/10 text-[10px]">
                           Completed
                        </span>
                     )}
                  </div>
-                 <button className="absolute top-4 right-4 p-2.5 rounded-xl bg-white/20 text-white hover:bg-white hover:text-primary transition-all backdrop-blur-md border border-white/20">
+                 <button className="absolute top-3 right-3 p-2 rounded-md bg-white/20 text-white hover:bg-white hover:text-primary transition-all backdrop-blur-md border border-white/20">
                     <Bookmark className="w-4 h-4" />
                  </button>
               </div>
 
-              <div className="p-6 flex-1 flex flex-col">
-                 <div className="flex items-start justify-between gap-4 mb-6">
-                    <h3 className="text-xl font-black text-slate-900 line-clamp-2 leading-tight tracking-tight group-hover:text-primary transition-colors">
+              <div className="p-5 flex-1 flex flex-col">
+                 <div className="flex items-start justify-between gap-4 mb-5">
+                    <h3 className="text-lg font-bold text-foreground line-clamp-2 leading-tight tracking-tight group-hover:text-primary transition-colors">
                        {course.title}
                     </h3>
-                    <button className="text-slate-300 hover:text-primary transition-colors shrink-0">
+                    <button className="text-text-muted hover:text-primary transition-colors shrink-0">
                        <MoreVertical className="w-5 h-5" />
                     </button>
                  </div>
 
-                 <div className="flex items-center gap-3 mb-8">
-                    <div className="w-10 h-10 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-center text-[10px] font-black text-primary">
+                 <div className="flex items-center gap-2.5 mb-8">
+                    <div className="w-8 h-8 rounded-lg bg-primary-light flex items-center justify-center text-[8px] font-bold text-primary">
                        {course.instructor.split(' ').map(n => n[0]).join('')}
                     </div>
                     <div>
-                       <div className="text-xs font-black text-slate-900 leading-none mb-1">{course.instructor}</div>
-                       <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">Instructor</div>
+                       <div className="text-[11px] font-bold text-foreground leading-none mb-1">{course.instructor}</div>
+                       <div className="text-[9px] font-bold text-text-muted uppercase tracking-widest leading-none">Instructor</div>
                     </div>
                  </div>
 
-                 <div className="mt-auto space-y-6">
-                    <div className="space-y-3">
-                       <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest">
-                          <span className="text-slate-400">Progress: {course.chapters}</span>
+                 <div className="mt-auto space-y-5">
+                    <div className="space-y-2.5">
+                       <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-widest">
+                          <span className="text-text-muted">Progress: {course.chapters}</span>
                           <span className="text-primary">{course.progress}%</span>
                        </div>
-                       <div className="h-2 w-full bg-slate-50 border border-slate-100 rounded-full overflow-hidden">
+                       <div className="h-1.5 w-full bg-border-soft rounded-full overflow-hidden">
                           <motion.div 
                             initial={{ width: 0 }}
                             whileInView={{ width: `${course.progress}%` }}
                             viewport={{ once: true }}
                             transition={{ duration: 1, ease: "easeOut" }}
-                            className={cn("h-full", course.color, "shadow-lg shadow-primary-glow/20")} 
+                            className={cn("h-full", course.color.includes('primary') ? 'bg-primary' : course.color, "shadow-sm shadow-primary/10")} 
                           />
                        </div>
                     </div>
 
-                    <div className="flex items-center justify-between pt-6 border-t border-slate-50">
-                       <div className="flex items-center gap-2.5 text-slate-400">
-                          <Clock className="w-4 h-4" />
-                          <span className="text-[10px] font-black uppercase tracking-widest leading-none">{course.lastAccessed}</span>
+                    <div className="flex items-center justify-between pt-5 border-t border-border-soft">
+                       <div className="flex items-center gap-2 text-text-muted">
+                          <Clock className="w-3.5 h-3.5" />
+                          <span className="text-[10px] font-bold uppercase tracking-widest leading-none">{course.lastAccessed}</span>
                        </div>
                        <Button size="sm" className={cn(
-                          "rounded-2xl font-black text-[10px] uppercase tracking-[0.15em] h-10 px-6 transition-all active:scale-95 shadow-lg shadow-primary-glow",
-                          course.status === "Completed" ? "bg-slate-100 text-slate-500 hover:bg-slate-200 shadow-none" : "bg-primary text-white"
+                          "rounded-btn font-bold text-[10px] uppercase tracking-widest h-9 px-5 transition-all active:scale-95 shadow-md shadow-primary/10",
+                          course.status === "Completed" ? "bg-bg-soft text-text-muted hover:bg-border-soft shadow-none" : "bg-primary text-white hover:bg-primary-dark"
                        )}>
                           {course.status === "Completed" ? "Review" : "Continue"}
                        </Button>
@@ -248,13 +251,13 @@ export default function MyCourses() {
       </div>
 
       {filteredCourses.length === 0 && (
-         <div className="py-24 flex flex-col items-center justify-center text-center">
-            <div className="w-24 h-24 rounded-[2rem] bg-slate-50 border border-slate-100 flex items-center justify-center mb-8 shadow-sm">
-               <BookOpen className="w-10 h-10 text-slate-300" />
+         <div className="py-20 flex flex-col items-center justify-center text-center">
+            <div className="w-20 h-20 rounded-xl bg-bg-soft border border-border-main flex items-center justify-center mb-6 shadow-sm">
+               <BookOpen className="w-8 h-8 text-text-muted" />
             </div>
-            <h3 className="text-2xl font-black text-slate-900 mb-2 tracking-tight">No courses found</h3>
-            <p className="text-slate-400 font-bold max-w-xs mx-auto">Try adjusting your filters or browse our catalog for new subjects.</p>
-            <Button className="mt-10 rounded-2xl bg-primary text-white font-black h-14 px-10 shadow-xl shadow-primary-glow active:scale-95 transition-all">
+            <h3 className="text-xl font-bold text-foreground mb-1 tracking-tight">No courses found</h3>
+            <p className="text-text-muted font-medium max-w-xs mx-auto text-sm">Try adjusting your filters or browse our catalog for new subjects.</p>
+            <Button className="mt-8 rounded-btn bg-primary text-white font-bold h-12 px-8 shadow-lg shadow-primary/10 active:scale-95 transition-all">
                 Explore Full Catalog
             </Button>
          </div>
