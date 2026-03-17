@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { 
   LayoutDashboard, Users, UserCog, BookOpen, 
   BarChart3, CalendarDays, Megaphone, Bell, Settings,
-  GraduationCap
+  GraduationCap, Video
 } from 'lucide-react';
 import styles from './sidebar.module.css';
 
@@ -18,6 +18,7 @@ const NAV_ITEMS = [
   { icon: <BarChart3 size={20} />, label: 'Reports & Analytics', path: '/faculty/reports' },
   { icon: <CalendarDays size={20} />, label: 'Curriculum Planner', path: '/faculty/curriculum' },
   { icon: <Megaphone size={20} />, label: 'Announcements', path: '/faculty/announcements' },
+  { icon: <Video size={20} />, label: 'Live & Recorded', path: '/faculty/classes' },
 ];
 
 const BOTTOM_ITEMS = [

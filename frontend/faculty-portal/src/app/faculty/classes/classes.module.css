@@ -1,0 +1,244 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 2.5rem;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+}
+
+.title {
+  font-size: 2.25rem;
+  font-weight: 850;
+  color: var(--color-text-main);
+  letter-spacing: -0.02em;
+}
+
+.subtitle {
+  color: var(--color-text-muted);
+  font-size: 1rem;
+  font-weight: 600;
+  margin-top: 0.5rem;
+}
+
+.actionGroup {
+  display: flex;
+  gap: 1rem;
+}
+
+.liveBtn {
+  padding: 0.8rem 1.8rem;
+  box-shadow: 0 10px 25px rgba(0, 102, 255, 0.2);
+}
+
+.hubGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 2rem;
+}
+
+.hubCard {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+  padding: 2.5rem;
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  cursor: pointer;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+}
+
+.hubCard:hover {
+  transform: translateY(-8px) scale(1.02);
+  box-shadow: 0 25px 40px -10px rgba(0, 102, 255, 0.12);
+  border-color: var(--color-primary);
+}
+
+.hubIcon {
+  width: 72px;
+  height: 72px;
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 16px rgba(0, 102, 255, 0.1);
+}
+
+.hubSecondary .hubIcon {
+  background: #EFF6FF;
+}
+
+.hubContent h3 {
+  font-size: 1.4rem;
+  font-weight: 850;
+  color: var(--color-text-main);
+  margin-bottom: 0.5rem;
+}
+
+.hubContent p {
+  font-size: 0.95rem;
+  color: var(--color-text-muted);
+  font-weight: 600;
+  margin-bottom: 1.5rem;
+}
+
+.hubAction {
+  background: none;
+  border: none;
+  color: var(--color-primary);
+  font-weight: 850;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  padding: 0;
+}
+
+.sectionHeader {
+  margin-bottom: 1.5rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.tabs {
+  display: flex;
+  gap: 2.5rem;
+}
+
+.tab {
+  background: none;
+  border: none;
+  padding: 1rem 0;
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  position: relative;
+  transition: color 0.2s;
+}
+
+.activeTab {
+  color: var(--color-primary);
+}
+
+.activeTab::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--color-primary);
+}
+
+.panel {
+  padding: 2rem;
+  min-height: 400px;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table th {
+  text-align: left;
+  padding: 1rem;
+  font-size: 0.8rem;
+  font-weight: 850;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.table td {
+  padding: 1.25rem 1rem;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.03);
+}
+
+.lectureName {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.playIcon {
+  width: 32px;
+  height: 32px;
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.recTitle {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--color-text-main);
+}
+
+.recDate {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.duration, .views {
+  font-size: 0.9rem;
+  font-weight: 750;
+  color: var(--color-text-main);
+}
+
+.statusBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.75rem;
+  border-radius: var(--radius-full);
+  font-size: 0.75rem;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.statPub { background: #ECFDF5; color: #10B981; }
+.statDraft { background: #F8FAFC; color: #64748B; }
+
+.moreBtn {
+  background: none;
+  border: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.placeholderState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+  text-align: center;
+}
+
+.pIcon {
+  color: var(--color-primary);
+  opacity: 0.2;
+  margin-bottom: 1.5rem;
+}
+
+.placeholderState h3 {
+  font-size: 1.2rem;
+  font-weight: 850;
+  margin-bottom: 0.5rem;
+}
+
+.placeholderState p {
+  max-width: 300px;
+  color: var(--color-text-muted);
+  font-weight: 600;
+}
