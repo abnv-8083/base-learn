@@ -22,6 +22,7 @@
 - 📊 Reports & Analytics
 - 📋 Curriculum Planner
 - 📢 Announcements
+- 📅 Live Class Studio
 - 🔔 Notifications
 - ⚙️ Settings
 
@@ -169,6 +170,32 @@
 - Password & 2FA settings
 - Notification preferences
 - Access control: what instructors they manage
+
+---
+---
+
+### PAGE 10 — Live Class Studio
+**URL:** `/faculty/classes`
+**Layout:** Sidebar + Professional Studio Layout
+
+**Integration Used:** **VideoSDK.live** (or similar WebRTC SDK)
+- **Classroom Mode:** Enabled by default.
+- **Privacy Logic:** Students can only view the faculty feed. The faculty can view all student feeds in a monitoring grid.
+
+**Studio Controls:**
+- 🔴 **Go Live / End Session:** Start/stop the broadcast.
+- 🎤 **Audio/Video Controls:** Microphone and Camera toggle with source selection.
+- 🖥️ **Screen Share:** Share presentation, whiteboard, or application windows.
+- 👥 **Student Monitor Grid:** View live thumbnails of all joined students (for attendance and engagement monitoring).
+- 💬 **Class Chat:** Moderated chat for student questions.
+- 📊 **Live Polls:** Create and launch instant MCQs to check student understanding.
+- ⚪ **Digital Whiteboard:** Integrated canvas for real-time explanations.
+
+**Session Analytics (Post-Class):**
+- Peak concurrent students
+- Avg. watch time
+- Participation rate (polls/chat)
+- Recording link (auto-saved to Recorded Classes)
 
 ---
 ---

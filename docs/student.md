@@ -103,6 +103,7 @@
 - 📚 My Courses
 - ▶️ Recorded Classes
 - 📅 Live Schedule
+- 🎥 Live Class Room
 - 📝 Assignments
 - 🧪 Tests & Quizzes
 - 📊 My Progress
@@ -439,3 +440,27 @@ Each Course Card contains:
 
 ---
 ---
+
+### PAGE 17 — Live Class Room
+**URL:** `/live-session`
+**Layout:** Full-width Video Studio (Zen Mode)
+
+**Integration Used:** **VideoSDK.live**
+- **Student Privacy Logic:** Students can only see the Faculty's video feed. Peer-to-peer student video is disabled for privacy and focus.
+- **Faculty Monitoring:** Students are informed that their video/audio is being monitored by the Faculty for attendance and engagement.
+
+**Room Features:**
+- 🎥 **Faculty Focus:** Large primary view of the Faculty member.
+- 💬 **Live Moderated Chat:** Ask questions in real-time. Chat is monitored to ensure a safe learning environment.
+- 📊 **Interactive Polls:** Pop-up MCQs during the live session to test your understanding. Results are shared instantly by the faculty.
+- ✍️ **Digital Whiteboard:** View real-time annotations and diagrams.
+- 🙋‍♂️ **Hand Raise:** Notify the faculty if you have a doubt (Faculty can then unmute you).
+- 📁 **Instant Downloads:** Grab notes or formula sheets shared during the live class.
+
+**Post-Session:**
+- Auto-redirect to Dashboard.
+- Recording becomes available in **Recorded Classes** within 1 hour.
+
+---
+---
+```
