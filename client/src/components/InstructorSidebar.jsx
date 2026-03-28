@@ -4,7 +4,8 @@ import {
   LayoutDashboard, 
   GitMerge, 
   Users, 
-  Layers
+  Layers,
+  UserCheck
 } from 'lucide-react';
 
 const InstructorSidebar = () => {
@@ -38,6 +39,10 @@ const InstructorSidebar = () => {
         <Link to="/instructor/student-management" className={getLinkClass('/student-management')}>
           <Users className="nav-item-icon" />
           Student Management
+        </Link>
+        <Link to="/instructor/faculty" className={getLinkClass('/faculty')}>
+          <UserCheck className="nav-item-icon" />
+          Faculty Management
         </Link>
         <Link to="/instructor/classes" className={getLinkClass('/classes')}>
           <Layers className="nav-item-icon" />

@@ -42,7 +42,7 @@ export const AuthProvider = ({ children }) => {
             return;
         }
         try {
-            const res = await axios.get('http://localhost:5000/api/auth/me');
+            const res = await axios.get('/api/auth/me');
             setUser(res.data);
         } catch (error) {
             console.error('Failed to load user:', error.response?.data?.message || error.message);
@@ -57,7 +57,7 @@ export const AuthProvider = ({ children }) => {
     }, [token]);
 
     const login = async (email, password, role) => {
-        const res = await axios.post('http://localhost:5000/api/auth/login', { email, password, role });
+        const res = await axios.post('/api/auth/login', { email, password, role });
         const userRole = res.data.role || role || getActiveRole();
         const roleKey = `baselearn_${userRole}_token`;
         
@@ -70,12 +70,12 @@ export const AuthProvider = ({ children }) => {
 
     const registerStudent = async (data) => {
         // Now returns a 201 with message, NO token yet (OTP pending)
-        const res = await axios.post('http://localhost:5000/api/auth/register', data);
+        const res = await axios.post('/api/auth/register', data);
         return res.data;
     };
 
     const verifyOTP = async (email, otp) => {
-        const res = await axios.post('http://localhost:5000/api/auth/verify-otp', { email, otp });
+        const res = await axios.post('/api/auth/verify-otp', { email, otp });
         // Successful verification returns the user + token
         const role = res.data.role || getActiveRole();
         const roleKey = `baselearn_${role}_token`;

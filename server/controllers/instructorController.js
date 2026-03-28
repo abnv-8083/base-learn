@@ -7,6 +7,8 @@ const Notification = require('../models/Notification');
 const Assignment = require('../models/Assignment');
 const Test = require('../models/Test');
 const StudyClass = require('../models/StudyClass');
+const Subject = require('../models/Subject');
+const Chapter = require('../models/Chapter');
 const logAction = require('../utils/logAction');
 
 // Get Instructor Dashboard Stats
@@ -101,6 +103,38 @@ exports.approveAssessment = async (req, res) => {
         res.status(200).json(assessment);
     } catch (error) {
         res.status(500).json({ message: 'Error approving assessment', error: error.message });
+    }
+};
+
+// Get Faculties (Available & Implicitly Assigned)
+exports.getFaculties = async (req, res) => {
+    try {
+        const availableFaculties = await Faculty.find({ role: 'faculty', isActive: true }).select('-password');
+        
+        // Find implicitly assigned faculties based on content linked to instructor's areas
+        const subjects = await Subject.find({ instructor: req.user.userId });
+        const subjectIds = subjects.map(s => s._id);
+        
+        const chapters = await Chapter.find({ subject: { $in: subjectIds } });
+        const chapterIds = chapters.map(c => c._id);
+        
+        const classes = await StudyClass.find({ instructor: req.user.userId });
+        const classIds = classes.map(c => c._id);
+
+        const recordedClasses = await RecordedClass.find({ chapter: { $in: chapterIds } }).select('faculty');
+        const tests = await Test.find({ subject: { $in: subjectIds } }).select('faculty');
+        const assignments = await Assignment.find({ assignedClasses: { $in: classIds } }).select('facultyId');
+        
+        const assignedSet = new Set();
+        recordedClasses.forEach(r => { if(r.faculty) assignedSet.add(r.faculty.toString()) });
+        tests.forEach(t => { if(t.faculty) assignedSet.add(t.faculty.toString()) });
+        assignments.forEach(a => { if(a.facultyId) assignedSet.add(a.facultyId.toString()) });
+        
+        const assignedFaculties = availableFaculties.filter(f => assignedSet.has(f._id.toString()));
+        
+        res.status(200).json({ available: availableFaculties, assigned: assignedFaculties });
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching faculties', error: error.message });
     }
 };
 

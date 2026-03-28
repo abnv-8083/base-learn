@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { Eye, EyeOff } from 'lucide-react';
 
 const Register = () => {
   const [stage, setStage] = useState(1);
@@ -20,6 +21,7 @@ const Register = () => {
   const [countryCode, setCountryCode] = useState('+91');
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   
   // Optional Fields (Combined)
   const [parentName, setParentName] = useState('');
@@ -121,6 +123,9 @@ const Register = () => {
         .stage-indicator { display: flex; gap: 8px; margin-bottom: 32px; }
         .stage-dot { height: 6px; flex: 1; border-radius: 3px; background: #E2E8F8; transition: all 0.3s; }
         .stage-dot.active { background: var(--color-primary); }
+        .password-wrapper { position: relative; width: 100%; }
+        .password-toggle { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); background: none; border: none; padding: 4px; color: var(--color-text-secondary); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: color 0.2s; }
+        .password-toggle:hover { color: var(--color-primary); }
       `}</style>
       
       <div className="auth-left">
@@ -268,7 +273,25 @@ const Register = () => {
               
               <div className="form-group">
                 <label className="form-label">Password *</label>
-                <input type="password" className="form-input" placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} required minLength={6} />
+                <div className="password-wrapper">
+                <input 
+                  type={showPassword ? "text" : "password"} 
+                  className="form-input" 
+                  placeholder="••••••••" 
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  required 
+                  minLength={6} 
+                  style={{ paddingRight: '46px' }}
+                />
+                <button 
+                  type="button" 
+                  className="password-toggle"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
               </div>
 
               <button type="button" onClick={prevStage} className="btn-submit btn-secondary">Back to Details</button>

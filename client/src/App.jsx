@@ -24,6 +24,7 @@ import InstructorLayout from './pages/instructor/InstructorLayout';
 import InstructorDashboard from './pages/instructor/InstructorDashboard';
 import ContentManagement from './pages/instructor/ContentManagement';
 import StudentManagement from './pages/instructor/StudentManagement';
+import FacultyManagement from './pages/instructor/FacultyManagement';
 import ClassManagement from './pages/instructor/ClassManagement';
 import InstructorProfile from './pages/instructor/InstructorProfile';
 
@@ -134,6 +135,7 @@ const App = () => {
                 <Route path="dashboard" element={<InstructorDashboard />} />
                 <Route path="content-management" element={<ContentManagement />} />
                 <Route path="student-management" element={<StudentManagement />} />
+                <Route path="faculty" element={<FacultyManagement />} />
                 <Route path="classes" element={<ClassManagement />} />
                 <Route path="profile" element={<InstructorProfile />} />
               </Route>

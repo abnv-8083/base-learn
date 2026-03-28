@@ -42,6 +42,9 @@ router.patch('/videos/:id/link', contentController.linkVideoToChapter);
 router.get('/assessments/pending', instructorController.getPendingAssessments);
 router.patch('/assessments/:id/:type/approve', instructorController.approveAssessment);
 
+// Faculty Management
+router.get('/faculties', instructorController.getFaculties);
+
 // Student Analysis & Management
 router.get('/students', instructorController.getStudents);
 router.route('/students/:id')

@@ -1,13 +1,14 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { BookOpen, Users, Shield } from 'lucide-react';
+import { BookOpen, Users, Shield, Eye, EyeOff } from 'lucide-react';
 
 const StaffLogin = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [activeRole, setActiveRole] = useState('instructor');
+  const [showPassword, setShowPassword] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -99,6 +100,9 @@ const StaffLogin = () => {
         .auth-footer { margin-top: 32px; text-align: center; color: var(--color-text-secondary); font-size: 15px; }
         .auth-footer a { color: var(--color-primary); font-weight: bold; text-decoration: none; }
         .auth-footer a:hover { text-decoration: underline; }
+        .password-wrapper { position: relative; width: 100%; }
+        .password-toggle { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); background: none; border: none; padding: 4px; color: var(--color-text-secondary); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: color 0.2s; }
+        .password-toggle:hover { color: var(--color-primary); }
       `}</style>
       
       <div className="auth-left">
@@ -172,14 +176,24 @@ const StaffLogin = () => {
                   Contact Admin
                 </a>
               </div>
-              <input 
-                type="password" 
-                className="form-input" 
-                placeholder="••••••••" 
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                required 
-              />
+              <div className="password-wrapper">
+                <input 
+                  type={showPassword ? "text" : "password"} 
+                  className="form-input" 
+                  placeholder="••••••••" 
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  required 
+                  style={{ paddingRight: '46px' }}
+                />
+                <button 
+                  type="button" 
+                  className="password-toggle"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
             </div>
 
             <button type="submit" className="btn-submit">Sign In as {activeRole.charAt(0).toUpperCase() + activeRole.slice(1)}</button>
