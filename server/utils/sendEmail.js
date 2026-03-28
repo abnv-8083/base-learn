@@ -5,11 +5,10 @@ const sendEmail = async (options) => {
 
     if (process.env.SMTP_HOST && process.env.SMTP_USER) {
         transporter = nodemailer.createTransport({
-            host: process.env.SMTP_HOST,
-            port: process.env.SMTP_PORT || 587,
+            service: 'gmail',
             auth: {
                 user: process.env.SMTP_USER,
-                pass: process.env.SMTP_PASS
+                pass: (process.env.SMTP_PASS || '').replace(/\s/g, '')
             }
         });
     } else {
@@ -27,7 +26,7 @@ const sendEmail = async (options) => {
     }
 
     const mailOptions = {
-        from: `${process.env.FROM_NAME || 'Base Learn Education'} <${process.env.FROM_EMAIL || 'noreply@baselearn.com'}>`,
+        from: `${process.env.FROM_NAME || 'Base Learn Education'} <${process.env.SMTP_USER}>`,
         to: options.email,
         subject: options.subject,
         text: options.message,
@@ -35,7 +34,7 @@ const sendEmail = async (options) => {
     };
 
     const info = await transporter.sendMail(mailOptions);
-    
+
     // Automatically log the preview URL to terminal if using the test account
     if (!process.env.SMTP_HOST) {
         console.log(`✉️ Simulated Email sent: ${info.messageId}`);
