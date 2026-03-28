@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { UploadCloud, ChevronLeft, Layers, BookOpen, Film, CheckCircle } from 'lucide-react';
+import { UploadCloud, ChevronLeft, Layers, BookOpen, Film, CheckCircle, Award } from 'lucide-react';
 import axios from 'axios';
 
 const FacultyContent = () => {
@@ -22,7 +22,7 @@ const FacultyContent = () => {
 
   const fileInputRef = useRef(null);
 
-  const token = localStorage.getItem('token');
+  const token = localStorage.getItem('baselearn_faculty_token');
 
   useEffect(() => { fetchSubjects(); }, []);
 

@@ -6,12 +6,18 @@ const api = axios.create({ baseURL: API_URL });
 
 // Attach token to every request
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
+  const token = localStorage.getItem('baselearn_faculty_token');
   if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
 
 const facultyService = {
+  // Dashboard
+  getDashboardStats: async () => {
+    const res = await api.get('/dashboard');
+    return res.data;
+  },
+
   // Content
   getSubjects: async () => {
     const res = await api.get('/subjects');
@@ -47,6 +53,10 @@ const facultyService = {
   },
   getStudentMetrics: async (studentId) => {
     const res = await api.get(`/students/${studentId}/metrics`);
+    return res.data;
+  },
+  updateProfile: async (data) => {
+    const res = await api.put('/profile', data);
     return res.data;
   },
 };

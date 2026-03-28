@@ -9,6 +9,10 @@ const facultySchema = new mongoose.Schema({
     department: { type: String },
     phone: { type: String },
     district: { type: String },
+    qualification: { type: String, default: '' },
+    experience: { type: String, default: '' },
+    specialization: { type: String, default: '' },
+    about: { type: String, default: 'Passionate educator dedicated to shaping the next generation of learners.' },
     isVerified: { type: Boolean, default: true },
     profilePhoto: { type: String, default: '' },
     isActive: { type: Boolean, default: true }

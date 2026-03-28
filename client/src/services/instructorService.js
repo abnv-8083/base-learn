@@ -2,9 +2,22 @@ import axios from 'axios';
 
 const API_URL = '/api';
 
-// Create an axios instance with authorization header
+const api = axios.create({
+  baseURL: API_URL,
+});
+
+// Attach token to every request for the `api` instance
+api.interceptors.request.use((config) => {
+  const role = localStorage.getItem('last_active_role') || 'instructor';
+  const token = localStorage.getItem(`baselearn_${role}_token`);
+  if (token) config.headers.Authorization = `Bearer ${token}`;
+  return config;
+});
+
+// For legacy axios calls in this file
 const getAuthHeaders = () => {
-  const token = localStorage.getItem('token');
+  const role = localStorage.getItem('last_active_role') || 'instructor';
+  const token = localStorage.getItem(`baselearn_${role}_token`);
   return {
     headers: { Authorization: `Bearer ${token}` }
   };
@@ -13,7 +26,7 @@ const getAuthHeaders = () => {
 const instructorService = {
   // Dashboard
   getDashboardStats: async () => {
-    const response = await axios.get(`${API_URL}/instructor/dashboard`, getAuthHeaders());
+    const response = await api.get(`/instructor/dashboard`);
     return response.data;
   },
 

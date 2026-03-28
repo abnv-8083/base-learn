@@ -210,3 +210,44 @@ exports.getStudentMetrics = asyncHandler(async (req, res) => {
         }
     });
 });
+
+// PUT /api/faculty/profile
+exports.updateProfile = asyncHandler(async (req, res) => {
+    const { name, phone, district, qualification, experience, specialization, about } = req.body;
+    const Faculty = require('../models/Faculty');
+
+    // Basic server-side validation
+    if (!name || name.length < 3) {
+        return res.status(400).json({ message: 'Name must be at least 3 characters long' });
+    }
+
+    const faculty = await Faculty.findById(req.user.userId);
+    if (!faculty) {
+        return res.status(404).json({ message: 'Faculty not found' });
+    }
+
+    // Update fields
+    faculty.name = name || faculty.name;
+    faculty.phone = phone || faculty.phone;
+    faculty.district = district || faculty.district;
+    faculty.qualification = qualification || faculty.qualification;
+    faculty.experience = experience || faculty.experience;
+    faculty.specialization = specialization || faculty.specialization;
+    faculty.about = about || faculty.about;
+
+    const updatedFaculty = await faculty.save();
+
+    res.status(200).json({
+        _id: updatedFaculty._id,
+        name: updatedFaculty.name,
+        email: updatedFaculty.email,
+        phone: updatedFaculty.phone,
+        district: updatedFaculty.district,
+        qualification: updatedFaculty.qualification,
+        experience: updatedFaculty.experience,
+        specialization: updatedFaculty.specialization,
+        about: updatedFaculty.about,
+        profilePhoto: updatedFaculty.profilePhoto,
+        role: updatedFaculty.role
+    });
+});
