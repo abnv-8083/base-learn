@@ -75,26 +75,50 @@ exports.createUser = asyncHandler(async (req, res) => {
     if (role === 'faculty' || role === 'instructor') {
         try {
             const portalUrl = `${req.protocol}://${req.get('host')}`;
+            const detailsHtml = Object.entries(rest).map(([k, v]) => `<p style="margin: 4px 0; color: #475569;"><strong>${k}:</strong> ${v}</p>`).join('');
             const html = `
                 <div style="font-family: 'Segoe UI', sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px;">
-                    <div style="text-align: center; margin-bottom: 30px;">
-                        <h1 style="color: #6366f1; margin: 0;">Base Learn</h1>
-                        <p style="color: #64748b; margin: 5px 0 0 0;">Education Platform</p>
+                    <div style="text-align: center; background: linear-gradient(135deg, #0F2D6B, #6366f1); padding: 30px; border-radius: 10px 10px 0 0; margin: -20px -20px 0 -20px;">
+                        <h1 style="color: white; margin: 0; font-size: 28px;">🎓 Base Learn</h1>
+                        <p style="color: rgba(255,255,255,0.8); margin: 5px 0 0 0;">Education Platform</p>
                     </div>
-                    <div style="padding: 24px; background: #f8fafc; border-radius: 8px;">
-                        <h2 style="color: #1e293b; margin-top: 0;">Welcome, ${name}!</h2>
-                        <p style="color: #475569; line-height: 1.6;">Your ${role} account has been created. Use the credentials below to log in:</p>
-                        <div style="margin: 24px 0; padding: 16px; background: white; border: 1px solid #cbd5e1; border-radius: 6px;">
-                            <p><strong>Email:</strong> ${email}</p>
-                            <p><strong>Password:</strong> ${password}</p>
+                    
+                    <div style="padding: 30px 20px;">
+                        <h2 style="color: #1e293b; margin-top: 0;">Welcome, ${name}! 👋</h2>
+                        <p style="color: #475569; line-height: 1.6;">This email is to notify you that your <strong>${role}</strong> account has been created by the Admin on Base Learn. You can now log in to your portal and start teaching!</p>
+                        
+                        <!-- LOGIN BUTTON -->
+                        <div style="text-align: center; margin: 30px 0;">
+                            <a href="${portalUrl}/staff-login?role=${role}" style="background: linear-gradient(135deg, #0F2D6B, #6366f1); color: white; padding: 16px 40px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 16px; display: inline-block; letter-spacing: 0.5px;">👉 Open ${role.charAt(0).toUpperCase() + role.slice(1)} Portal</a>
                         </div>
-                        <p style="color: #ef4444; font-size: 13px;">⚠️ Change your password after first login.</p>
-                        <div style="margin-top: 32px; text-align: center;">
-                            <a href="${portalUrl}" style="background: #6366f1; color: white; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: bold; display: inline-block;">Login Portal</a>
+
+                        <!-- CREDENTIALS BOX -->
+                        <div style="background: #f0f4ff; border: 2px solid #6366f1; border-radius: 10px; padding: 20px; margin: 20px 0;">
+                            <h3 style="color: #4338ca; margin: 0 0 15px 0; font-size: 16px; text-transform: uppercase; letter-spacing: 0.05em;">🔑 Your Login Credentials</h3>
+                            <table style="width: 100%; border-collapse: collapse;">
+                                <tr><td style="padding: 8px 0; color: #64748b; font-weight: bold; width: 40%;">Portal URL:</td><td style="padding: 8px 0; color: #1e293b;"><a href="${portalUrl}/staff-login?role=${role}" style="color: #6366f1;">${portalUrl}/staff-login</a></td></tr>
+                                <tr><td style="padding: 8px 0; color: #64748b; font-weight: bold;">Email:</td><td style="padding: 8px 0; color: #1e293b; font-weight: bold;">${email}</td></tr>
+                                <tr><td style="padding: 8px 0; color: #64748b; font-weight: bold;">Password:</td><td style="padding: 8px 0; color: #1e293b; font-weight: bold; font-size: 18px; letter-spacing: 2px;">${password}</td></tr>
+                                <tr><td style="padding: 8px 0; color: #64748b; font-weight: bold;">Role:</td><td style="padding: 8px 0;"><span style="background: #6366f1; color: white; padding: 2px 10px; border-radius: 20px; font-size: 13px;">${role}</span></td></tr>
+                            </table>
                         </div>
+
+                        <!-- PROFILE DETAILS BOX -->
+                        <div style="margin: 20px 0; padding: 16px; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px;">
+                            <h3 style="color: #1e293b; margin: 0 0 12px 0; font-size: 15px;">📋 Your Profile Details (Added by Admin)</h3>
+                            <p style="margin: 4px 0; color: #475569;"><strong>Name:</strong> ${name}</p>
+                            <p style="margin: 4px 0; color: #475569;"><strong>Email:</strong> ${email}</p>
+                            <p style="margin: 4px 0; color: #475569;"><strong>Role:</strong> ${role}</p>
+                            ${detailsHtml}
+                        </div>
+
+                        <p style="color: #ef4444; font-size: 13px; border-left: 3px solid #ef4444; padding-left: 10px;">⚠️ For your security, please change your password immediately after your first login.</p>
+
+                        <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 24px 0;" />
+                        <p style="color: #94a3b8; font-size: 12px; text-align: center; margin: 0;">© ${new Date().getFullYear()} Base Learn Education Platform. This is an automated message.</p>
                     </div>
                 </div>`;
-            await sendEmail({ email: user.email, subject: `Welcome to Base Learn - Your ${role} Credentials`, html });
+            await sendEmail({ email: user.email, subject: `Welcome to Base Learn - Your ${role.charAt(0).toUpperCase() + role.slice(1)} Portal Access`, html });
         } catch (e) { console.error('Email fail:', e.message); }
     }
 
