@@ -33,4 +33,9 @@ router.get('/profile-requests', adminController.getProfileRequests);
 router.put('/profile-requests/:id/approve', adminController.approveProfileRequest);
 router.put('/profile-requests/:id/reject', adminController.rejectProfileRequest);
 
+// User Details
+router.get('/faculty/:id/details', adminController.getFacultyDetails);
+router.get('/students/:id/details', adminController.getStudentDetails);
+router.get('/instructors/:id/details', adminController.getInstructorDetails);
+
 module.exports = router;

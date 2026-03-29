@@ -41,6 +41,9 @@ import FacultyProfile from './pages/faculty/FacultyProfile';
 import AdminLayout from './pages/admin/AdminLayout';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminUserManagement from './pages/admin/AdminUserManagement';
+import AdminFacultyDetails from './pages/admin/AdminFacultyDetails';
+import AdminStudentDetails from './pages/admin/AdminStudentDetails';
+import AdminInstructorDetails from './pages/admin/AdminInstructorDetails';
 import AdminBatchManagement from './pages/admin/AdminBatchManagement';
 import AdminAnalytics from './pages/admin/AdminAnalytics';
 import AdminClassManagement from './pages/admin/AdminClassManagement';
@@ -104,9 +107,11 @@ const App = () => {
               <Route element={<AdminLayout />}>
                 <Route path="dashboard" element={<AdminDashboard />} />
                 <Route path="students" element={<AdminUserManagement role="student" />} />
+                <Route path="students/:id" element={<AdminStudentDetails />} />
                 <Route path="faculty" element={<AdminUserManagement role="faculty" />} />
                 <Route path="faculty/:id" element={<AdminFacultyDetails />} />
                 <Route path="instructors" element={<AdminUserManagement role="instructor" />} />
+                <Route path="instructors/:id" element={<AdminInstructorDetails />} />
                 <Route path="classes" element={<AdminClassManagement />} />
                 <Route path="analytics" element={<AdminAnalytics />} />
                 <Route path="payments" element={<AdminAnalytics />} />

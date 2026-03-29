@@ -5,9 +5,9 @@ import axios from 'axios';
 import toast from 'react-hot-toast';
 
 const ROLE_CONFIG = {
-  student: { label: 'Students', singular: 'Student', color: '#6366f1', fields: ['name', 'email', 'phone', 'studentClass', 'district', 'parentName', 'parentPhone', 'school'] },
-  faculty: { label: 'Faculty', singular: 'Faculty', color: '#10b981', fields: ['name', 'email', 'phone', 'district'] },
-  instructor: { label: 'Instructors', singular: 'Instructor', color: '#f59e0b', fields: ['name', 'email', 'phone'] },
+  student: { label: 'Students', singular: 'Student', color: '#6366f1', fields: ['name', 'email', 'phone', 'studentClass', 'district', 'parentName', 'parentPhone', 'school', 'profilePhoto'] },
+  faculty: { label: 'Faculty', singular: 'Faculty', color: '#10b981', fields: ['name', 'email', 'phone', 'district', 'experience', 'qualification', 'profilePhoto'] },
+  instructor: { label: 'Instructors', singular: 'Instructor', color: '#f59e0b', fields: ['name', 'email', 'phone', 'experience', 'qualification', 'profilePhoto'] },
 };
 
 const AdminUserManagement = ({ role }) => {
@@ -39,6 +39,7 @@ const AdminUserManagement = ({ role }) => {
     const empty = {};
     config.fields.forEach(f => { empty[f] = ''; });
     empty.password = '';
+    if (role !== 'student') empty.teachingMode = 'online';
     setForm(empty);
     setErrors({});
     setEditingUser(null);
@@ -48,6 +49,7 @@ const AdminUserManagement = ({ role }) => {
   const openEdit = (user) => {
     const filled = {};
     config.fields.forEach(f => { filled[f] = user[f] || ''; });
+    if (role !== 'student') filled.teachingMode = user.teachingMode || 'online';
     setForm(filled);
     setErrors({});
     setEditingUser(user);
@@ -161,6 +163,7 @@ const AdminUserManagement = ({ role }) => {
                 <th style={{ padding: '12px 20px', textAlign: 'left', fontWeight: '600' }}>Name</th>
                 <th style={{ padding: '12px 20px', textAlign: 'left', fontWeight: '600' }}>Email</th>
                 {role === 'student' && <th style={{ padding: '12px 20px', textAlign: 'center', fontWeight: '600' }}>Class</th>}
+                {role !== 'student' && <th style={{ padding: '12px 20px', textAlign: 'center', fontWeight: '600' }}>Mode</th>}
                 <th style={{ padding: '12px 20px', textAlign: 'center', fontWeight: '600' }}>Status</th>
                 <th style={{ padding: '12px 20px', textAlign: 'center', fontWeight: '600' }}>Actions</th>
               </tr>
@@ -180,15 +183,32 @@ const AdminUserManagement = ({ role }) => {
                       {role === 'faculty' ? (
                         <span
                           onClick={() => navigate(`/admin/faculty/${u._id}`)}
-                          style={{ fontWeight: '600', fontSize: '14px', color: '#10b981', cursor: 'pointer', textDecoration: 'underline' }}
+                          style={{ fontWeight: '600', fontSize: '14px', color: 'var(--color-text-primary)', cursor: 'pointer' }}
+                        >{u.name}</span>
+                      ) : role === 'student' ? (
+                        <span
+                          onClick={() => navigate(`/admin/students/${u._id}`)}
+                          style={{ fontWeight: '600', fontSize: '14px', color: 'var(--color-text-primary)', cursor: 'pointer' }}
+                        >{u.name}</span>
+                      ) : role === 'instructor' ? (
+                        <span
+                          onClick={() => navigate(`/admin/instructors/${u._id}`)}
+                          style={{ fontWeight: '600', fontSize: '14px', color: 'var(--color-text-primary)', cursor: 'pointer' }}
                         >{u.name}</span>
                       ) : (
-                        <span style={{ fontWeight: '600', fontSize: '14px' }}>{u.name}</span>
+                        <span style={{ fontWeight: '600', fontSize: '14px', color: 'var(--color-text-primary)' }}>{u.name}</span>
                       )}
                     </div>
                   </td>
                   <td style={{ padding: '14px 20px', color: 'var(--color-text-secondary)', fontSize: '14px' }}>{u.email}</td>
                   {role === 'student' && <td style={{ padding: '14px 20px', textAlign: 'center', fontSize: '13px' }}>{u.studentClass || '—'}</td>}
+                  {role !== 'student' && (
+                    <td style={{ padding: '14px 20px', textAlign: 'center' }}>
+                      <span style={{ padding: '3px 10px', borderRadius: '12px', fontSize: '12px', fontWeight: 'bold', background: u.teachingMode === 'offline' ? '#f3e8ff' : u.teachingMode === 'hybrid' ? '#ffedd5' : '#e0f2fe', color: u.teachingMode === 'offline' ? '#7e22ce' : u.teachingMode === 'hybrid' ? '#c2410c' : '#0369a1', textTransform: 'capitalize' }}>
+                        {u.teachingMode || 'Online'}
+                      </span>
+                    </td>
+                  )}
                   <td style={{ padding: '14px 20px', textAlign: 'center' }}>
                     <span style={{ padding: '3px 10px', borderRadius: '12px', fontSize: '12px', fontWeight: 'bold', background: u.isActive ? '#dcfce7' : '#fee2e2', color: u.isActive ? '#166534' : '#991b1b' }}>
                       {u.isActive ? 'Active' : 'Blocked'}
@@ -232,6 +252,22 @@ const AdminUserManagement = ({ role }) => {
                   {errors[f] && <span style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px', display: 'block' }}>{errors[f]}</span>}
                 </div>
               ))}
+              
+              {role !== 'student' && (
+                <div>
+                  <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold', fontSize: '13px' }}>Teaching Mode</label>
+                  <select
+                    value={form.teachingMode || 'online'}
+                    onChange={e => setForm({ ...form, teachingMode: e.target.value })}
+                    style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--color-border)', fontSize: '14px', backgroundColor: 'white' }}
+                  >
+                    <option value="online">Online</option>
+                    <option value="offline">Offline</option>
+                    <option value="hybrid">Hybrid</option>
+                  </select>
+                </div>
+              )}
+
               {!editingUser && (
                 <div>
                   <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold', fontSize: '13px' }}>Password *</label>

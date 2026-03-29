@@ -7,6 +7,9 @@ const instructorSchema = new mongoose.Schema({
     password: { type: String, required: true },
     role: { type: String, default: 'instructor' },
     phone: { type: String },
+    experience: { type: String },
+    qualification: { type: String },
+    teachingMode: { type: String, enum: ['online', 'offline', 'hybrid'], default: 'online' },
     isVerified: { type: Boolean, default: true },
     profilePhoto: { type: String, default: '' },
     isActive: { type: Boolean, default: true }

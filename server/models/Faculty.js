@@ -13,6 +13,7 @@ const facultySchema = new mongoose.Schema({
     experience: { type: String, default: '' },
     specialization: { type: String, default: '' },
     about: { type: String, default: 'Passionate educator dedicated to shaping the next generation of learners.' },
+    teachingMode: { type: String, enum: ['online', 'offline', 'hybrid'], default: 'online' },
     isVerified: { type: Boolean, default: true },
     profilePhoto: { type: String, default: '' },
     isActive: { type: Boolean, default: true }

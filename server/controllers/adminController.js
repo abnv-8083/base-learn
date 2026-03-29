@@ -7,9 +7,15 @@ const StudyClass = require('../models/StudyClass');
 const Subject = require('../models/Subject');
 const Batch = require('../models/Batch');
 const ActivityLog = require('../models/ActivityLog');
+<<<<<<< HEAD
 const LiveClass = require('../models/LiveClass');
 const RecordedClass = require('../models/RecordedClass');
 const ProfileRequest = require('../models/ProfileRequest');
+=======
+const ProfileUpdateRequest = require('../models/ProfileUpdateRequest');
+const Notification = require('../models/Notification');
+const LiveClass = require('../models/LiveClass');
+>>>>>>> 520dbd7 (feat: Implement Instructor Profile UI, Student records view and teaching mode classifications)
 const logAction = require('../utils/logAction');
 const sendEmail = require('../utils/sendEmail');
 const crypto = require('crypto');
@@ -268,6 +274,47 @@ exports.getFacultyDetails = asyncHandler(async (req, res) => {
             totalStudentsReached
         },
         recentClasses: liveClasses.slice(0, 10)
+    });
+});
+
+// GET /api/admin/students/:id/details
+exports.getStudentDetails = asyncHandler(async (req, res) => {
+    const studentId = req.params.id;
+    const student = await Student.findById(studentId).select('-password');
+    
+    if (!student) {
+        return res.status(404).json({ message: 'Student not found' });
+    }
+
+    const batches = await Batch.find({ students: studentId }).populate('studyClass');
+
+    res.status(200).json({ student, batches });
+});
+
+// GET /api/admin/instructors/:id/details
+exports.getInstructorDetails = asyncHandler(async (req, res) => {
+    const instructor = await Instructor.findById(req.params.id).select('-password');
+    if (!instructor) return res.status(404).json({ message: 'Instructor not found' });
+
+    const [studyClasses, batches] = await Promise.all([
+        StudyClass.find({ instructor: instructor._id }).lean(),
+        Batch.find({ instructor: instructor._id }).lean()
+    ]);
+
+    let totalStudentsManaged = 0;
+    batches.forEach(b => {
+        if (b.students) totalStudentsManaged += b.students.length;
+    });
+
+    res.status(200).json({
+        instructor,
+        studyClasses,
+        batches,
+        stats: {
+            totalClasses: studyClasses.length,
+            totalBatches: batches.length,
+            totalStudentsManaged
+        }
     });
 });
 
