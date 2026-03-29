@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Plus, Pencil, Trash2, ToggleLeft, ToggleRight, Search, X, Eye, EyeOff } from 'lucide-react';
+import { Plus, Pencil, Trash2, ToggleLeft, ToggleRight, Search, X, Eye, EyeOff, ExternalLink } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import axios from 'axios';
 
 const ROLE_CONFIG = {
@@ -135,6 +136,11 @@ const AdminUserManagement = ({ role }) => {
                   </td>
                   <td style={{ padding: '14px 20px', textAlign: 'center' }}>
                     <div style={{ display: 'flex', justifyContent: 'center', gap: '6px' }}>
+                      {role === 'faculty' && (
+                        <Link to={`/admin/faculty/${u._id}`} style={{ padding: '6px', borderRadius: '6px', border: '1px solid var(--color-border)', background: 'white', cursor: 'pointer', color: '#10b981', display: 'flex', alignItems: 'center' }} title="View Details">
+                          <ExternalLink size={15} />
+                        </Link>
+                      )}
                       <button onClick={() => openEdit(u)} style={{ padding: '6px', borderRadius: '6px', border: '1px solid var(--color-border)', background: 'white', cursor: 'pointer', color: '#6366f1' }} title="Edit"><Pencil size={15} /></button>
                       <button onClick={() => handleToggleStatus(u._id, u.isActive)} style={{ padding: '6px', borderRadius: '6px', border: '1px solid var(--color-border)', background: 'white', cursor: 'pointer', color: u.isActive ? '#f59e0b' : '#22c55e' }} title={u.isActive ? 'Block' : 'Activate'}>
                         {u.isActive ? <ToggleLeft size={15} /> : <ToggleRight size={15} />}

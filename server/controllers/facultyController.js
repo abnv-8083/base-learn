@@ -8,6 +8,7 @@ const Batch = require('../models/Batch');
 const LiveClass = require('../models/LiveClass');
 const Assignment = require('../models/Assignment');
 const Test = require('../models/Test');
+const ProfileRequest = require('../models/ProfileRequest');
 const logAction = require('../utils/logAction');
 
 // GET /api/faculty/dashboard

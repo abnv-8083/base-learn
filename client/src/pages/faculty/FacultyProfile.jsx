@@ -91,6 +91,20 @@ const FacultyProfile = () => {
     }
   };
 
+  const handleRequest = async (type, newValue = null) => {
+    try {
+      const res = await axios.post('/api/faculty/profile/request-update', { type, newValue }, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+      });
+      alert(res.data.message);
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to submit request');
+    }
+  };
+
+  const [showEmailModal, setShowEmailModal] = useState(false);
+  const [newEmail, setNewEmail] = useState('');
+
   const fields = [
     { key: 'name', label: 'Full Name', icon: User, type: 'text', placeholder: 'Full name', required: true },
     { key: 'email', label: 'Email Address', icon: Mail, type: 'email', placeholder: 'email@school.edu', required: true, disabled: true },
@@ -210,6 +224,36 @@ const FacultyProfile = () => {
               })}
             </div>
           </form>
+
+          {/* Security Section */}
+          <div style={{ marginTop: '40px', paddingTop: '32px', borderTop: '1px solid var(--color-border)' }}>
+            <h3 style={{ fontSize: '18px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>
+              <Shield size={20} color="var(--color-primary)" /> Security & Account Updates
+            </h3>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+              <div style={{ padding: '20px', borderRadius: '12px', background: '#f8fafc', border: '1px solid #e2e8f0' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
+                  <div style={{ width: '36px', height: '36px', borderRadius: '8px', background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#3b82f6' }}>
+                    <Mail size={18} />
+                  </div>
+                  <div style={{ fontWeight: 'bold', fontSize: '15px' }}>Email Address</div>
+                </div>
+                <p style={{ fontSize: '13px', color: '#64748b', marginBottom: '16px' }}>To update your login email, you must submit a request for administrative approval.</p>
+                <button className="btn btn-outline" style={{ width: '100%', fontSize: '13px', padding: '8px' }} onClick={() => setShowEmailModal(true)}>Request Email Change</button>
+              </div>
+
+              <div style={{ padding: '20px', borderRadius: '12px', background: '#f8fafc', border: '1px solid #e2e8f0' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
+                  <div style={{ width: '36px', height: '36px', borderRadius: '8px', background: '#fff7ed', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#f97316' }}>
+                    <Lock size={18} />
+                  </div>
+                  <div style={{ fontWeight: 'bold', fontSize: '15px' }}>Account Password</div>
+                </div>
+                <p style={{ fontSize: '13px', color: '#64748b', marginBottom: '16px' }}>Request a password reset. A new temporary password will be sent to your email upon approval.</p>
+                <button className="btn btn-outline" style={{ width: '100%', fontSize: '13px', padding: '8px' }} onClick={() => { if(window.confirm('Request a password reset from admin?')) handleRequest('password'); }}>Request Password Reset</button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
       

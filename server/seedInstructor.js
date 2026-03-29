@@ -1,6 +1,8 @@
-require('dotenv').config();
+require('dotenv').config({ path: require('path').join(__dirname, '.env') });
 const mongoose = require('mongoose');
-const User = require('./models/User');
+const Instructor = require('./models/Instructor');
+const Faculty = require('./models/Faculty');
+const Student = require('./models/Student');
 const Batch = require('./models/Batch');
 const RecordedClass = require('./models/RecordedClass');
 
@@ -10,9 +12,9 @@ async function seed() {
         console.log("Connected to MongoDB Atlas");
 
         // 1. Create Instructor
-        let instructor = await User.findOne({ email: 'instructor@demo.com' });
+        let instructor = await Instructor.findOne({ email: 'instructor@demo.com' });
         if (!instructor) {
-            instructor = new User({
+            instructor = new Instructor({
                 name: "Demo Instructor",
                 email: "instructor@demo.com",
                 password: "password123",
@@ -25,9 +27,9 @@ async function seed() {
         }
 
         // 2. Create Faculty
-        let faculty = await User.findOne({ email: 'faculty@demo.com' });
+        let faculty = await Faculty.findOne({ email: 'faculty@demo.com' });
         if (!faculty) {
-            faculty = new User({
+            faculty = new Faculty({
                 name: "Dr. Demo Faculty",
                 email: "faculty@demo.com",
                 password: "password123",
@@ -41,14 +43,15 @@ async function seed() {
         // 3. Create Students
         const students = [];
         for(let i=1; i<=3; i++) {
-            let s = await User.findOne({ email: `student${i}@demo.com` });
+            let s = await Student.findOne({ email: `student${i}@demo.com` });
             if (!s) {
-                s = new User({
+                s = new Student({
                     name: `Demo Student ${i}`,
                     email: `student${i}@demo.com`,
                     password: "password123",
                     role: "student",
                     studentId: `ST00${i}`,
+                    isVerified: true,
                     instructorNotes: [
                         { note: `Needs to focus more on assignments.`, date: new Date() }
                     ]
@@ -104,9 +107,8 @@ async function seed() {
         const pending1 = new RecordedClass({
             title: "Data Structures - Arrays",
             description: "Introduction to arrays",
-            subject: "Computer Science",
             videoUrl: "https://example.com/video1.mp4",
-            facultyId: faculty._id,
+            faculty: faculty._id,
             status: "draft" // "pending" approval in instructor pipeline
         });
         await pending1.save();
@@ -114,9 +116,8 @@ async function seed() {
         const pending2 = new RecordedClass({
             title: "Algorithms - Sorting",
             description: "Bubble, Merge, Quick sort",
-            subject: "Computer Science",
             videoUrl: "https://example.com/video2.mp4",
-            facultyId: faculty._id,
+            faculty: faculty._id,
             status: "draft"
         });
         await pending2.save();
@@ -125,9 +126,8 @@ async function seed() {
         const published1 = new RecordedClass({
             title: "React Fundamentals",
             description: "Hooks and State",
-            subject: "Web Development",
             videoUrl: "https://example.com/video3.mp4",
-            facultyId: faculty._id,
+            faculty: faculty._id,
             status: "published",
             assignedTo: [batch1._id.toString()]
         });

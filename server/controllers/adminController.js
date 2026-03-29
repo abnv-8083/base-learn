@@ -7,8 +7,12 @@ const StudyClass = require('../models/StudyClass');
 const Subject = require('../models/Subject');
 const Batch = require('../models/Batch');
 const ActivityLog = require('../models/ActivityLog');
+const LiveClass = require('../models/LiveClass');
+const RecordedClass = require('../models/RecordedClass');
+const ProfileRequest = require('../models/ProfileRequest');
 const logAction = require('../utils/logAction');
 const sendEmail = require('../utils/sendEmail');
+const crypto = require('crypto');
 
 // Helper to find a user across all collections
 const findUserById = async (id) => {
@@ -71,26 +75,50 @@ exports.createUser = asyncHandler(async (req, res) => {
     if (role === 'faculty' || role === 'instructor') {
         try {
             const portalUrl = `${req.protocol}://${req.get('host')}`;
+            const detailsHtml = Object.entries(rest).map(([k, v]) => `<p style="margin: 4px 0; color: #475569;"><strong>${k}:</strong> ${v}</p>`).join('');
             const html = `
                 <div style="font-family: 'Segoe UI', sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px;">
-                    <div style="text-align: center; margin-bottom: 30px;">
-                        <h1 style="color: #6366f1; margin: 0;">Base Learn</h1>
-                        <p style="color: #64748b; margin: 5px 0 0 0;">Education Platform</p>
+                    <div style="text-align: center; background: linear-gradient(135deg, #0F2D6B, #6366f1); padding: 30px; border-radius: 10px 10px 0 0; margin: -20px -20px 0 -20px;">
+                        <h1 style="color: white; margin: 0; font-size: 28px;">🎓 Base Learn</h1>
+                        <p style="color: rgba(255,255,255,0.8); margin: 5px 0 0 0;">Education Platform</p>
                     </div>
-                    <div style="padding: 24px; background: #f8fafc; border-radius: 8px;">
-                        <h2 style="color: #1e293b; margin-top: 0;">Welcome, ${name}!</h2>
-                        <p style="color: #475569; line-height: 1.6;">Your ${role} account has been created. Use the credentials below to log in:</p>
-                        <div style="margin: 24px 0; padding: 16px; background: white; border: 1px solid #cbd5e1; border-radius: 6px;">
-                            <p><strong>Email:</strong> ${email}</p>
-                            <p><strong>Password:</strong> ${password}</p>
+                    
+                    <div style="padding: 30px 20px;">
+                        <h2 style="color: #1e293b; margin-top: 0;">Welcome, ${name}! 👋</h2>
+                        <p style="color: #475569; line-height: 1.6;">This email is to notify you that your <strong>${role}</strong> account has been created by the Admin on Base Learn. You can now log in to your portal and start teaching!</p>
+                        
+                        <!-- LOGIN BUTTON -->
+                        <div style="text-align: center; margin: 30px 0;">
+                            <a href="${portalUrl}/staff-login?role=${role}" style="background: linear-gradient(135deg, #0F2D6B, #6366f1); color: white; padding: 16px 40px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 16px; display: inline-block; letter-spacing: 0.5px;">👉 Open ${role.charAt(0).toUpperCase() + role.slice(1)} Portal</a>
                         </div>
-                        <p style="color: #ef4444; font-size: 13px;">⚠️ Change your password after first login.</p>
-                        <div style="margin-top: 32px; text-align: center;">
-                            <a href="${portalUrl}" style="background: #6366f1; color: white; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: bold; display: inline-block;">Login Portal</a>
+
+                        <!-- CREDENTIALS BOX -->
+                        <div style="background: #f0f4ff; border: 2px solid #6366f1; border-radius: 10px; padding: 20px; margin: 20px 0;">
+                            <h3 style="color: #4338ca; margin: 0 0 15px 0; font-size: 16px; text-transform: uppercase; letter-spacing: 0.05em;">🔑 Your Login Credentials</h3>
+                            <table style="width: 100%; border-collapse: collapse;">
+                                <tr><td style="padding: 8px 0; color: #64748b; font-weight: bold; width: 40%;">Portal URL:</td><td style="padding: 8px 0; color: #1e293b;"><a href="${portalUrl}/staff-login?role=${role}" style="color: #6366f1;">${portalUrl}/staff-login</a></td></tr>
+                                <tr><td style="padding: 8px 0; color: #64748b; font-weight: bold;">Email:</td><td style="padding: 8px 0; color: #1e293b; font-weight: bold;">${email}</td></tr>
+                                <tr><td style="padding: 8px 0; color: #64748b; font-weight: bold;">Password:</td><td style="padding: 8px 0; color: #1e293b; font-weight: bold; font-size: 18px; letter-spacing: 2px;">${password}</td></tr>
+                                <tr><td style="padding: 8px 0; color: #64748b; font-weight: bold;">Role:</td><td style="padding: 8px 0;"><span style="background: #6366f1; color: white; padding: 2px 10px; border-radius: 20px; font-size: 13px;">${role}</span></td></tr>
+                            </table>
                         </div>
+
+                        <!-- PROFILE DETAILS BOX -->
+                        <div style="margin: 20px 0; padding: 16px; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px;">
+                            <h3 style="color: #1e293b; margin: 0 0 12px 0; font-size: 15px;">📋 Your Profile Details (Added by Admin)</h3>
+                            <p style="margin: 4px 0; color: #475569;"><strong>Name:</strong> ${name}</p>
+                            <p style="margin: 4px 0; color: #475569;"><strong>Email:</strong> ${email}</p>
+                            <p style="margin: 4px 0; color: #475569;"><strong>Role:</strong> ${role}</p>
+                            ${detailsHtml}
+                        </div>
+
+                        <p style="color: #ef4444; font-size: 13px; border-left: 3px solid #ef4444; padding-left: 10px;">⚠️ For your security, please change your password immediately after your first login.</p>
+
+                        <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 24px 0;" />
+                        <p style="color: #94a3b8; font-size: 12px; text-align: center; margin: 0;">© ${new Date().getFullYear()} Base Learn Education Platform. This is an automated message.</p>
                     </div>
                 </div>`;
-            await sendEmail({ email: user.email, subject: `Welcome to Base Learn - Your ${role} Credentials`, html });
+            await sendEmail({ email: user.email, subject: `Welcome to Base Learn - Your ${role.charAt(0).toUpperCase() + role.slice(1)} Portal Access`, html });
         } catch (e) { console.error('Email fail:', e.message); }
     }
 
@@ -208,4 +236,98 @@ exports.getActivityLogs = asyncHandler(async (req, res) => {
     const filter = role && role !== 'all' ? { actorRole: role } : {};
     const logs = await ActivityLog.find(filter).sort({ createdAt: -1 }).limit(100);
     res.status(200).json(logs);
+});
+
+// GET /api/admin/faculty/:id/details
+exports.getFacultyDetails = asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    const faculty = await Faculty.findById(id).select('-password');
+    if (!faculty) return res.status(404).json({ message: 'Faculty not found' });
+
+    // 1. Stats from Live Classes
+    const liveClasses = await LiveClass.find({ faculty: id });
+    const stats = {
+        totalClasses: liveClasses.length,
+        completedClasses: liveClasses.filter(c => c.status === 'completed').length,
+        totalStudentsReached: liveClasses.reduce((acc, c) => acc + (c.attendance?.filter(a => a.attended).length || 0), 0),
+        subjectsTaught: [...new Set(liveClasses.map(c => c.subject))]
+    };
+
+    // 2. Recent Live Classes
+    const recentLive = await LiveClass.find({ faculty: id })
+        .sort({ scheduledAt: -1 })
+        .limit(5);
+
+    // 3. Uploaded Content (Recorded Classes)
+    const uploadedContent = await RecordedClass.find({ faculty: id })
+        .sort({ createdAt: -1 })
+        .limit(10);
+
+    // 4. Pending Profile Requests
+    const pendingRequests = await ProfileRequest.find({ faculty: id, status: 'pending' });
+
+    res.status(200).json({
+        faculty,
+        stats,
+        recentClasses: recentLive,
+        uploadedContent,
+        pendingRequests
+    });
+});
+
+// POST /api/admin/faculty/approve-request/:requestId
+exports.approveProfileRequest = asyncHandler(async (req, res) => {
+    const { requestId } = req.params;
+    const { action } = req.body; // 'approve' or 'reject'
+
+    const request = await ProfileRequest.findById(requestId).populate('faculty');
+    if (!request) return res.status(404).json({ message: 'Request not found' });
+
+    if (action === 'reject') {
+        request.status = 'rejected';
+        await request.save();
+        return res.status(200).json({ message: 'Request rejected' });
+    }
+
+    const { faculty, type, newValue } = request;
+
+    if (type === 'email') {
+        const oldEmail = faculty.email;
+        faculty.email = newValue;
+        await faculty.save();
+
+        // Notify new email
+        try {
+            await sendEmail({
+                email: newValue,
+                subject: 'Email Updated - Base Learn',
+                html: `<h1>Email Updated</h1><p>Your faculty account email has been updated to this address by Admin.</p>`
+            });
+        } catch (e) { console.error('Email fail:', e.message); }
+
+        request.status = 'approved';
+        await request.save();
+        await logAction(req, 'Approved Email Change', `Faculty: ${faculty.name} (${oldEmail} -> ${newValue})`);
+    }
+
+    if (type === 'password') {
+        const tempPassword = crypto.randomBytes(4).toString('hex'); // 8 char random hex
+        faculty.password = tempPassword;
+        await faculty.save();
+
+        // Send temp password to faculty
+        try {
+            await sendEmail({
+                email: faculty.email,
+                subject: 'New Password Generated - Base Learn',
+                html: `<h1>Password Reset</h1><p>Your request for a password reset was approved. Your new temporary password is: <strong>${tempPassword}</strong></p><p>Please log in and change it immediately.</p>`
+            });
+        } catch (e) { console.error('Email fail:', e.message); }
+
+        request.status = 'approved';
+        await request.save();
+        await logAction(req, 'Approved Password Reset', `Faculty: ${faculty.name}`);
+    }
+
+    res.status(200).json({ message: 'Request approved and processed' });
 });

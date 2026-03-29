@@ -15,6 +15,8 @@ router.post('/users', adminController.createUser);
 router.put('/users/:id', adminController.updateUser);
 router.delete('/users/:id', adminController.deleteUser);
 router.patch('/users/:id/status', adminController.toggleUserStatus);
+router.get('/faculty/:id/details', adminController.getFacultyDetails);
+router.post('/faculty/approve-request/:requestId', adminController.approveProfileRequest);
 
 // Class Management
 router.get('/classes', adminController.getClasses);

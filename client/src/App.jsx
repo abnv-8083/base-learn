@@ -44,6 +44,7 @@ import AdminBatchManagement from './pages/admin/AdminBatchManagement';
 import AdminAnalytics from './pages/admin/AdminAnalytics';
 import AdminClassManagement from './pages/admin/AdminClassManagement';
 import AdminActivityLog from './pages/admin/AdminActivityLog';
+import AdminFacultyDetails from './pages/admin/AdminFacultyDetails';
 
 const ProtectedRoute = ({ children, requiredRole }) => {
   const { user, loading } = useAuth();
@@ -102,6 +103,7 @@ const App = () => {
                 <Route path="dashboard" element={<AdminDashboard />} />
                 <Route path="students" element={<AdminUserManagement role="student" />} />
                 <Route path="faculty" element={<AdminUserManagement role="faculty" />} />
+                <Route path="faculty/:id" element={<AdminFacultyDetails />} />
                 <Route path="instructors" element={<AdminUserManagement role="instructor" />} />
                 <Route path="classes" element={<AdminClassManagement />} />
                 <Route path="analytics" element={<AdminAnalytics />} />
