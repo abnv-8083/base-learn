@@ -22,9 +22,11 @@ router.post('/content/upload', upload.single('file'), facultyController.uploadCo
 router.get('/live-classes', facultyController.getLiveClasses);
 router.post('/live-classes', facultyController.scheduleLiveClass);
 router.get('/batches', facultyController.getBatches);
+router.put('/profile', facultyController.updateProfile);
 
 // Students
 router.get('/students', facultyController.getStudents);
 router.get('/students/:id/metrics', facultyController.getStudentMetrics);
+router.post('/profile/request-update', facultyController.createProfileRequest);
 
 module.exports = router;

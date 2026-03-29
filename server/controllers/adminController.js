@@ -7,10 +7,12 @@ const StudyClass = require('../models/StudyClass');
 const Subject = require('../models/Subject');
 const Batch = require('../models/Batch');
 const ActivityLog = require('../models/ActivityLog');
-const ProfileUpdateRequest = require('../models/ProfileUpdateRequest');
-const Notification = require('../models/Notification');
+const LiveClass = require('../models/LiveClass');
+const RecordedClass = require('../models/RecordedClass');
+const ProfileRequest = require('../models/ProfileRequest');
 const logAction = require('../utils/logAction');
 const sendEmail = require('../utils/sendEmail');
+const crypto = require('crypto');
 
 // Helper to find a user across all collections
 const findUserById = async (id) => {
@@ -276,58 +278,96 @@ exports.getActivityLogs = asyncHandler(async (req, res) => {
     res.status(200).json(logs);
 });
 
-// --- Profile Update Requests --- //
+// GET /api/admin/faculty/:id/details
+exports.getFacultyDetails = asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    const faculty = await Faculty.findById(id).select('-password');
+    if (!faculty) return res.status(404).json({ message: 'Faculty not found' });
 
-exports.getProfileRequests = asyncHandler(async (req, res) => {
-    const requests = await ProfileUpdateRequest.find({ status: 'pending' })
-        .populate('userId', 'name email role')
-        .sort({ createdAt: -1 });
-    res.status(200).json(requests);
+    // 1. Stats from Live Classes
+    const liveClasses = await LiveClass.find({ faculty: id });
+    const stats = {
+        totalClasses: liveClasses.length,
+        completedClasses: liveClasses.filter(c => c.status === 'completed').length,
+        totalStudentsReached: liveClasses.reduce((acc, c) => acc + (c.attendance?.filter(a => a.attended).length || 0), 0),
+        subjectsTaught: [...new Set(liveClasses.map(c => c.subject))]
+    };
+
+    // 2. Recent Live Classes
+    const recentLive = await LiveClass.find({ faculty: id })
+        .sort({ scheduledAt: -1 })
+        .limit(5);
+
+    // 3. Uploaded Content (Recorded Classes)
+    const uploadedContent = await RecordedClass.find({ faculty: id })
+        .sort({ createdAt: -1 })
+        .limit(10);
+
+    // 4. Pending Profile Requests
+    const pendingRequests = await ProfileRequest.find({ faculty: id, status: 'pending' });
+
+    res.status(200).json({
+        faculty,
+        stats,
+        recentClasses: recentLive,
+        uploadedContent,
+        pendingRequests
+    });
 });
 
+// POST /api/admin/faculty/approve-request/:requestId
 exports.approveProfileRequest = asyncHandler(async (req, res) => {
-    const request = await ProfileUpdateRequest.findById(req.params.id);
-    if (!request) return res.status(404).json({ message: 'Request not found' });
-    if (request.status !== 'pending') return res.status(400).json({ message: 'Request is no longer pending' });
+    const { requestId } = req.params;
+    const { action } = req.body; // 'approve' or 'reject'
 
-    const Model = getModelByRole(request.userModel.toLowerCase());
-    if (!Model) return res.status(400).json({ message: 'Invalid user model' });
-
-    const user = await Model.findById(request.userId);
-    if (!user) return res.status(404).json({ message: 'User not found' });
-
-    if (request.requestedEmail) user.email = request.requestedEmail;
-    if (request.requestedPassword) user.password = request.requestedPassword;
-    
-    await user.save(); // Triggers pre-save hooks
-    
-    request.status = 'approved';
-    await request.save();
-
-    await Notification.create({
-        message: 'Your profile update request has been approved.',
-        type: 'info',
-        recipient: user._id.toString(),
-        sender: req.user.userId
-    });
-
-    await logAction(req, 'Approved Profile Request', `User: ${user.name}`, { targetId: user._id, targetModel: request.userModel });
-
-    res.status(200).json({ message: 'Profile updated successfully', request });
-});
-
-exports.rejectProfileRequest = asyncHandler(async (req, res) => {
-    const request = await ProfileUpdateRequest.findByIdAndUpdate(req.params.id, { status: 'rejected' }, { new: true });
+    const request = await ProfileRequest.findById(requestId).populate('faculty');
     if (!request) return res.status(404).json({ message: 'Request not found' });
 
-    await Notification.create({
-        message: 'Your profile update request has been rejected.',
-        type: 'alert',
-        recipient: request.userId.toString(),
-        sender: req.user.userId
-    });
+    if (action === 'reject') {
+        request.status = 'rejected';
+        await request.save();
+        return res.status(200).json({ message: 'Request rejected' });
+    }
 
-    await logAction(req, 'Rejected Profile Request', `Request ID: ${request._id}`, { targetId: request._id, targetModel: 'ProfileUpdateRequest' });
+    const { faculty, type, newValue } = request;
 
-    res.status(200).json({ message: 'Request rejected', request });
+    if (type === 'email') {
+        const oldEmail = faculty.email;
+        faculty.email = newValue;
+        await faculty.save();
+
+        // Notify new email
+        try {
+            await sendEmail({
+                email: newValue,
+                subject: 'Email Updated - Base Learn',
+                html: `<h1>Email Updated</h1><p>Your faculty account email has been updated to this address by Admin.</p>`
+            });
+        } catch (e) { console.error('Email fail:', e.message); }
+
+        request.status = 'approved';
+        await request.save();
+        await logAction(req, 'Approved Email Change', `Faculty: ${faculty.name} (${oldEmail} -> ${newValue})`);
+    }
+
+    if (type === 'password') {
+        const tempPassword = crypto.randomBytes(4).toString('hex'); // 8 char random hex
+        faculty.password = tempPassword;
+        await faculty.save();
+
+        // Send temp password to faculty
+        try {
+            await sendEmail({
+                email: faculty.email,
+                subject: 'New Password Generated - Base Learn',
+                html: `<h1>Password Reset</h1><p>Your request for a password reset was approved. Your new temporary password is: <strong>${tempPassword}</strong></p><p>Please log in and change it immediately.</p>`
+            });
+        } catch (e) { console.error('Email fail:', e.message); }
+
+        request.status = 'approved';
+        await request.save();
+        await logAction(req, 'Approved Password Reset', `Faculty: ${faculty.name}`);
+    }
+
+    res.status(200).json({ message: 'Request approved and processed' });
 });
