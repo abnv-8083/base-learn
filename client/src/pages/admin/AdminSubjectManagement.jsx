@@ -1,15 +1,16 @@
 import { useState, useEffect } from 'react';
-import { Plus, Pencil, Trash2, BookOpen, X } from 'lucide-react';
+import { Plus, Pencil, Trash2, BookOpen, X, Users, Shield } from 'lucide-react';
 import axios from 'axios';
 
 const AdminSubjectManagement = () => {
   const token = localStorage.getItem('token');
   const [subjects, setSubjects] = useState([]);
-  const [staff, setStaff] = useState([]);
+  const [facultyList, setFacultyList] = useState([]);
+  const [instructorList, setInstructorList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingSubject, setEditingSubject] = useState(null);
-  const [form, setForm] = useState({ name: '', targetGrade: 'Class 10', description: '', instructorId: '' });
+  const [form, setForm] = useState({ name: '', targetGrade: 'Class 10', description: '', instructorId: '', facultyId: '' });
   const [saving, setSaving] = useState(false);
 
   useEffect(() => { 
@@ -23,7 +24,8 @@ const AdminSubjectManagement = () => {
         axios.get('/api/admin/users?role=faculty', { headers: { Authorization: `Bearer ${token}` } }),
         axios.get('/api/admin/users?role=instructor', { headers: { Authorization: `Bearer ${token}` } })
       ]);
-      setStaff([...facRes.data, ...instRes.data]);
+      setFacultyList(Array.isArray(facRes.data) ? facRes.data : []);
+      setInstructorList(Array.isArray(instRes.data) ? instRes.data : []);
     } catch(err) { console.error('Failed to fetch staff list.'); }
   };
 
@@ -38,13 +40,25 @@ const AdminSubjectManagement = () => {
   };
 
   const openCreate = () => {
-    setForm({ name: '', targetGrade: 'Class 10', description: '', instructorId: staff[0]?._id || '' });
+    setForm({ 
+      name: '', 
+      targetGrade: 'Class 10', 
+      description: '', 
+      instructorId: instructorList[0]?._id || '', 
+      facultyId: '' 
+    });
     setEditingSubject(null);
     setShowModal(true);
   };
 
   const openEdit = (subject) => {
-    setForm({ name: subject.name, targetGrade: subject.targetGrade || 'Class 10', description: subject.description || '', instructorId: subject.instructor?._id || staff[0]?._id || '' });
+    setForm({ 
+      name: subject.name, 
+      targetGrade: subject.targetGrade || 'Class 10', 
+      description: subject.description || '', 
+      instructorId: subject.instructor?._id || instructorList[0]?._id || '',
+      facultyId: subject.faculty?._id || ''
+    });
     setEditingSubject(subject);
     setShowModal(true);
   };
@@ -77,7 +91,7 @@ const AdminSubjectManagement = () => {
       <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-6)' }}>
         <div>
           <h1 className="page-title">Subject Management</h1>
-          <p className="page-subtitle">Define and manage academic subjects for Class 8, 9, and 10.</p>
+          <p className="page-subtitle">Define and manage academic subjects. Assign faculty and instructors.</p>
         </div>
         <button className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '8px' }} onClick={openCreate}>
           <Plus size={18} /> New Subject
@@ -105,8 +119,15 @@ const AdminSubjectManagement = () => {
                 <p style={{ fontSize: '13px', color: 'var(--color-text-secondary)', marginTop: '8px', lineHeight: '1.4' }}>{subject.description || 'No description provided.'}</p>
               </div>
               
-              <div style={{ marginTop: 'auto', paddingTop: '12px', borderTop: '1px solid var(--color-border)', fontSize: '12px', color: 'var(--color-text-secondary)' }}>
-                Instructor: <span style={{ fontWeight: '600', color: 'var(--color-text-primary)' }}>{subject.instructor?.name || 'Assigned Factory'}</span>
+              <div style={{ marginTop: 'auto', paddingTop: '12px', borderTop: '1px solid var(--color-border)', fontSize: '12px', color: 'var(--color-text-secondary)', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <Users size={13} style={{ color: '#6366f1' }} />
+                  Faculty: <span style={{ fontWeight: '600', color: 'var(--color-text-primary)' }}>{subject.faculty?.name || <span style={{ color: '#f59e0b', fontStyle: 'italic' }}>Not assigned</span>}</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <Shield size={13} style={{ color: '#10b981' }} />
+                  Instructor: <span style={{ fontWeight: '600', color: 'var(--color-text-primary)' }}>{subject.instructor?.name || 'N/A'}</span>
+                </div>
               </div>
             </div>
           );
@@ -120,14 +141,14 @@ const AdminSubjectManagement = () => {
 
       {showModal && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-          <div style={{ background: 'white', borderRadius: '16px', padding: '28px', width: '440px' }}>
+          <div style={{ background: 'white', borderRadius: '16px', padding: '28px', width: '480px', maxHeight: '90vh', overflowY: 'auto' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
               <h2 style={{ fontWeight: 'bold', fontSize: '18px', margin: 0 }}>{editingSubject ? 'Edit Subject' : 'New Subject'}</h2>
               <button onClick={() => setShowModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer' }}><X size={20} /></button>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
               <div>
-                <label style={{ display: 'block', marginBottom: '6px', fontWeight: 'bold', fontSize: '13px' }}>Subject Name</label>
+                <label style={{ display: 'block', marginBottom: '6px', fontWeight: 'bold', fontSize: '13px' }}>Subject Name *</label>
                 <input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="e.g. Physics"
                   style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--color-border)' }} />
               </div>
@@ -146,14 +167,38 @@ const AdminSubjectManagement = () => {
                   style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--color-border)', minHeight: '80px', fontFamily: 'inherit' }} />
               </div>
               <div>
-                <label style={{ display: 'block', marginBottom: '6px', fontWeight: 'bold', fontSize: '13px' }}>Assigned Faculty/Instructor</label>
-                <select value={form.instructorId} onChange={e => setForm({ ...form, instructorId: e.target.value })}
+                <label style={{ display: 'block', marginBottom: '6px', fontWeight: 'bold', fontSize: '13px' }}>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <Users size={14} style={{ color: '#6366f1' }} /> Assign Faculty
+                  </span>
+                </label>
+                <select value={form.facultyId} onChange={e => setForm({ ...form, facultyId: e.target.value })}
                   style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--color-border)', background: 'white' }}>
-                  {staff.length === 0 ? <option value="">No faculty/instructors available</option> : null}
-                  {staff.map(s => (
-                    <option key={s._id} value={s._id}>{s.name} ({s.role.charAt(0).toUpperCase() + s.role.slice(1)})</option>
+                  <option value="">— No Faculty Assigned —</option>
+                  {facultyList.map(f => (
+                    <option key={f._id} value={f._id}>{f.name} ({f.email})</option>
                   ))}
                 </select>
+                <p style={{ fontSize: '11px', color: 'var(--color-text-secondary)', marginTop: '4px' }}>
+                  The faculty member will see this subject in their portal and can upload content for it.
+                </p>
+              </div>
+              <div>
+                <label style={{ display: 'block', marginBottom: '6px', fontWeight: 'bold', fontSize: '13px' }}>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <Shield size={14} style={{ color: '#10b981' }} /> Assign Instructor
+                  </span>
+                </label>
+                <select value={form.instructorId} onChange={e => setForm({ ...form, instructorId: e.target.value })}
+                  style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--color-border)', background: 'white' }}>
+                  {instructorList.length === 0 ? <option value="">No instructors available</option> : null}
+                  {instructorList.map(s => (
+                    <option key={s._id} value={s._id}>{s.name} ({s.email})</option>
+                  ))}
+                </select>
+                <p style={{ fontSize: '11px', color: 'var(--color-text-secondary)', marginTop: '4px' }}>
+                  The instructor manages chapters, reviews content, and oversees this subject.
+                </p>
               </div>
             </div>
             <div style={{ display: 'flex', gap: '10px', marginTop: '22px' }}>

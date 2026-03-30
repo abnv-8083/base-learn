@@ -42,13 +42,13 @@ exports.getPendingRecordedClasses = async (req, res) => {
 exports.assignRecordedClass = async (req, res) => {
     try {
         const { id } = req.params;
-        const { assignedTo, publishDate } = req.body;
+        const { batchIds, publishDate } = req.body;
         
         const recording = await RecordedClass.findByIdAndUpdate(
             id,
             {
                 status: 'published',
-                assignedTo,
+                assignedTo: batchIds,
                 publishedAt: publishDate || Date.now()
             },
             { new: true }

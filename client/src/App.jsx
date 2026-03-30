@@ -33,6 +33,7 @@ import InstructorProfile from './pages/instructor/InstructorProfile';
 import FacultyLayout from './pages/faculty/FacultyLayout';
 import FacultyDashboard from './pages/faculty/FacultyDashboard';
 import FacultyContent from './pages/faculty/FacultyContent';
+import FacultyContentManager from './pages/faculty/FacultyContentManager';
 import FacultyLiveClasses from './pages/faculty/FacultyLiveClasses';
 import FacultyStudents from './pages/faculty/FacultyStudents';
 import FacultyProfile from './pages/faculty/FacultyProfile';
@@ -49,6 +50,7 @@ import AdminAnalytics from './pages/admin/AdminAnalytics';
 import AdminClassManagement from './pages/admin/AdminClassManagement';
 import AdminActivityLog from './pages/admin/AdminActivityLog';
 import AdminRequests from './pages/admin/AdminRequests';
+import AdminSubjectManagement from './pages/admin/AdminSubjectManagement';
 
 const ProtectedRoute = ({ children, requiredRole }) => {
   const { user, loading } = useAuth();
@@ -113,6 +115,7 @@ const App = () => {
                 <Route path="instructors" element={<AdminUserManagement role="instructor" />} />
                 <Route path="instructors/:id" element={<AdminInstructorDetails />} />
                 <Route path="classes" element={<AdminClassManagement />} />
+                <Route path="subjects" element={<AdminSubjectManagement />} />
                 <Route path="analytics" element={<AdminAnalytics />} />
                 <Route path="payments" element={<AdminAnalytics />} />
                 <Route path="activity-log" element={<AdminActivityLog />} />
@@ -130,6 +133,7 @@ const App = () => {
                 <Route path="dashboard" element={<FacultyDashboard />} />
                 <Route path="live-classes" element={<FacultyLiveClasses />} />
                 <Route path="content" element={<FacultyContent />} />
+                <Route path="content/manage/:type" element={<FacultyContentManager />} />
                 <Route path="students" element={<FacultyStudents />} />
                 <Route path="profile" element={<FacultyProfile />} />
                 <Route index element={<Navigate to="dashboard" replace />} />

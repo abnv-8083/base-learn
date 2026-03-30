@@ -6,6 +6,7 @@ const recordedClassSchema = new mongoose.Schema({
   subject: { type: mongoose.Schema.Types.ObjectId, ref: 'Subject' },
   chapter: { type: mongoose.Schema.Types.ObjectId, ref: 'Chapter' },
   videoUrl: { type: String, required: true },
+  assignmentUrl: { type: String }, // Optional supplementary assignment file (PDF)
   thumbnail: { type: String },
   faculty: { type: mongoose.Schema.Types.ObjectId, ref: 'Faculty', required: true },
   contentType: { type: String, enum: ['lecture', 'faq'], default: 'lecture' },

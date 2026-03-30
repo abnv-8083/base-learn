@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, PlayCircle, Clock, Settings, Maximize, Play, Pause, Volume2, Calendar } from 'lucide-react';
+import { ChevronLeft, PlayCircle, Clock, Settings, Maximize, Play, Pause, Volume2, Calendar, BookOpen, Download, FileText } from 'lucide-react';
 
 import studentService from '../../services/studentService';
+import VideoPlayer from '../../components/VideoPlayer';
 
 const RecordedClasses = () => {
   const navigate = useNavigate();
@@ -100,8 +101,15 @@ const RecordedClasses = () => {
         <div className="spinner" style={{ margin: 'auto', display: 'block', marginTop: '10vh' }}></div>
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '24px' }}>
-          {subjects.length === 0 ? <p style={{ color: 'var(--color-text-secondary)', padding: '20px' }}>No subjects assigned to your batch.</p> : null}
-          {subjects.map((sub) => (
+          {subjects.length === 0 ? (
+            <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: '60px 20px', background: 'var(--color-bg)', borderRadius: '24px', border: '2px dashed var(--color-border)' }}>
+              <div style={{ fontSize: '64px', marginBottom: '24px' }}>📁</div>
+              <h3 style={{ fontSize: '24px', fontWeight: 'bold', color: 'var(--color-text-primary)', marginBottom: '12px' }}>No Subjects Assigned</h3>
+              <p style={{ color: 'var(--color-text-secondary)', maxWidth: '460px', margin: '0 auto', lineHeight: '1.6' }}>
+                Your curriculum is currently being prepared. Once your instructor assigns subjects to your batch, they will appear here automatically.
+              </p>
+            </div>
+          ) : subjects.map((sub) => (
             <div key={sub.id} className="card" style={{ cursor: 'pointer', transition: 'transform 0.2s, box-shadow 0.2s' }} onClick={() => handleSubjectClick(sub)}>
               <div style={{ padding: 'var(--space-8)', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: 'var(--space-4)' }}>
                 <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: sub.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '36px', boxShadow: '0 8px 16px rgba(0,0,0,0.05)' }}>
@@ -235,8 +243,11 @@ const RecordedClasses = () => {
             boxShadow: '0 8px 30px rgba(0,0,0,0.15)',
             flexShrink: 0
           }}>
-            {selectedResource?.type === 'video' ? (
-              <video src={selectedResource.videoUrl} controls style={{ width: '100%', height: '100%', objectFit: 'cover' }} autoPlay />
+            {selectedResource?.type === 'video' || selectedResource?.type === 'faq' ? (
+              <VideoPlayer 
+                src={selectedResource.videoUrl || selectedResource.url} 
+                title={selectedResource.title}
+              />
             ) : selectedResource?.url ? (
                <iframe src={selectedResource.url} style={{ width: '100%', height: '100%', border: 'none', background: 'white' }} title="Document Viewer" />
             ) : (
@@ -262,11 +273,42 @@ const RecordedClasses = () => {
             </div>
             
             {selectedResource?.type === 'video' && (
-              <div style={{ background: 'var(--color-surface)', padding: '24px', borderRadius: '16px', border: '1px solid var(--color-border)' }}>
-                <h4 style={{ fontWeight: 'bold', marginBottom: '12px' }}>Description</h4>
-                <p style={{ color: 'var(--color-text-secondary)', lineHeight: 1.6 }}>
-                  {selectedResource?.description || "No description provided for this recording."}
-                </p>
+              <div style={{ background: 'var(--color-surface)', padding: '24px', borderRadius: '16px', border: '1px solid var(--color-border)', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                <div>
+                  <h4 style={{ fontWeight: 'bold', marginBottom: '12px' }}>Description</h4>
+                  <p style={{ color: 'var(--color-text-secondary)', lineHeight: 1.6 }}>
+                    {selectedResource?.description || "No description provided for this recording."}
+                  </p>
+                </div>
+
+                {selectedResource?.assignmentUrl && (
+                  <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: '24px' }}>
+                    <h4 style={{ fontWeight: 'bold', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <BookOpen size={20} color="var(--color-primary)" />
+                      Attached Assignment
+                    </h4>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--color-bg)', padding: '16px 20px', borderRadius: '14px', border: '1px solid var(--color-border)' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                        <div style={{ width: '44px', height: '44px', borderRadius: '12px', background: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 10px rgba(0,0,0,0.05)' }}>
+                          <FileText size={22} color="var(--color-primary)" />
+                        </div>
+                        <div>
+                          <p style={{ fontWeight: '700', fontSize: '15px', margin: '0 0 2px 0' }}>Supplementary Materials</p>
+                          <p style={{ fontSize: '12px', color: 'var(--color-text-muted)', margin: 0 }}>PDF Document • Verification Required</p>
+                        </div>
+                      </div>
+                      <a 
+                        href={selectedResource.assignmentUrl} 
+                        target="_blank" 
+                        rel="noopener noreferrer" 
+                        className="btn btn-primary"
+                        style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 20px' }}
+                      >
+                        <Download size={18} /> Download PDF
+                      </a>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>

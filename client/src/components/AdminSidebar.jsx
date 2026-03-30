@@ -5,6 +5,7 @@ import {
   Users,
   GraduationCap,
   BookOpen,
+  Library,
   BarChart2,
   CreditCard,
   Shield,
@@ -61,6 +62,10 @@ const AdminSidebar = () => {
         <Link to="/admin/classes" className={getLinkClass('/classes')}>
           <BookOpen className="nav-item-icon" />
           Classes
+        </Link>
+        <Link to="/admin/subjects" className={getLinkClass('/subjects')}>
+          <Library className="nav-item-icon" />
+          Subjects
         </Link>
 
         <span className="sidebar-section-label" style={{ marginTop: 16 }}>Analytics</span>

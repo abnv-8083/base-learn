@@ -9,6 +9,9 @@ const sendEmail = async (options) => {
             auth: {
                 user: process.env.SMTP_USER,
                 pass: (process.env.SMTP_PASS || '').replace(/\s/g, '')
+            },
+            tls: {
+                rejectUnauthorized: false
             }
         });
     } else {
@@ -33,14 +36,19 @@ const sendEmail = async (options) => {
         html: options.html
     };
 
-    const info = await transporter.sendMail(mailOptions);
+    try {
+        const info = await transporter.sendMail(mailOptions);
 
-    // Automatically log the preview URL to terminal if using the test account
-    if (!process.env.SMTP_HOST) {
-        console.log(`✉️ Simulated Email sent: ${info.messageId}`);
-        console.log(`URL link to view the simulated OTP email safely in your Browser: ${nodemailer.getTestMessageUrl(info)}`);
-    } else {
-        console.log(`Email successfully routed via SMTP: ${info.messageId}`);
+        // Automatically log the preview URL to terminal if using the test account
+        if (!process.env.SMTP_HOST) {
+            console.log(`✉️ Simulated Email sent: ${info.messageId}`);
+            console.log(`URL link to view the simulated OTP email safely in your Browser: ${nodemailer.getTestMessageUrl(info)}`);
+        } else {
+            console.log(`Email successfully routed via SMTP: ${info.messageId}`);
+        }
+    } catch (error) {
+        console.error('Nodemailer Error:', error);
+        throw error;
     }
 };
 

@@ -76,7 +76,7 @@ const registerUser = async (req, res) => {
             } catch (err) {
                 console.error('Email sending failed:', err);
                 await Student.deleteOne({ _id: user._id });
-                return res.status(500).json({ message: 'Email could not be sent. Please enter a valid email.' });
+                return res.status(500).json({ message: 'Email could not be sent. Please enter a valid email.', error: err.message });
             }
         }
     } catch (error) {

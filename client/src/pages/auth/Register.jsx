@@ -64,7 +64,9 @@ const Register = () => {
       });
       setStage(3); // Move to OTP
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to request registration. Check details.');
+      const msg = err.response?.data?.message || 'Failed to request registration.';
+      const detailed = err.response?.data?.error ? ` (${err.response.data.error})` : '';
+      setError(msg + detailed);
     }
   };
 

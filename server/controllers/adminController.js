@@ -426,6 +426,76 @@ exports.approveProfileRequest = asyncHandler(async (req, res) => {
     res.status(200).json({ message: 'Request approved and processed' });
 });
 
+// ---- SUBJECT CRUD ----
+// GET /api/admin/subjects
+exports.getSubjects = asyncHandler(async (req, res) => {
+    const subjects = await Subject.find({})
+        .populate('instructor', 'name email role')
+        .populate('faculty', 'name email role')
+        .populate('assignedTo', 'name')
+        .sort({ createdAt: -1 });
+    res.status(200).json(subjects);
+});
+
+// POST /api/admin/subjects
+exports.createSubject = asyncHandler(async (req, res) => {
+    const { name, description, targetGrade, instructorId, facultyId } = req.body;
+    if (!name) return res.status(400).json({ message: 'Subject name is required' });
+
+    // Find a valid instructor — use provided or fallback to first available
+    let instructor = instructorId;
+    if (!instructor) {
+        const defaultInstructor = await Instructor.findOne({});
+        if (!defaultInstructor) return res.status(400).json({ message: 'No instructor available. Create an instructor first.' });
+        instructor = defaultInstructor._id;
+    }
+
+    const subject = await Subject.create({
+        name,
+        description: description || '',
+        targetGrade: targetGrade || 'Class 10',
+        instructor,
+        faculty: facultyId || null,
+        assignedTo: []
+    });
+
+    const populated = await Subject.findById(subject._id)
+        .populate('instructor', 'name email role')
+        .populate('faculty', 'name email role');
+
+    await logAction(req, 'Created Subject', `Subject: ${name}`, { targetId: subject._id, targetModel: 'Subject' });
+    res.status(201).json(populated);
+});
+
+// PUT /api/admin/subjects/:id
+exports.updateSubject = asyncHandler(async (req, res) => {
+    const { name, description, targetGrade, instructorId, facultyId } = req.body;
+    const updateData = {};
+    if (name) updateData.name = name;
+    if (description !== undefined) updateData.description = description;
+    if (targetGrade) updateData.targetGrade = targetGrade;
+    if (instructorId) updateData.instructor = instructorId;
+    if (facultyId !== undefined) updateData.faculty = facultyId || null;
+
+    const subject = await Subject.findByIdAndUpdate(req.params.id, updateData, { new: true })
+        .populate('instructor', 'name email role')
+        .populate('faculty', 'name email role')
+        .populate('assignedTo', 'name');
+
+    if (!subject) return res.status(404).json({ message: 'Subject not found' });
+    await logAction(req, 'Updated Subject', `Subject: ${subject.name}`, { targetId: subject._id, targetModel: 'Subject' });
+    res.status(200).json(subject);
+});
+
+// DELETE /api/admin/subjects/:id
+exports.deleteSubject = asyncHandler(async (req, res) => {
+    const subject = await Subject.findById(req.params.id);
+    if (!subject) return res.status(404).json({ message: 'Subject not found' });
+    await logAction(req, 'Deleted Subject', `Subject: ${subject.name}`, { targetId: subject._id, targetModel: 'Subject' });
+    await Subject.findByIdAndDelete(req.params.id);
+    res.status(200).json({ message: 'Subject deleted', id: req.params.id });
+});
+
 // GET /api/admin/profile-requests
 exports.getProfileRequests = asyncHandler(async (req, res) => {
     const requests = await ProfileUpdateRequest.find({ status: 'pending' }).populate('userId', 'name email');

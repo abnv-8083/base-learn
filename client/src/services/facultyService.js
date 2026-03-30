@@ -59,6 +59,20 @@ const facultyService = {
     const res = await api.put('/profile', data);
     return res.data;
   },
+
+  // Management
+  getUploadedContent: async (type) => {
+    const res = await api.get(`/content/manage/${type}`);
+    return res.data;
+  },
+  updateContent: async (type, id, data) => {
+    const res = await api.put(`/content/manage/${type}/${id}`, data);
+    return res.data;
+  },
+  deleteContent: async (type, id, chapterId) => {
+    const res = await api.delete(`/content/manage/${type}/${id}${chapterId ? `?chapterId=${chapterId}` : ''}`);
+    return res.data;
+  },
 };
 
 export default facultyService;

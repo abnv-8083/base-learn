@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { User, Mail, Phone, MapPin, Camera, Save, BookOpen, GraduationCap, Briefcase, Info } from 'lucide-react';
+import { User, Mail, Phone, MapPin, Camera, Save, BookOpen, GraduationCap, Briefcase, Info, Shield, Lock } from 'lucide-react';
 import facultyService from '../../services/facultyService';
 import toast from 'react-hot-toast';
+import axios from 'axios';
 
 const FacultyProfile = () => {
   const { user } = useAuth();

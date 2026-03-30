@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const asyncHandler = require('express-async-handler');
 const Subject = require('../models/Subject');
 const Student = require('../models/Student');
@@ -16,14 +17,20 @@ const getDashboard = asyncHandler(async (req, res) => {
 
   const studentBatch = await Batch.findOne({ students: studentId }).populate('studyClass instructor').lean();
   let assignedSubjects = [];
+  let recordedCount = 0;
+  
   if (studentBatch) {
     assignedSubjects = await Subject.find({ assignedTo: studentBatch._id }).lean();
+    recordedCount = await RecordedClass.countDocuments({ 
+        status: 'published',
+        assignedTo: { $in: [studentBatch._id] }
+    });
   }
 
-  const studentDetails = await Student.findById(studentId).select('hasPaid').lean();
-
-  const recordedCount = await RecordedClass.countDocuments({ status: 'published' });
-  const liveCount = await LiveClass.countDocuments({ status: { $in: ['upcoming', 'ongoing'] } });
+  const liveCount = await LiveClass.countDocuments({ 
+      status: { $in: ['upcoming', 'ongoing'] },
+      batch: studentBatch?._id 
+  });
   
   const totalAssignments = await Assignment.countDocuments();
   const assignmentsData = await Assignment.find({ 'submissions.studentId': studentId });
@@ -52,7 +59,7 @@ const getDashboard = asyncHandler(async (req, res) => {
       subjects: assignedSubjects.map(s => ({
         id: s._id,
         name: s.name,
-        progress: Math.floor(Math.random() * 60) + 20
+        progress: 0 // Default to zero if progress tracking not implemented
       }))
     }
   });
@@ -69,27 +76,36 @@ const getRecordedClasses = asyncHandler(async (req, res) => {
     return res.status(200).json({ success: true, count: 0, data: [] });
   }
 
-  const batchId = studentBatch._id;
+  const batchId = new mongoose.Types.ObjectId(studentBatch._id);
+  const classId = studentBatch.studyClass ? new mongoose.Types.ObjectId(studentBatch.studyClass._id || studentBatch.studyClass) : null;
 
-  // 1. Find all subjects assigned to this batch
-  const subjects = await Subject.find({ assignedTo: batchId }).lean();
+  // 1. Find all videos specifically assigned to this batch (videos are always batch-specific)
+  const assignedVideos = await RecordedClass.find({
+      status: 'published',
+      assignedTo: { $in: [batchId] }
+  }).populate('chapter subject').lean();
+
+  const implicitSubjectIds = [...new Set(assignedVideos.map(v => v.subject?._id || v.subject))].filter(Boolean);
+  const implicitChapterIds = [...new Set(assignedVideos.map(v => v.chapter?._id || v.chapter))].filter(Boolean);
+
+  // 2. Find all subjects (explicitly assigned to Batch/Class OR containing assigned videos)
+  const subjects = await Subject.find({ 
+    $or: [
+      { assignedTo: { $in: [batchId, classId] } }, // Check Batch or Parent Class
+      { _id: { $in: implicitSubjectIds } }
+    ]
+  }).lean();
   const subjectIds = subjects.map(s => s._id);
 
-  // 2. Find all chapters assigned to this batch OR belonging to assigned subjects
+  // 3. Find all chapters (explicitly assigned to Batch/Class OR containing assigned videos)
   const chapters = await Chapter.find({
       $or: [
-          { assignedTo: batchId },
+          { assignedTo: { $in: [batchId, classId] } },
+          { _id: { $in: implicitChapterIds } },
           { subject: { $in: subjectIds } }
       ]
   }).lean();
-  const chapterIds = chapters.map(c => c._id);
-
-  // 3. Find only published videos specifically assigned to this batch
-  const videos = await RecordedClass.find({
-      status: 'published',
-      assignedTo: batchId
-  }).lean();
-
+ 
   // Combine into hierarchy matching MOCK_SUBJECTS format
   const colors = [
     { color: 'var(--color-primary)', bg: 'var(--color-primary-light)', icon: '📚' },
@@ -105,28 +121,44 @@ const getRecordedClasses = asyncHandler(async (req, res) => {
     const subChapters = chapters.filter(c => c.subject?.toString() === sub._id.toString());
     
     const mappedChapters = subChapters.map(chap => {
-       // Filter videos belonging to this chapter
-       const chapVideos = videos.filter(v => v.chapter?.toString() === chap._id.toString());
+       // Filter videos belonging to this chapter (from our pre-fetched assigned list)
+       const chapVideos = assignedVideos.filter(v => {
+          const videoChapterId = v.chapter?._id || v.chapter;
+          return videoChapterId && videoChapterId.toString() === chap._id.toString();
+       });
+       
+       // A chapter is visible if:
+       // 1. It has assigned videos
+       // 2. It is explicitly assigned to the batch or class
+       const isExplicitlyAssigned = chap.assignedTo?.some(id => 
+          id.toString() === batchId.toString() || (classId && id.toString() === classId.toString())
+       );
+       
+       if (chapVideos.length === 0 && !isExplicitlyAssigned) {
+         return null; // Skip empty chapters unless explicitly assigned
+       }
        
        return {
          id: chap._id,
          title: chap.name,
          progress: 0, 
-         videos: chapVideos.filter(v => v.contentType !== 'faq').map(v => ({
+         videos: chapVideos.filter(v => (v.contentType || 'lecture') !== 'faq').map(v => ({
            id: v._id,
            title: v.title,
            duration: 'Varies',
-           date: new Date(v.publishedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+           date: new Date(v.publishedAt || v.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
            videoUrl: v.videoUrl,
-           description: v.description,
+           assignmentUrl: v.assignmentUrl,
+           description: v.description || 'No description available.',
            type: 'lecture'
          })),
          faqs: chapVideos.filter(v => v.contentType === 'faq').map(v => ({
            id: v._id,
            title: v.title,
-           date: new Date(v.publishedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+           date: new Date(v.publishedAt || v.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
            videoUrl: v.videoUrl,
-           description: v.description,
+           assignmentUrl: v.assignmentUrl,
+           description: v.description || 'FAQ recording.',
            type: 'faq'
          })),
          notes: chap.notes || [],
@@ -139,14 +171,22 @@ const getRecordedClasses = asyncHandler(async (req, res) => {
     return {
       id: sub._id,
       title: sub.name,
-      icon: cTheme.icon,
-      color: cTheme.color,
-      bg: cTheme.bg,
-      chapters: mappedChapters
+      description: sub.description,
+      icon: '📚', // Default icon for all subjects
+      color: '#10b981', // Brand green
+      bg: '#ecfdf5',
+      chapters: mappedChapters.filter(Boolean)
     };
   });
 
-  res.status(200).json({ success: true, count: hierarchy.length, data: hierarchy });
+  const finalData = hierarchy.filter(s => {
+    const subObj = subjects.find(sub => sub._id.toString() === s.id.toString());
+    const isExplicitlyAssigned = subObj?.assignedTo?.some(id => 
+       id.toString() === batchId.toString() || (classId && id.toString() === classId.toString())
+    );
+    return s.chapters.length > 0 || isExplicitlyAssigned;
+  });
+  res.status(200).json({ success: true, count: finalData.length, data: finalData });
 });
 
 // @desc    Get upcoming and past live classes

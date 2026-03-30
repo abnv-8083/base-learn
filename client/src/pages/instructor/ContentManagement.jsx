@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Layers, Plus, Users, BookOpen, ChevronLeft, Video, Edit, Trash2, Link as LinkIcon, CheckCircle } from 'lucide-react';
+import { Layers, Plus, Users, BookOpen, ChevronLeft, Video, Edit, Trash2, Link as LinkIcon, CheckCircle, Download, FileText } from 'lucide-react';
 import instructorService from '../../services/instructorService';
 import ConfirmModal from '../../components/ConfirmModal';
+import VideoPlayer from '../../components/VideoPlayer';
 
 const ContentManagement = () => {
   const [loading, setLoading] = useState(true);
@@ -17,11 +18,9 @@ const ContentManagement = () => {
   const [classes, setClasses] = useState([]);
   const [students, setStudents] = useState([]);
 
-  // Top-Level Navigation
-  const [activeSection, setActiveSection] = useState('recorded'); // 'recorded' | 'live' | 'assignments' | 'tests'
-
-  // Drilldown
-  const [currentView, setCurrentView] = useState('subjects'); // 'subjects' | 'chapters' | 'videos'
+  // Hub Navigation
+  const [activeHubSection, setActiveHubSection] = useState(null); // null = Dashboard/Hub
+  const [currentView, setCurrentView] = useState('list'); // 'list' | 'detail'
   const [selectedSubject, setSelectedSubject] = useState(null);
   const [selectedChapter, setSelectedChapter] = useState(null);
 
@@ -43,6 +42,10 @@ const ContentManagement = () => {
   const [distributeData, setDistributeData] = useState({ id: '', title: '', targetType: 'batch', type: 'assignment' }); // Added type
   const [distributeTargetId, setDistributeTargetId] = useState('');
   const [assessmentDeadline, setAssessmentDeadline] = useState('');
+
+  // Dual View for Recorded Classes
+  const [recordedSubSection, setRecordedSubSection] = useState('curriculum'); // 'pending' | 'curriculum'
+  const [selectedStudyClassId, setSelectedStudyClassId] = useState('');
 
   // Reusable Delete Modal State
   const [confirmDelete, setConfirmDelete] = useState({
@@ -174,15 +177,34 @@ const ContentManagement = () => {
 
   const handleLinkVideo = async (videoId) => {
     try {
-      const linked = await instructorService.linkVideoToChapter(videoId, selectedChapter._id, selectedSubject._id);
-      setVideos([...videos, linked]);
+      const videoToLink = pendingVideos.find(v => v._id === videoId);
+      
+      // Use currently selected context OR fallback to what faculty assigned
+      const chapterId = selectedChapter?._id || videoToLink?.chapter?._id || videoToLink?.chapter;
+      const subjectId = selectedSubject?._id || videoToLink?.subject?._id || videoToLink?.subject;
+
+      if (!chapterId || !subjectId) {
+        alert("Could not determine the target chapter or subject for this video.");
+        return;
+      }
+
+      const linked = await instructorService.linkVideoToChapter(videoId, chapterId, subjectId);
+      
+      // Update local state: add to current videos if it matches the current view chapter
+      if (selectedChapter && (linked.chapter === selectedChapter._id || linked.chapter?._id === selectedChapter._id)) {
+        setVideos([...videos, linked]);
+      }
+      
       setPendingVideos(pendingVideos.filter(v => v._id !== videoId));
       setShowReviewModal(false);
       setPreviewVideo(null);
       
       // Auto-trigger assignment flow
       openAssignModal('video', linked);
-    } catch (err) { alert("Error linking video"); }
+    } catch (err) { 
+      console.error(err);
+      alert("Error linking video: " + (err.response?.data?.message || err.message)); 
+    }
   };
 
   // --- Assign Logic ---
@@ -235,23 +257,20 @@ const ContentManagement = () => {
 
   const renderBreadcrumbs = () => (
     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '24px', fontSize: '14px', color: 'var(--color-text-secondary)' }}>
-      <button onClick={() => setCurrentView('subjects')} style={{ background: 'none', border: 'none', color: currentView === 'subjects' ? 'var(--color-text-primary)' : 'var(--color-primary)', cursor: 'pointer', padding: 0, fontWeight: currentView === 'subjects' ? 'bold' : 'normal' }}>
-        Subjects
+      <button onClick={() => setActiveHubSection(null)} style={{ background: 'none', border: 'none', color: 'var(--color-primary)', cursor: 'pointer', padding: 0 }}>
+        Content Hub
       </button>
-      {currentView !== 'subjects' && (
-        <>
-          <ChevronLeft size={14} />
-          <button onClick={() => { setCurrentView('chapters'); fetchChapters(selectedSubject._id); }} style={{ background: 'none', border: 'none', color: currentView === 'chapters' ? 'var(--color-text-primary)' : 'var(--color-primary)', cursor: 'pointer', padding: 0, fontWeight: currentView === 'chapters' ? 'bold' : 'normal' }}>
-            {selectedSubject?.name}
-          </button>
-        </>
-      )}
-      {currentView === 'videos' && (
-        <>
-           <ChevronLeft size={14} />
-           <span style={{ color: 'var(--color-text-primary)', fontWeight: 'bold' }}>{selectedChapter?.name}</span>
-        </>
-      )}
+      <ChevronLeft size={14} />
+      <span style={{ color: 'var(--color-text-primary)', fontWeight: 'bold' }}>
+        {activeHubSection === 'curriculum' && 'Subjects & Chapters'}
+        {activeHubSection === 'recorded' && 'Recorded Classes'}
+        {activeHubSection === 'dpp' && 'DPP'}
+        {activeHubSection === 'pyq' && 'PYQ'}
+        {activeHubSection === 'notes' && 'Class Notes'}
+        {activeHubSection === 'liveNotes' && 'Live Notes'}
+        {activeHubSection === 'assignments' && 'Main Assignment'}
+        {activeHubSection === 'tests' && 'Main Test'}
+      </span>
     </div>
   );
 
@@ -264,189 +283,201 @@ const ContentManagement = () => {
           <h1 className="page-title">Content Pipeline</h1>
           <p className="page-subtitle">Manage curriculum hierarchy, tests, assignments, and live classes.</p>
         </div>
-        {(pendingVideos.length > 0 || pendingAssessments.tests.length > 0 || pendingAssessments.assignments.length > 0) && currentView === 'subjects' && (
+        {(pendingVideos.length > 0 || pendingAssessments.tests.length > 0 || pendingAssessments.assignments.length > 0) && (
           <div style={{ background: '#FEF3C7', padding: '8px 16px', borderRadius: '8px', border: '1px solid #FDE68A', display: 'flex', alignItems: 'center', gap: '8px', color: '#92400E', fontWeight: 'bold', cursor: 'pointer' }} onClick={() => setShowReviewModal(true)}>
              <CheckCircle size={16} /> {pendingVideos.length + pendingAssessments.tests.length + pendingAssessments.assignments.length} Pending Approvals
           </div>
         )}
       </div>
 
-      {/* TABS NAVIGATION */}
-      <div style={{ display: 'flex', borderBottom: '1px solid var(--color-border)', marginBottom: '24px', gap: '24px' }}>
-        {[
-          { id: 'recorded', label: 'Recorded Classes' },
-          { id: 'live', label: 'Live Classes' },
-          { id: 'assignments', label: 'Assignments' },
-          { id: 'tests', label: 'Tests' }
-        ].map(tab => (
-          <button 
-            key={tab.id}
-            onClick={() => setActiveSection(tab.id)}
-            style={{ 
-              background: 'none', 
-              border: 'none', 
-              padding: '0 0 12px 0', 
-              cursor: 'pointer', 
-              fontSize: '15px', 
-              fontWeight: activeSection === tab.id ? 'bold' : '600',
-              color: activeSection === tab.id ? 'var(--color-primary)' : 'var(--color-text-secondary)',
-              borderBottom: activeSection === tab.id ? '2px solid var(--color-primary)' : '2px solid transparent',
-              transition: 'all 0.2s'
-            }}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
-
-      {activeSection === 'recorded' && renderBreadcrumbs()}
-
-      {/* VIEW: SUBJECTS */}
-      {activeSection === 'recorded' && currentView === 'subjects' && (
-        <>
-          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '20px' }}>
-            <button className="btn btn-primary" onClick={() => { setSubjectForm({ id: null, name: '' }); setShowSubjectModal(true); }}>
-              <Plus size={18} /> New Subject
-            </button>
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '20px' }}>
-            {subjects.length === 0 ? <div style={{ background: 'white', padding: '30px', textAlign: 'center', borderRadius: '12px', border: '1px dashed #ccc', gridColumn: '1 / -1' }}>No subjects found.</div> : null}
-            {subjects.map(sub => (
-              <div key={sub._id} style={{ background: 'white', border: '1px solid var(--color-border)', borderRadius: '16px', padding: '20px', transition: 'all 0.2s', boxShadow: '0 4px 6px rgba(0,0,0,0.02)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' }} onClick={() => { setSelectedSubject(sub); setCurrentView('chapters'); fetchChapters(sub._id); }}>
-                    <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'var(--color-primary-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-primary)' }}>
-                      <BookOpen size={24} />
-                    </div>
-                    <div>
-                      <h3 style={{ fontSize: '18px', fontWeight: 'bold', margin: '0 0 4px 0' }}>{sub.name}</h3>
-                      <span style={{ fontSize: '13px', color: 'var(--color-text-secondary)' }}>Assigned to {sub.assignedTo.length} batches</span>
-                    </div>
-                  </div>
-                </div>
-                
-                <div style={{ display: 'flex', gap: '8px', borderTop: '1px solid var(--color-border)', paddingTop: '16px' }}>
-                  <button className="btn btn-outline" style={{ flex: 1, padding: '8px', fontSize: '13px' }} onClick={() => openAssignModal('subject', sub)}><Users size={14} style={{ marginRight: '6px' }}/> Assign</button>
-                  <button className="btn btn-outline" style={{ padding: '8px' }} onClick={() => { setSubjectForm({ id: sub._id, name: sub.name }); setShowSubjectModal(true); }}><Edit size={14} /></button>
-                  <button className="btn btn-outline" style={{ padding: '8px', color: '#DC2626', borderColor: '#FEE2E2' }} onClick={() => handleDeleteSubject(sub._id)}><Trash2 size={14} /></button>
-                </div>
+      {/* --- HUB VIEW: GRID OF CARDS --- */}
+      {!activeHubSection && (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '24px' }}>
+          {[
+            { id: 'curriculum', title: 'Subjects & Chapters', icon: <BookOpen />, color: '#bae6fd', desc: 'Setup Subjects, Chapters and Batch assignments' },
+            { id: 'recorded', title: 'Recorded Classes', count: pendingVideos.length, icon: <Video />, color: '#fee2e2', desc: 'Manual approval and linkage of videos' },
+            { id: 'dpp', title: 'DPP', icon: <Edit />, color: '#fef3c7', desc: 'Daily Practice Problems distribution' },
+            { id: 'pyq', title: 'PYQ', icon: <BookOpen />, color: '#dcfce7', desc: 'Previous Year Questions library' },
+            { id: 'notes', title: 'Class Notes', icon: <FileText />, color: '#e0e7ff', desc: 'Standard classroom PDF materials' },
+            { id: 'liveNotes', title: 'Live Notes', icon: <LinkIcon />, color: '#fae8ff', desc: 'Notes captured from live sessions' },
+            { id: 'assignments', title: 'Main Assignment', count: pendingAssessments.assignments.length, icon: <CheckCircle />, color: '#f1f5f9', desc: 'High-priority student assignments' },
+            { id: 'tests', title: 'Main Test', count: pendingAssessments.tests.length, icon: <Layers />, color: '#f3f4f6', desc: 'Curriculum-wide examinations' }
+          ].map(card => (
+            <div 
+              key={card.id} 
+              className="card hover-lift" 
+              onClick={() => setActiveHubSection(card.id)}
+              style={{ cursor: 'pointer', padding: '32px 24px', textAlign: 'center', border: '1px solid var(--color-border)', borderRadius: '24px', background: 'white', display: 'flex', flexDirection: 'column', alignItems: 'center', transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)' }}
+            >
+              <div style={{ width: '80px', height: '80px', borderRadius: '20px', background: card.color, color: 'var(--color-text-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '32px', marginBottom: '20px', position: 'relative', boxShadow: '0 8px 16px rgba(0,0,0,0.05)' }}>
+                {card.icon}
+                {card.count > 0 && (
+                   <span style={{ position: 'absolute', top: '-8px', right: '-8px', background: '#DC2626', color: 'white', fontSize: '12px', fontWeight: 'bold', width: '24px', height: '24px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid white' }}>
+                     {card.count}
+                   </span>
+                )}
               </div>
-            ))}
-          </div>
-        </>
+              <h3 style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '8px' }}>{card.title}</h3>
+              <p style={{ fontSize: '14px', color: 'var(--color-text-secondary)', lineHeight: 1.5 }}>{card.desc}</p>
+              <div style={{ marginTop: '24px', width: '100%', padding: '12px', background: 'var(--color-bg)', borderRadius: '12px', fontSize: '13px', fontWeight: 'bold', color: 'var(--color-primary)' }}>
+                View Module
+              </div>
+            </div>
+          ))}
+        </div>
       )}
 
-      {/* VIEW: CHAPTERS */}
-      {activeSection === 'recorded' && currentView === 'chapters' && (
-        <>
-          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '20px' }}>
-            <button className="btn btn-primary" onClick={() => { setChapterForm({ id: null, name: '' }); setShowChapterModal(true); }}>
-              <Plus size={18} /> New Chapter
-            </button>
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '20px' }}>
-            {chapters.length === 0 ? <div style={{ background: 'white', padding: '30px', textAlign: 'center', borderRadius: '12px', border: '1px dashed #ccc', gridColumn: '1 / -1' }}>No chapters found for {selectedSubject.name}.</div> : null}
-            {chapters.map(chap => (
-              <div key={chap._id} style={{ background: 'white', border: '1px solid var(--color-border)', borderRadius: '16px', padding: '20px', transition: 'all 0.2s', boxShadow: '0 4px 6px rgba(0,0,0,0.02)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' }} onClick={() => { setSelectedChapter(chap); setCurrentView('videos'); fetchVideos(chap._id); }}>
-                    <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'rgba(99, 102, 241, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6366f1' }}>
-                      <Layers size={24} />
+      {/* --- SECTION VIEW: CURRICULUM (SUBJECTS & CHAPTERS) --- */}
+      {activeHubSection === 'curriculum' && (
+        <div>
+          {renderBreadcrumbs()}
+          {currentView === 'list' ? (
+            <>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '24px' }}>
+                <h2 style={{ fontSize: '22px', fontWeight: 'bold' }}>Subjects Management</h2>
+                <button className="btn btn-primary" onClick={() => { setSubjectForm({ id: null, name: '' }); setShowSubjectModal(true); }}>
+                  <Plus size={18} /> New Subject
+                </button>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '20px' }}>
+                {subjects.map(sub => (
+                  <div key={sub._id} style={{ background: 'white', border: '1px solid var(--color-border)', borderRadius: '20px', padding: '24px', boxShadow: '0 4px 6px rgba(0,0,0,0.02)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '20px', cursor: 'pointer' }} onClick={() => { setSelectedSubject(sub); setCurrentView('chapters'); fetchChapters(sub._id); }}>
+                      <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'var(--color-primary-light)', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px' }}>📚</div>
+                      <div>
+                        <h3 style={{ fontSize: '18px', fontWeight: 'bold', margin: '0' }}>{sub.name}</h3>
+                        <p style={{ fontSize: '12px', color: '#666', margin: 0 }}>{sub.assignedTo?.length || 0} Batches Accessing</p>
+                      </div>
                     </div>
-                    <div>
-                      <h3 style={{ fontSize: '18px', fontWeight: 'bold', margin: '0 0 4px 0' }}>{chap.name}</h3>
-                      <span style={{ fontSize: '13px', color: 'var(--color-text-secondary)' }}>Assigned to {chap.assignedTo.length} batches</span>
+                    <div style={{ display: 'flex', gap: '10px' }}>
+                      <button className="btn btn-outline" style={{ flex: 2, fontSize: '13px' }} onClick={() => openAssignModal('subject', sub)}><Users size={14} style={{ marginRight: '6px' }}/> Assign Subject</button>
+                      <button className="btn btn-outline" onClick={() => { setSubjectForm({ id: sub._id, name: sub.name }); setShowSubjectModal(true); }}><Edit size={14} /></button>
+                      <button className="btn btn-outline" style={{ color: '#DC2626' }} onClick={() => handleDeleteSubject(sub._id)}><Trash2 size={14} /></button>
                     </div>
                   </div>
-                </div>
-                
-                <div style={{ display: 'flex', gap: '8px', borderTop: '1px solid var(--color-border)', paddingTop: '16px' }}>
-                  <button className="btn btn-outline" style={{ flex: 1, padding: '8px', fontSize: '13px' }} onClick={() => openAssignModal('chapter', chap)}><Users size={14} style={{ marginRight: '6px' }}/> Assign</button>
-                  <button className="btn btn-outline" style={{ padding: '8px' }} onClick={() => { setChapterForm({ id: chap._id, name: chap.name }); setShowChapterModal(true); }}><Edit size={14} /></button>
-                  <button className="btn btn-outline" style={{ padding: '8px', color: '#DC2626', borderColor: '#FEE2E2' }} onClick={() => handleDeleteChapter(chap._id)}><Trash2 size={14} /></button>
-                </div>
+                ))}
               </div>
-            ))}
-          </div>
-        </>
-      )}
-
-      {/* VIEW: VIDEOS */}
-      {activeSection === 'recorded' && currentView === 'videos' && (
-        <>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px', alignItems: 'center' }}>
-            <h2 style={{ fontSize: '20px', margin: 0 }}>Linked Recorded Classes</h2>
-            <button className="btn btn-primary" onClick={() => setShowReviewModal(true)}>
-              <LinkIcon size={18} /> Review Faculty Uploads
-            </button>
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '20px' }}>
-            {videos.length === 0 ? <div style={{ background: 'white', padding: '30px', textAlign: 'center', borderRadius: '12px', border: '1px dashed #ccc', gridColumn: '1 / -1' }}>No recorded classes uploaded yet.</div> : null}
-            {videos.map(vid => (
-              <div key={vid._id} style={{ background: 'white', border: '1px solid var(--color-border)', borderRadius: '16px', padding: '20px', transition: 'all 0.2s', boxShadow: '0 4px 6px rgba(0,0,0,0.02)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
-                  <div style={{ display: 'flex', gap: '12px' }}>
-                    <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: '#e0e7ff', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#4f46e5' }}>
-                      <Video size={20} />
-                    </div>
-                    <div>
-                      <h3 style={{ fontSize: '16px', fontWeight: 'bold', margin: '0 0 4px 0', lineHeight: 1.3 }}>{vid.title}</h3>
-                      {vid.scheduledFor && new Date(vid.scheduledFor) > new Date() ? (
-                         <span style={{ fontSize: '12px', padding: '2px 6px', background: '#fef9c3', color: '#a16207', borderRadius: '4px', fontWeight: 'bold' }}>Scheduled: {new Date(vid.scheduledFor).toLocaleDateString()}</span>
-                      ) : (
-                         <span style={{ fontSize: '12px', padding: '2px 6px', background: '#dcfce7', color: '#166534', borderRadius: '4px', fontWeight: 'bold' }}>Active</span>
-                      )}
+            </>
+          ) : (
+            <>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '24px', alignItems: 'center' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                   <button className="icon-btn" onClick={() => setCurrentView('list')}><ChevronLeft /></button>
+                   <h2 style={{ fontSize: '22px', fontWeight: 'bold' }}>{selectedSubject?.name} Chapters</h2>
+                </div>
+                <button className="btn btn-primary" onClick={() => { setChapterForm({ id: null, name: '' }); setShowChapterModal(true); }}>
+                  <Plus size={18} /> New Chapter
+                </button>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '20px' }}>
+                {chapters.map(chap => (
+                  <div key={chap._id} style={{ background: 'white', border: '1px solid var(--color-border)', borderRadius: '20px', padding: '24px' }}>
+                    <h3 style={{ fontSize: '17px', fontWeight: 'bold', marginBottom: '16px' }}>{chap.name}</h3>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <button className="btn btn-outline" style={{ flex: 1, fontSize: '12px' }} onClick={() => openAssignModal('chapter', chap)}>Assign</button>
+                      <button className="btn btn-outline" onClick={() => { setChapterForm({ id: chap._id, name: chap.name }); setShowChapterModal(true); }}><Edit size={14} /></button>
                     </div>
                   </div>
-                </div>
-                
-                <div style={{ display: 'flex', gap: '8px', borderTop: '1px solid var(--color-border)', paddingTop: '16px' }}>
-                  <button className="btn btn-outline" style={{ flex: 1, padding: '8px', fontSize: '13px' }} onClick={() => openAssignModal('video', vid)}><Users size={14} style={{ marginRight: '6px' }}/> Assign</button>
-                  <button className="btn btn-outline" style={{ padding: '8px', color: '#DC2626', borderColor: '#FEE2E2' }} onClick={() => handleDeleteVideo(vid._id)}><Trash2 size={14} /></button>
-                </div>
+                ))}
               </div>
-            ))}
-          </div>
-        </>
+            </>
+          )}
+        </div>
+      )}
+      {activeHubSection === 'recorded' && (
+        <div>
+           {renderBreadcrumbs()}
+           
+           {/* Section 1: Pending */}
+           <div style={{ marginBottom: '40px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+                 <h2 style={{ fontSize: '22px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                   <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#EF4444' }}></div>
+                   Pending for Approval
+                 </h2>
+                 <span style={{ fontSize: '14px', padding: '6px 12px', background: '#FEE2E2', color: '#DC2626', borderRadius: '8px', fontWeight: 'bold' }}>
+                    {pendingVideos.length} New Uploads
+                 </span>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: '20px' }}>
+                  {pendingVideos.length === 0 ? (
+                    <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: '60px', background: 'white', border: '2px dashed var(--color-border)', borderRadius: '24px' }}>
+                       <p style={{ color: 'var(--color-text-secondary)', fontSize: '16px' }}>All caught up! No recorded videos waiting for review.</p>
+                    </div>
+                  ) : pendingVideos.map(vid => (
+                    <div key={vid._id} style={{ background: 'white', border: '1px solid var(--color-border)', borderRadius: '20px', padding: '24px', boxShadow: '0 4px 6px rgba(0,0,0,0.02)' }}>
+                      <div style={{ display: 'flex', gap: '16px', marginBottom: '20px' }}>
+                        <div style={{ width: '56px', height: '56px', borderRadius: '14px', background: '#f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px' }}>🎥</div>
+                        <div>
+                           <h4 style={{ fontWeight: 'bold', fontSize: '16px', marginBottom: '4px' }}>{vid.title}</h4>
+                           <p style={{ fontSize: '12px', color: '#666' }}>By {vid.faculty?.name} • For {vid.subject?.name || 'Various'}</p>
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', gap: '12px' }}>
+                         <button className="btn btn-primary" style={{ flex: 1 }} onClick={() => { setPreviewVideo({...vid, itemType: 'video'}); setShowReviewModal(true); }}>Review & Approve</button>
+                      </div>
+                    </div>
+                  ))}
+              </div>
+           </div>
+
+           {/* Section 2: Assigned */}
+           <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+                 <h2 style={{ fontSize: '22px', fontWeight: 'bold' }}>Recently Published</h2>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '20px' }}>
+                 {/* This would normally be filtered by a search or list, but for now we show all videos assigned to any batch */}
+                 {/* In a real app, maybe you want a search bar here since chapter drilldown is gone */}
+                 {videos.length === 0 && <div style={{ gridColumn: '1/-1', textAlign: 'center', color: '#666' }}>No recently published videos found across batches.</div>}
+                 {videos.slice(0, 12).map(vid => (
+                    <div key={vid._id} style={{ background: 'white', border: '1px solid var(--color-border)', borderRadius: '16px', padding: '20px' }}>
+                       <div style={{ display: 'flex', gap: '12px', marginBottom: '16px' }}>
+                         <div style={{ color: 'var(--color-primary)' }}><Video size={20} /></div>
+                         <h4 style={{ fontSize: '15px', fontWeight: 'bold', margin: 0 }}>{vid.title}</h4>
+                       </div>
+                       <div style={{ display: 'flex', gap: '8px', borderTop: '1px solid #f1f5f9', paddingTop: '16px' }}>
+                          <button className="btn btn-outline" style={{ fontSize: '12px', flex: 1 }} onClick={() => openAssignModal('video', vid)}>Modify Access</button>
+                          <button className="btn btn-outline" style={{ color: '#DC2626' }} onClick={() => handleDeleteVideo(vid._id)}><Trash2 size={14} /></button>
+                       </div>
+                    </div>
+                 ))}
+              </div>
+           </div>
+        </div>
       )}
 
-      {/* SECTION: LIVE CLASSES */}
-      {activeSection === 'live' && (
-        <div style={{ background: 'white', padding: '40px', borderRadius: '16px', border: '1px solid var(--color-border)', textAlign: 'center' }}>
-           <h2 style={{ fontSize: '20px', marginBottom: '8px', fontWeight: 'bold' }}>Live Classes Module</h2>
-           <p style={{ color: 'var(--color-text-secondary)', marginBottom: '24px' }}>Schedule, manage and launch interactive live sessions.</p>
-           <button className="btn btn-primary"><Plus size={16} style={{ marginRight: '8px' }}/> Schedule Session</button>
+      {/* --- SECTION VIEW: OTHERS (DPP, PYQ, ETC) PLACEHOLDERS --- */}
+      {['dpp', 'pyq', 'notes', 'liveNotes'].includes(activeHubSection) && (
+        <div>
+           {renderBreadcrumbs()}
+           <div style={{ background: 'white', padding: '60px', borderRadius: '24px', border: '1px solid var(--color-border)', textAlign: 'center' }}>
+              <h2 style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '8px' }}>{activeHubSection.toUpperCase()} Management</h2>
+              <p style={{ color: 'var(--color-text-secondary)', marginBottom: '32px' }}>Review and distribute {activeHubSection} resources to student batches.</p>
+              <button className="btn btn-primary" onClick={() => setShowReviewModal(true)}>Check Pending {activeHubSection.toUpperCase()} Uploads</button>
+           </div>
         </div>
       )}
 
       {/* SECTION: ASSIGNMENTS */}
-      {activeSection === 'assignments' && (
+      {activeHubSection === 'assignments' && (
         <>
+          {renderBreadcrumbs()}
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px', alignItems: 'center' }}>
-            <h2 style={{ fontSize: '20px', margin: 0, fontWeight: 'bold' }}>Available Assignments</h2>
-            <p style={{ color: 'var(--color-text-secondary)', margin: 0, fontSize: '14px' }}>Drafted by Faculty</p>
+            <h2 style={{ fontSize: '22px', margin: 0, fontWeight: 'bold' }}>Main Assignments</h2>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '20px' }}>
-            {assignments.length === 0 ? <div style={{ background: 'white', padding: '40px', textAlign: 'center', borderRadius: '16px', border: '1px dashed #ccc', gridColumn: '1 / -1' }}>No assignments available from Faculty yet.</div> : null}
+            {assignments.length === 0 ? <div style={{ background: 'white', padding: '40px', textAlign: 'center', borderRadius: '16px', border: '1px dashed #ccc', gridColumn: '1 / -1' }}>No assignments available.</div> : null}
             {assignments.map(asgn => (
-              <div key={asgn._id} style={{ background: 'white', border: '1px solid var(--color-border)', borderRadius: '16px', padding: '24px', transition: 'all 0.2s', boxShadow: '0 4px 6px rgba(0,0,0,0.02)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
-                    <h3 style={{ fontSize: '18px', fontWeight: 'bold', margin: '0 0 4px 0', lineHeight: 1.3 }}>{asgn.title}</h3>
-                  </div>
-                  <p style={{ fontSize: '13px', color: 'var(--color-text-secondary)', margin: '0 0 16px 0' }}>{asgn.description?.substring(0, 80)}...</p>
-                  
-                  <div style={{ background: '#f8fafc', padding: '12px', borderRadius: '8px', marginBottom: '20px', fontSize: '13px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                     <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#64748b' }}>Due:</span> <strong>{new Date(asgn.deadline).toLocaleDateString()}</strong></div>
-                     <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#64748b' }}>Marks:</span> <strong>{asgn.maxMarks}</strong></div>
-                  </div>
+              <div key={asgn._id} style={{ background: 'white', border: '1px solid var(--color-border)', borderRadius: '16px', padding: '24px', boxShadow: '0 4px 6px rgba(0,0,0,0.02)' }}>
+                <h3 style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '12px' }}>{asgn.title}</h3>
+                <div style={{ background: '#f8fafc', padding: '12px', borderRadius: '8px', marginBottom: '20px', fontSize: '13px' }}>
+                   Deadline: <strong>{new Date(asgn.deadline).toLocaleDateString()}</strong>
                 </div>
-                
-                <button className="btn btn-primary" style={{ width: '100%', padding: '10px', fontSize: '14px' }} onClick={() => {
+                <button className="btn btn-primary" style={{ width: '100%' }} onClick={() => {
                   setDistributeData({ id: asgn._id, title: asgn.title, targetType: 'batch' });
-                  setDistributeTargetId('');
                   setShowDistributeModal(true);
-                }}><Users size={16} style={{ marginRight: '8px' }}/> Distribute </button>
+                }}>Distribute to Batches</button>
               </div>
             ))}
           </div>
@@ -454,11 +485,14 @@ const ContentManagement = () => {
       )}
 
       {/* SECTION: TESTS */}
-      {activeSection === 'tests' && (
-        <div style={{ background: 'white', padding: '40px', borderRadius: '16px', border: '1px solid var(--color-border)', textAlign: 'center' }}>
-           <h2 style={{ fontSize: '20px', marginBottom: '8px', fontWeight: 'bold' }}>Tests & Quizzes</h2>
-           <p style={{ color: 'var(--color-text-secondary)', marginBottom: '24px' }}>Administer formatted examinations and evaluate progress.</p>
-           <button className="btn btn-primary"><Plus size={16} style={{ marginRight: '8px' }}/> Create Test</button>
+      {activeHubSection === 'tests' && (
+        <div>
+           {renderBreadcrumbs()}
+           <div style={{ background: 'white', padding: '60px', borderRadius: '24px', border: '2px dashed var(--color-border)', textAlign: 'center' }}>
+              <h2 style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '12px' }}>Tests Hub</h2>
+              <p style={{ color: 'var(--color-text-secondary)', marginBottom: '32px' }}>Create and manage curriculum-wide examinations.</p>
+              <button className="btn btn-primary"><Plus size={18} /> Create New Test</button>
+           </div>
         </div>
       )}
 
@@ -522,12 +556,23 @@ const ContentManagement = () => {
             </div>
 
             <form onSubmit={handleAssign}>
+              <div style={{ marginBottom: '16px' }}>
+                <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: 'bold' }}>Filter by Study Class</label>
+                <select value={selectedStudyClassId} onChange={e => { setSelectedStudyClassId(e.target.value); setSelectedBatchId(''); }} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #ccc' }}>
+                  <option value="">All Classes</option>
+                  {classes.map(c => <option key={c._id} value={c._id}>{c.name} ({c.targetGrade})</option>)}
+                </select>
+              </div>
+
               <div style={{ marginBottom: '24px' }}>
-                <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: 'bold' }}>Assign to New Batch</label>
+                <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: 'bold' }}>Select Batch</label>
                 <select value={selectedBatchId} onChange={e => setSelectedBatchId(e.target.value)} required style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #ccc' }}>
                   <option value="" disabled>Select a batch...</option>
-                  {batches.filter(b => !assignData.currentBatches.find(cb => cb._id === b._id)).map(b => (
-                    <option key={b._id} value={b._id}>{b.name} ({b.studyClass?.name})</option>
+                  {batches
+                    .filter(b => !selectedStudyClassId || (b.studyClass?._id === selectedStudyClassId || b.studyClass === selectedStudyClassId))
+                    .filter(b => !assignData.currentBatches.find(cb => cb._id === b._id))
+                    .map(b => (
+                      <option key={b._id} value={b._id}>{b.name}</option>
                   ))}
                 </select>
               </div>
@@ -617,12 +662,20 @@ const ContentManagement = () => {
                     <div style={{ height: '300px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#666' }}>Select an item to preview</div>
                   ) : (
                     <>
+                      <div style={{ background: '#f8fafc', padding: '12px 16px', borderRadius: '12px', border: '1px solid var(--color-border)', marginBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                         <div>
+                            <span style={{ fontSize: '11px', color: '#666', textTransform: 'uppercase', display: 'block' }}>Faculty Target Curriculum</span>
+                            <strong style={{ fontSize: '13px', color: 'var(--color-primary)' }}>
+                               {previewVideo.subject?.name || 'No Subject'} / {previewVideo.chapter?.name || 'No Chapter'}
+                            </strong>
+                         </div>
+                      </div>
                       {previewVideo.itemType === 'video' ? (
                         <div style={{ width: '100%', aspectRatio: '16/9', background: '#000', borderRadius: '12px', overflow: 'hidden', marginBottom: '16px' }}>
                            {previewVideo.videoUrl.includes('youtube.com') || previewVideo.videoUrl.includes('youtu.be') ? (
                              <iframe width="100%" height="100%" src={previewVideo.videoUrl.replace('watch?v=', 'embed/')} frameBorder="0" allowFullScreen></iframe>
                            ) : (
-                             <video src={previewVideo.videoUrl} width="100%" height="100%" controls></video>
+                             <VideoPlayer src={previewVideo.videoUrl} />
                            )}
                         </div>
                       ) : (
@@ -630,6 +683,18 @@ const ContentManagement = () => {
                            <h3 style={{ margin: '0 0 8px 0' }}>{previewVideo.title}</h3>
                            <p style={{ color: '#666', fontSize: '14px' }}>Document Preview (PDF)</p>
                            <a href={previewVideo.fileUrl} target="_blank" rel="noreferrer" className="btn btn-outline" style={{ display: 'inline-block', marginTop: '12px' }}>Download/View File</a>
+                        </div>
+                      )}
+
+                      {previewVideo.itemType === 'video' && previewVideo.assignmentUrl && (
+                        <div style={{ background: '#f0f9ff', padding: '12px 16px', borderRadius: '12px', border: '1px solid #bae6fd', marginBottom: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <FileText size={18} color="#0369a1" />
+                            <span style={{ fontSize: '13px', fontWeight: '700', color: '#0369a1' }}>Supplementary Assignment (PDF)</span>
+                          </div>
+                          <a href={previewVideo.assignmentUrl} target="_blank" rel="noreferrer" className="btn btn-outline" style={{ padding: '6px 12px', fontSize: '12px', borderColor: '#bae6fd', background: 'white' }}>
+                             <Download size={14} style={{ marginRight: '6px' }} /> View PDF
+                          </a>
                         </div>
                       )}
                       
