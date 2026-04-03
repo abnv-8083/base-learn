@@ -10,16 +10,25 @@ const protect = async (req, res, next) => {
     if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
         try {
             token = req.headers.authorization.split(' ')[1];
-            const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret');
+            const decoded = jwt.verify(token, process.env.JWT_ACCESS_SECRET || 'access_fallback');
 
-            // Search across all models for the ID
-            let user = await Admin.findById(decoded.id).select('-password');
-            if (!user) user = await Instructor.findById(decoded.id).select('-password');
-            if (!user) user = await Faculty.findById(decoded.id).select('-password');
-            if (!user) user = await Student.findById(decoded.id).select('-password');
+            // Use the role from token to pick correct model - highly efficient
+            const roleModelMap = {
+                admin: Admin,
+                instructor: Instructor,
+                faculty: Faculty,
+                student: Student
+            };
+
+            const Model = roleModelMap[decoded.role];
+            if (!Model) {
+                return res.status(401).json({ message: 'Not authorized, invalid token role' });
+            }
+
+            const user = await Model.findById(decoded.id).select('-password');
             
             if (!user) {
-                return res.status(401).json({ message: 'Not authorized, user not found' });
+                return res.status(401).json({ message: 'Not authorized, user no longer exists' });
             }
             
             req.user = user;
@@ -27,10 +36,11 @@ const protect = async (req, res, next) => {
 
             next();
         } catch (error) {
-            res.status(401).json({ message: 'Not authorized, token failed' });
+            console.error('[AUTH] Token verification failed:', error.message);
+            res.status(401).json({ message: 'Not authorized, token expired or invalid' });
         }
     } else {
-        res.status(401).json({ message: 'Not authorized, no token' });
+        res.status(401).json({ message: 'Not authorized, no token provided' });
     }
 };
 

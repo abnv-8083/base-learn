@@ -11,6 +11,17 @@ const Subject = require('../models/Subject');
 const Chapter = require('../models/Chapter');
 const ProfileUpdateRequest = require('../models/ProfileUpdateRequest');
 const logAction = require('../utils/logAction');
+const sendEmail = require('../utils/sendEmail');
+const bcrypt = require('bcryptjs');
+
+// --- Helper for Chapter Resources ---
+const getChapterResource = (chapter, resourceId) => {
+    for (const field of ['notes', 'liveNotes', 'dpps', 'pyqs']) {
+        const res = chapter[field].find(r => r._id.toString() === resourceId);
+        if (res) return { resource: res, field };
+    }
+    return null;
+};
 
 // Get Instructor Dashboard Stats
 exports.getDashboardStats = async (req, res) => {
@@ -19,9 +30,24 @@ exports.getDashboardStats = async (req, res) => {
         const totalBatches = await Batch.countDocuments({ instructor: req.user.userId });
         const scheduledVideos = await RecordedClass.countDocuments({ status: 'draft', scheduledFor: { $gt: new Date() } }); 
         const totalStudents = await Student.countDocuments(); 
-        res.status(200).json({ totalClasses, totalBatches, scheduledVideos, totalStudents });
+        res.status(200).json({ success: true, data: { totalClasses, totalBatches, scheduledVideos, totalStudents } });
     } catch (error) {
-        res.status(500).json({ message: 'Error fetching instructor dashboard stats', error: error.message });
+        res.status(500).json({ success: false, message: 'Error fetching instructor dashboard stats', error: error.message });
+    }
+};
+
+// Get Recently Published Videos (across all chapters)
+exports.getRecentVideos = async (req, res) => {
+    try {
+        const recordings = await RecordedClass.find({ status: 'published' })
+            .sort({ publishedAt: -1 })
+            .limit(20)
+            .populate('faculty', 'name email')
+            .populate('subject', 'name')
+            .populate('chapter', 'name');
+        res.status(200).json({ success: true, data: recordings });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Error fetching recent recordings', error: error.message });
     }
 };
 
@@ -32,9 +58,9 @@ exports.getPendingRecordedClasses = async (req, res) => {
             .populate('faculty', 'name email')
             .populate('subject', 'name')
             .populate('chapter', 'name');
-        res.status(200).json(recordings);
+        res.status(200).json({ success: true, data: recordings });
     } catch (error) {
-        res.status(500).json({ message: 'Error fetching pending recordings', error: error.message });
+        res.status(500).json({ success: false, message: 'Error fetching pending recordings', error: error.message });
     }
 };
 
@@ -57,10 +83,42 @@ exports.assignRecordedClass = async (req, res) => {
         if (recording) {
             await logAction(req, 'Approved Video', `RecordedClass: ${recording.title}`, { targetId: recording._id, targetModel: 'RecordedClass' });
         }
-
-        res.status(200).json(recording);
+        res.status(200).json({ success: true, data: recording });
     } catch (error) {
         res.status(500).json({ message: 'Error assigning recorded class', error: error.message });
+    }
+};
+
+// Reject Recorded Class
+exports.rejectRecordedClass = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { reason } = req.body;
+        
+        const recording = await RecordedClass.findByIdAndUpdate(
+            id,
+            {
+                status: 'rejected',
+                rejectionReason: reason
+            },
+            { new: true }
+        );
+
+        if (recording) {
+            await logAction(req, 'Rejected Video', `RecordedClass: ${recording.title}`, { targetId: recording._id, targetModel: 'RecordedClass' });
+            
+            // Notify Faculty
+            await Notification.create({
+                message: `Recorded Class Rejected: "${recording.title}". Reason: ${reason}`,
+                type: 'alert',
+                recipient: recording.faculty,
+                sender: req.user.userId
+            });
+        }
+
+        res.status(200).json({ success: true, data: recording });
+    } catch (error) {
+        res.status(500).json({ message: 'Error rejecting recorded class', error: error.message });
     }
 };
 
@@ -69,9 +127,9 @@ exports.getPendingAssessments = async (req, res) => {
     try {
         const tests = await Test.find({ status: 'draft' }).populate('faculty', 'name email').populate('subject', 'name').lean();
         const assignments = await Assignment.find({ status: 'draft' }).populate('facultyId', 'name email').lean();
-        res.status(200).json({ tests, assignments });
+        res.status(200).json({ success: true, data: { tests, assignments } });
     } catch (error) {
-        res.status(500).json({ message: 'Error fetching pending assessments', error: error.message });
+        res.status(500).json({ success: false, message: 'Error fetching pending assessments', error: error.message });
     }
 };
 
@@ -85,6 +143,7 @@ exports.approveAssessment = async (req, res) => {
         let updateData = {
             status: 'published',
             assignedBatches: assignedTo, 
+            assignedBy: req.user.userId,
             publishedAt: Date.now()
         };
 
@@ -101,9 +160,62 @@ exports.approveAssessment = async (req, res) => {
             await logAction(req, `Approved ${type.charAt(0).toUpperCase() + type.slice(1)}`, `Title: ${assessment.title}`, { targetId: assessment._id, targetModel: type === 'test' ? 'Test' : 'Assignment' });
         }
 
-        res.status(200).json(assessment);
+        res.status(200).json({ success: true, data: assessment });
     } catch (error) {
-        res.status(500).json({ message: 'Error approving assessment', error: error.message });
+        res.status(500).json({ success: false, message: 'Error approving assessment', error: error.message });
+    }
+};
+
+// Get Submissions for an Assessment
+exports.getAssessmentSubmissions = async (req, res) => {
+    try {
+        const { id, type } = req.params;
+        const Model = type === 'test' ? Test : Assignment;
+        console.log(`[INSTRUCTOR-DEBUG] Fetching submissions for ${type} ID: ${id}`);
+        const assessment = await Model.findById(id).populate('submissions.studentId', 'name email').lean();
+        
+        if (!assessment) {
+            console.log(`[INSTRUCTOR-DEBUG] Assessment ${id} NOT FOUND`);
+            return res.status(404).json({ success: false, message: 'Assessment not found' });
+        }
+        
+        console.log(`[INSTRUCTOR-DEBUG] Found assessment: ${assessment.title}, Submissions count: ${assessment.submissions?.length || 0}`);
+        res.status(200).json({ success: true, data: assessment.submissions || [] });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Error fetching submissions', error: error.message });
+    }
+};
+
+// Forward Submission to Faculty
+exports.forwardSubmissionToFaculty = async (req, res) => {
+    try {
+        const { id, type, studentId } = req.params;
+        const Model = type === 'test' ? Test : Assignment;
+        
+        const assessment = await Model.findById(id);
+        if (!assessment) return res.status(404).json({ message: 'Assessment not found' });
+        
+        const submission = assessment.submissions.find(s => s.studentId.toString() === studentId);
+        if (!submission) return res.status(404).json({ message: 'Submission not found' });
+        
+        submission.status = 'forwarded';
+        submission.forwardedAt = new Date();
+        await assessment.save();
+        
+        // Notify Faculty
+        const facultyId = type === 'test' ? assessment.faculty : assessment.facultyId;
+        await Notification.create({
+            message: `New student submission forwarded for grading: "${assessment.title}"`,
+            type: 'info',
+            recipient: facultyId,
+            sender: req.user.userId
+        });
+
+        await logAction(req, 'Forwarded Submission', `Assessment: ${assessment.title}, Student: ${studentId}`, { targetId: id, targetModel: type === 'test' ? 'Test' : 'Assignment' });
+
+        res.status(200).json({ success: true, message: 'Submission forwarded to faculty successfully' });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Error forwarding submission', error: error.message });
     }
 };
 
@@ -133,7 +245,7 @@ exports.getFaculties = async (req, res) => {
         
         const assignedFaculties = availableFaculties.filter(f => assignedSet.has(f._id.toString()));
         
-        res.status(200).json({ available: availableFaculties, assigned: assignedFaculties });
+        res.status(200).json({ success: true, data: { available: availableFaculties, assigned: assignedFaculties } });
     } catch (error) {
         res.status(500).json({ message: 'Error fetching faculties', error: error.message });
     }
@@ -143,9 +255,9 @@ exports.getFaculties = async (req, res) => {
 exports.getStudents = async (req, res) => {
     try {
         const students = await Student.find({}).select('-password');
-        res.status(200).json(students);
+        res.status(200).json({ success: true, data: students });
     } catch (error) {
-        res.status(500).json({ message: 'Error fetching students', error: error.message });
+        res.status(500).json({ success: false, message: 'Error fetching students', error: error.message });
     }
 };
 
@@ -156,10 +268,24 @@ exports.getStudentAnalysis = async (req, res) => {
         const student = await Student.findById(id).select('-password');
         if (!student) return res.status(404).json({ message: 'Student not found' });
         
-        // Fetch assignment submissions this student has made
-        const assignments = await Assignment.find({ 'submissions.student': id });
+        const assignments = await Assignment.find({ 'submissions.studentId': id }).lean();
+        const tests = await Test.find({ 'submissions.studentId': id }).lean();
         
-        res.status(200).json({ student, assignments });
+        const RecordedClass = require('../models/RecordedClass');
+        const recordedClassesRaw = await RecordedClass.find({ "watchProgress.student": id }).select('title contentType watchProgress').lean();
+        const recordedClasses = recordedClassesRaw.map(v => {
+            const progress = v.watchProgress.find(p => p.student?.toString() === id);
+            return { _id: v._id, title: v.title, type: v.contentType, progress };
+        });
+
+        const LiveClass = require('../models/LiveClass');
+        const liveClassesRaw = await LiveClass.find({ "attendance.studentId": id }).select('title status scheduledAt duration attendance').lean();
+        const liveClasses = liveClassesRaw.map(l => {
+             const att = l.attendance.find(a => a.studentId === id);
+             return { _id: l._id, title: l.title, scheduledAt: l.scheduledAt, duration: l.duration, status: l.status, attendance: att };
+        });
+        
+        res.status(200).json({ success: true, data: { student, assignments, tests, recordedClasses, liveClasses } });
     } catch (error) {
         res.status(500).json({ message: 'Error fetching student analysis', error: error.message });
     }
@@ -180,22 +306,56 @@ exports.addStudentNote = async (req, res) => {
             await logAction(req, 'Added Student Note', `Student: ${student.name}`, { targetId: student._id, targetModel: 'Student', details: { note } });
         }
 
-        res.status(200).json(student);
+        res.status(200).json({ success: true, data: student });
     } catch (error) {
         res.status(500).json({ message: 'Error adding student note', error: error.message });
     }
 };
 
+// [Removed Duplicate getBatchesByClass - see line 889]
+
 // Get Batches
 exports.getBatches = async (req, res) => {
     try {
-        const batches = await Batch.find({ instructor: req.user.userId })
+        const { managed } = req.query;
+        let query = {}; 
+        
+        // If managed is true, only return batches where this user is the primary instructor
+        if (managed === 'true' && req.user.role !== 'admin') {
+            query.instructor = req.user.userId;
+        }
+
+        const batches = await Batch.find(query)
             .populate('students', 'name email')
             .populate('instructor', 'name')
             .populate('studyClass', 'name targetGrade');
-        res.status(200).json(batches);
+        res.status(200).json({ success: true, data: batches });
     } catch (error) {
-        res.status(500).json({ message: 'Error fetching batches', error: error.message });
+        res.status(500).json({ success: false, message: 'Error fetching batches', error: error.message });
+    }
+};
+
+// Get Single Batch
+exports.getBatch = async (req, res) => {
+    try {
+        const batch = await Batch.findById(req.params.id)
+            .populate('students', 'name email phone studentClass isActive')
+            .populate('instructor', 'name email')
+            .populate('studyClass', 'name targetGrade');
+
+        if (!batch) {
+            return res.status(404).json({ success: false, message: 'Batch not found' });
+        }
+
+        // Basic permission check: only the assigned instructor or admin can get batch details
+        const instructorId = batch.instructor?._id ? batch.instructor._id.toString() : batch.instructor?.toString();
+        if (instructorId !== req.user.userId.toString() && req.user.role !== 'admin') {
+            return res.status(403).json({ success: false, message: 'Unauthorized access to this batch' });
+        }
+
+        res.status(200).json({ success: true, data: batch });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Error fetching batch details', error: error.message });
     }
 };
 
@@ -214,7 +374,7 @@ exports.createBatch = async (req, res) => {
         
         // Populate studyClass so frontend updates seamlessly
         const populatedBatch = await Batch.findById(batch._id).populate('studyClass', 'name targetGrade');
-        res.status(201).json(populatedBatch);
+        res.status(201).json({ success: true, data: populatedBatch });
     } catch (error) {
         res.status(500).json({ message: 'Error creating batch', error: error.message });
     }
@@ -231,7 +391,7 @@ exports.updateBatchStudents = async (req, res) => {
             : { $pull: { students: studentId } };
             
         const batch = await Batch.findByIdAndUpdate(id, update, { new: true }).populate('students', 'name email');
-        res.status(200).json(batch);
+        res.status(200).json({ success: true, data: batch });
     } catch (error) {
         res.status(500).json({ message: 'Error updating batch students', error: error.message });
     }
@@ -248,9 +408,523 @@ exports.sendNotification = async (req, res) => {
             sender: req.user.userId
         });
         await notification.save();
-        res.status(201).json(notification);
+        res.status(201).json({ success: true, data: notification });
     } catch (error) {
         res.status(500).json({ message: 'Error sending notification', error: error.message });
+    }
+};
+
+// --- Subject Batch Assignments --- //
+
+exports.getBatchSubjects = async (req, res) => {
+    try {
+        const { id } = req.params; // batch id
+        const userId = req.user.userId || req.user._id;
+        
+        // Find all subjects (if admin, see all. if instructor, see assigned)
+        const query = req.user.role === 'admin' ? {} : { instructor: userId };
+        const allSubjects = await Subject.find(query).lean();
+        
+        // Mark which ones are assigned to this batch
+        const result = allSubjects.map(sub => ({
+            ...sub,
+            isAssigned: sub.assignedTo?.some(bid => bid.toString() === id.toString()) || false
+        }));
+        
+        res.status(200).json({ success: true, data: result });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Error fetching batch subjects', error: error.message });
+    }
+};
+
+exports.updateBatchSubjects = async (req, res) => {
+    try {
+        const { id } = req.params; // batch id
+        const { subjectIds } = req.body; // array of subject ids to be assigned
+        const userId = req.user.userId || req.user._id;
+
+        // 1. Remove this batch from ALL subjects where it might be assigned
+        await Subject.updateMany(
+            { assignedTo: id },
+            { $pull: { assignedTo: id } }
+        );
+
+        // 2. Add this batch to the newly selected subjects
+        if (subjectIds && subjectIds.length > 0) {
+            await Subject.updateMany(
+                { _id: { $in: subjectIds } },
+                { $addToSet: { assignedTo: id } }
+            );
+        }
+
+        await logAction(req, 'Updated Batch Subjects', `Batch: ${id}`, { targetId: id, targetModel: 'Batch', subjectCount: subjectIds?.length || 0 });
+        res.status(200).json({ success: true, message: 'Batch subjects updated successfully' });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Error updating batch subjects', error: error.message });
+    }
+};
+
+// --- Chapter Resource Approvals ---
+
+exports.getPendingChapterResources = async (req, res) => {
+    try {
+        console.log('DEBUG: Fetching pending for instructor:', req.user.userId || req.user._id);
+        const userId = req.user.userId || req.user._id;
+        const subjectQuery = req.user.role === 'admin' ? {} : { instructor: userId };
+        const instructorSubjects = await Subject.find(subjectQuery).select('_id');
+        const subjectIds = instructorSubjects.map(s => s._id);
+        console.log('DEBUG: Found subject IDs:', subjectIds);
+
+        const chapters = await Chapter.find({
+            subject: { $in: subjectIds },
+            $or: [
+                { 'notes.status': 'draft' },
+                { 'liveNotes.status': 'draft' },
+                { 'dpps.status': 'draft' },
+                { 'pyqs.status': 'draft' }
+            ]
+        }).populate('subject', 'name').populate('notes.uploadedBy liveNotes.uploadedBy dpps.uploadedBy pyqs.uploadedBy', 'name email');
+
+        const pending = [];
+        chapters.forEach(chap => {
+            ['notes', 'liveNotes', 'dpps', 'pyqs'].forEach(field => {
+                const draftResources = chap[field].filter(r => r.status === 'draft');
+                draftResources.forEach(r => {
+                    pending.push({
+                        _id: r._id,
+                        title: r.title,
+                        url: r.url,
+                        description: r.description,
+                        uploadedBy: r.uploadedBy,
+                        uploadedAt: r.uploadedAt,
+                        chapterId: chap._id,
+                        chapterName: chap.name,
+                        subjectName: chap.subject?.name,
+                        type: field.replace('s', '') // note, liveNote, dpp, pyq
+                    });
+                });
+            });
+        });
+
+        res.status(200).json({ success: true, data: pending });
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching pending chapter resources', error: error.message });
+    }
+};
+
+exports.getRecentChapterResources = async (req, res) => {
+    try {
+        const Subject = require('../models/Subject');
+        const userId = req.user.userId || req.user._id;
+        const subjectQuery = req.user.role === 'admin' ? {} : { instructor: userId };
+        const subjects = await Subject.find(subjectQuery);
+        const subjectIds = subjects.map(s => s._id);
+
+        const chapters = await Chapter.find({ subject: { $in: subjectIds } })
+            .populate('subject', 'name');
+
+        let recent = [];
+        const fields = ['notes', 'liveNotes', 'dpps', 'pyqs'];
+
+        chapters.forEach(chap => {
+            fields.forEach(field => {
+                chap[field].forEach(r => {
+                    if (r.status === 'published') {
+                        recent.push({
+                            _id: r._id,
+                            title: r.title,
+                            url: r.url,
+                            description: r.description,
+                            uploadedBy: r.uploadedBy,
+                            uploadedAt: r.uploadedAt,
+                            publishedAt: r.publishedAt || r.uploadedAt, // Fallback for legacy items
+                            chapterId: chap._id,
+                            chapterName: chap.name,
+                            subjectName: chap.subject?.name,
+                            type: field.replace('s', '') // note, liveNote, dpp, pyq
+                        });
+                    }
+                });
+            });
+        });
+
+        // Sort by publishedAt DESC and take top 20
+        recent.sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt));
+        recent = recent.slice(0, 20);
+
+        res.status(200).json({ success: true, data: recent });
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching recent resources', error: error.message });
+    }
+};
+
+exports.approveChapterResource = async (req, res) => {
+    try {
+        const { chapterId, resourceId } = req.params;
+        const { batchIds } = req.body;
+
+        const chapter = await Chapter.findById(chapterId);
+        if (!chapter) return res.status(404).json({ message: 'Chapter not found' });
+
+        const result = getChapterResource(chapter, resourceId);
+        if (!result) return res.status(404).json({ message: 'Resource not found' });
+
+        result.resource.status = 'published';
+        result.resource.publishedAt = Date.now();
+        result.resource.assignedTo = batchIds;
+
+        // Auto-assign parent chapter to these batches as well
+        batchIds.forEach(bid => {
+            if (!chapter.assignedTo.includes(bid)) {
+                chapter.assignedTo.push(bid);
+            }
+        });
+
+        await chapter.save();
+
+        // Also ensure the Subject is assigned to these batches
+        const Subject = require('../models/Subject');
+        await Subject.findByIdAndUpdate(chapter.subject, {
+            $addToSet: { assignedTo: { $each: batchIds } }
+        });
+
+        await logAction(req, 'Approved Chapter Resource', `Title: ${result.resource.title}`, { targetId: resourceId, targetModel: 'Chapter' });
+        res.status(200).json({ success: true, message: 'Resource approved successfully', data: result.resource });
+    } catch (error) {
+        res.status(500).json({ message: 'Error approving chapter resource', error: error.message });
+    }
+};
+
+exports.rejectChapterResource = async (req, res) => {
+    try {
+        const { chapterId, resourceId } = req.params;
+        const { reason } = req.body;
+
+        const chapter = await Chapter.findById(chapterId);
+        if (!chapter) return res.status(404).json({ message: 'Chapter not found' });
+
+        const result = getChapterResource(chapter, resourceId);
+        if (!result) return res.status(404).json({ message: 'Resource not found' });
+
+        result.resource.status = 'rejected';
+        result.resource.rejectionReason = reason;
+        await chapter.save();
+
+        // Notify Faculty
+        await Notification.create({
+            message: `Resource Rejected: "${result.resource.title}". Reason: ${reason}`,
+            type: 'alert',
+            recipient: result.resource.uploadedBy,
+            sender: req.user.userId
+        });
+
+        await logAction(req, 'Rejected Chapter Resource', `Title: ${result.resource.title}`, { targetId: resourceId, targetModel: 'Chapter' });
+        res.status(200).json({ success: true, message: 'Resource rejected', data: result.resource });
+    } catch (error) {
+        res.status(500).json({ message: 'Error rejecting chapter resource', error: error.message });
+    }
+};
+
+// --- Content Verification Queue (Unified) --- //
+
+exports.getContentForVerification = async (req, res) => {
+    try {
+        const { status } = req.query; // 'all', 'pending', 'approved', 'rejected'
+        const userId = req.user.userId || req.user._id;
+        const Subject = require('../models/Subject');
+        const Chapter = require('../models/Chapter');
+        const RecordedClass = require('../models/RecordedClass');
+
+        const subjectQuery = req.user.role === 'admin' ? {} : { instructor: userId };
+        const instructorSubjects = await Subject.find(subjectQuery).select('_id name');
+        const subjectIds = instructorSubjects.map(s => s._id);
+
+        const facultyQuery = req.user.role === 'admin' ? {} : { assignedInstructor: userId };
+        const assignedFaculties = await Faculty.find(facultyQuery).select('_id');
+        const facultyIds = assignedFaculties.map(f => f._id);
+
+        const dbStatus = status === 'pending' ? 'draft' : (status === 'approved' ? 'published' : (status === 'rejected' ? 'rejected' : (status === 'deletion' ? 'pending_delete' : null)));
+
+        // Get Videos
+        let videoQuery = req.user.role === 'admin' ? {} : {
+            $or: [
+                { subject: { $in: subjectIds } },
+                { faculty: { $in: facultyIds } }
+            ]
+        };
+        if (dbStatus) videoQuery.status = dbStatus;
+        if (status === 'all') videoQuery.status = { $in: ['draft', 'published', 'rejected'] };
+
+        const videos = await RecordedClass.find(videoQuery)
+            .populate('faculty', 'name')
+            .populate('subject', 'name')
+            .lean();
+
+        // Get Chapters to extract resources
+        const chapterQuery = req.user.role === 'admin' ? {} : {
+            $or: [
+                { subject: { $in: subjectIds } },
+                { 'notes.uploadedBy': { $in: facultyIds } },
+                { 'liveNotes.uploadedBy': { $in: facultyIds } },
+                { 'dpps.uploadedBy': { $in: facultyIds } },
+                { 'pyqs.uploadedBy': { $in: facultyIds } }
+            ]
+        };
+
+        const chapters = await Chapter.find(chapterQuery)
+            .populate('subject', 'name')
+            .populate('notes.uploadedBy liveNotes.uploadedBy dpps.uploadedBy pyqs.uploadedBy', 'name');
+
+        let allContent = [];
+
+        videos.forEach(v => {
+            allContent.push({
+                _id: v._id,
+                title: v.title,
+                thumbnail: v.thumbnail,
+                url: v.videoUrl, // Pass URL for frontend preview
+                assignmentUrl: v.assignmentUrl, // Associated exercise PDF
+                assignedTo: v.assignedTo || [],
+                type: 'video',
+                createdAt: v.createdAt || v.publishedAt,
+                faculty: v.faculty || { name: 'Unknown' },
+                subject: v.subject || { name: 'Unknown' },
+                approvalStatus: v.status === 'draft' ? 'pending' : (v.status === 'published' ? 'approved' : v.status),
+                itemModel: 'RecordedClass'
+            });
+        });
+
+        chapters.forEach(chap => {
+            ['notes', 'liveNotes', 'dpps', 'pyqs'].forEach(field => {
+                let resources = chap[field];
+                if (dbStatus) {
+                    resources = resources.filter(r => r.status === dbStatus);
+                } else if (status === 'all') {
+                    resources = resources.filter(r => ['draft', 'published', 'rejected'].includes(r.status));
+                }
+
+                // If not admin, and chapter is outside assigned subjects, strictly filter to assigned faculty resources
+                if (req.user.role !== 'admin' && !subjectIds.some(sid => sid.equals(chap.subject?._id || chap.subject))) {
+                    resources = resources.filter(r => facultyIds.some(fid => fid.equals(r.uploadedBy?._id || r.uploadedBy)));
+                }
+
+                resources.forEach(r => {
+                    allContent.push({
+                        _id: r._id,
+                        title: r.title,
+                        url: r.url, // Pass URL for frontend preview
+                        assignedTo: r.assignedTo || [],
+                        type: field.replace('s', ''), // note, liveNote, dpp, pyq
+                        createdAt: r.uploadedAt,
+                        faculty: r.uploadedBy || { name: 'Unknown' },
+                        subject: chap.subject || { name: 'Unknown' },
+                        approvalStatus: r.status === 'draft' ? 'pending' : (r.status === 'published' ? 'approved' : r.status.replace('_', ' ')),
+                        itemModel: 'ChapterResource',
+                        chapterId: chap._id,
+                        resourceField: field
+                    });
+                });
+            });
+        });
+
+        // Get Tests
+        let testQuery = req.user.role === 'admin' ? {} : {
+            $or: [
+                { subject: { $in: subjectIds } },
+                { faculty: { $in: facultyIds } }
+            ]
+        };
+        if (dbStatus) testQuery.status = dbStatus;
+        if (status === 'all') testQuery.status = { $in: ['draft', 'published', 'rejected'] };
+
+        const tests = await Test.find(testQuery).populate('faculty', 'name').populate('subject', 'name').lean();
+        tests.forEach(t => {
+            allContent.push({
+                _id: t._id,
+                title: t.title,
+                url: t.fileUrl,
+                assignedTo: t.assignedTo || [],
+                type: 'test',
+                createdAt: t.createdAt,
+                faculty: t.faculty || { name: 'Unknown' },
+                subject: t.subject || { name: 'Unknown' },
+                approvalStatus: t.status === 'draft' ? 'pending' : (t.status === 'published' ? 'approved' : t.status.replace('_', ' ')),
+                itemModel: 'Test'
+            });
+        });
+
+        // Get Assignments
+        let asgQuery = req.user.role === 'admin' ? {} : {
+            $or: [
+                { subject: { $in: subjectIds } },
+                { facultyId: { $in: facultyIds } }
+            ]
+        };
+        if (dbStatus) asgQuery.status = dbStatus;
+        if (status === 'all') asgQuery.status = { $in: ['draft', 'published', 'rejected'] };
+
+        const assignments = await Assignment.find(asgQuery).populate('facultyId', 'name').populate('subject', 'name').lean();
+        assignments.forEach(a => {
+            allContent.push({
+                _id: a._id,
+                title: a.title,
+                url: a.fileUrl,
+                assignedTo: a.assignedBatches || [],
+                type: 'assignment',
+                createdAt: a.createdAt,
+                faculty: a.facultyId || { name: 'Unknown' },
+                subject: a.subject || { name: 'Unknown' },
+                approvalStatus: a.status === 'draft' ? 'pending' : (a.status === 'published' ? 'approved' : a.status.replace('_', ' ')),
+                itemModel: 'Assignment'
+            });
+        });
+
+        // Sort by date newest first
+        allContent.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+        res.status(200).json({ success: true, data: allContent });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Error fetching content', error: error.message });
+    }
+};
+
+exports.updateContentStatus = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { approvalStatus, itemModel, chapterId, batchIds, rejectionReason, deadline, maxMarks } = req.body; 
+        const dbStatus = approvalStatus === 'approved' ? 'published' : approvalStatus; // approve -> published, reject -> rejected
+        
+        let updateOps = { status: dbStatus };
+        if (rejectionReason) updateOps.rejectionReason = rejectionReason;
+        if (deadline) updateOps.deadline = new Date(deadline);
+        if (maxMarks) updateOps.maxMarks = Number(maxMarks);
+        if (chapterId) updateOps.chapter = chapterId;
+
+        if (dbStatus === 'published' && batchIds && batchIds.length > 0) {
+            updateOps.$addToSet = { assignedTo: { $each: batchIds } };
+            // For Assignments, use assignedBatches
+            if (itemModel === 'Assignment') {
+                updateOps.$addToSet = { assignedBatches: { $each: batchIds } };
+            }
+        }
+
+        let contentObj;
+        if (itemModel === 'RecordedClass') {
+            contentObj = await RecordedClass.findByIdAndUpdate(id, updateOps, { new: true });
+        } else if (itemModel === 'Test') {
+            contentObj = await Test.findByIdAndUpdate(id, updateOps, { new: true });
+        } else if (itemModel === 'Assignment') {
+            contentObj = await Assignment.findByIdAndUpdate(id, updateOps, { new: true });
+        } else if (itemModel === 'ChapterResource') {
+            const chapter = await Chapter.findById(chapterId);
+            if (chapter) {
+                let foundResource = null;
+                for (const field of ['notes', 'liveNotes', 'dpps', 'pyqs']) {
+                    foundResource = chapter[field].find(r => r._id.toString() === id);
+                    if (foundResource) {
+                        foundResource.status = dbStatus;
+                        if (rejectionReason) foundResource.rejectionReason = rejectionReason;
+                        if (dbStatus === 'published') {
+                            foundResource.publishedAt = Date.now();
+                            if (batchIds && batchIds.length > 0) {
+                                foundResource.assignedTo = [...new Set([...(foundResource.assignedTo || []), ...batchIds])];
+                                chapter.assignedTo = [...new Set([...(chapter.assignedTo || []), ...batchIds])];
+                            }
+                        }
+                        break;
+                    }
+                }
+                if (foundResource) {
+                    await chapter.save();
+                    contentObj = foundResource;
+                }
+            }
+        }
+
+        // Notify Faculty if rejected
+        if (approvalStatus === 'rejected' && contentObj) {
+            const facultyId = contentObj.faculty || contentObj.facultyId || contentObj.uploadedBy;
+            if (facultyId) {
+                await Notification.create({
+                    message: `Content Rejected: "${contentObj.title}". Reason: ${rejectionReason}`,
+                    type: 'alert',
+                    recipient: facultyId,
+                    sender: req.user.userId
+                });
+            }
+        }
+
+        res.status(200).json({ success: true, message: `Content ${approvalStatus}` });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Error updating content status', error: error.message });
+    }
+};
+
+exports.updateAssignedContent = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { itemModel, chapterId, title, description, batchIds } = req.body;
+
+        const updateData = { title, description };
+        if (batchIds) {
+            updateData.assignedTo = batchIds;
+            if (itemModel === 'Assignment') updateData.assignedBatches = batchIds;
+        }
+
+        if (itemModel === 'RecordedClass') {
+            await RecordedClass.findByIdAndUpdate(id, updateData);
+        } else if (itemModel === 'Test') {
+            await Test.findByIdAndUpdate(id, updateData);
+        } else if (itemModel === 'Assignment') {
+            await Assignment.findByIdAndUpdate(id, updateData);
+        } else if (itemModel === 'ChapterResource') {
+            const chapter = await Chapter.findById(chapterId);
+            if (chapter) {
+                for (const field of ['notes', 'liveNotes', 'dpps', 'pyqs']) {
+                    const r = chapter[field].find(res => res._id.toString() === id);
+                    if (r) {
+                        r.title = title || r.title;
+                        r.description = description || r.description;
+                        if (batchIds) r.assignedTo = batchIds;
+                        break;
+                    }
+                }
+                await chapter.save();
+            }
+        }
+        res.status(200).json({ success: true, message: 'Content updated successfully' });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Error updating content', error: error.message });
+    }
+};
+
+exports.deleteAssignedContent = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { itemModel, chapterId } = req.query;
+
+        if (itemModel === 'RecordedClass') {
+            await RecordedClass.findByIdAndDelete(id);
+        } else if (itemModel === 'Test') {
+            await Test.findByIdAndDelete(id);
+        } else if (itemModel === 'Assignment') {
+            await Assignment.findByIdAndDelete(id);
+        } else if (itemModel === 'ChapterResource') {
+            const chapter = await Chapter.findById(chapterId);
+            if (chapter) {
+                for (const field of ['notes', 'liveNotes', 'dpps', 'pyqs']) {
+                    const r = chapter[field].find(res => res._id.toString() === id);
+                    if (r) {
+                        chapter[field].pull(id);
+                        break;
+                    }
+                }
+                await chapter.save();
+            }
+        }
+        res.status(200).json({ success: true, message: 'Content deleted successfully' });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Error deleting content', error: error.message });
     }
 };
 
@@ -259,11 +933,13 @@ exports.sendNotification = async (req, res) => {
 exports.getStudyClasses = async (req, res) => {
     try {
         const classes = await StudyClass.find({}).sort({ targetGrade: 1 });
-        res.status(200).json(classes);
+        res.status(200).json({ success: true, data: classes });
     } catch (error) {
         res.status(500).json({ message: 'Error fetching classes', error: error.message });
     }
 };
+
+
 
 exports.createStudyClass = async (req, res) => {
     try {
@@ -274,7 +950,7 @@ exports.createStudyClass = async (req, res) => {
             instructor: req.user.userId
         });
         await studyClass.save();
-        res.status(201).json(studyClass);
+        res.status(201).json({ success: true, data: studyClass });
     } catch (error) {
         res.status(500).json({ message: 'Error creating class', error: error.message });
     }
@@ -287,7 +963,7 @@ exports.moveStudentBatch = async (req, res) => {
         await Batch.findByIdAndUpdate(fromBatchId, { $pull: { students: studentId } });
         const newBatch = await Batch.findByIdAndUpdate(toBatchId, { $addToSet: { students: studentId } }, { new: true }).populate('students', 'name email').populate('studyClass', 'name targetGrade');
         
-        res.status(200).json({ message: "Student moved successfully", newBatch });
+        res.status(200).json({ success: true, message: "Student moved successfully", data: newBatch });
     } catch (error) {
         res.status(500).json({ message: 'Error moving student', error: error.message });
     }
@@ -302,7 +978,7 @@ exports.updateStudyClass = async (req, res) => {
         studyClass.name = req.body.name || studyClass.name;
         studyClass.targetGrade = req.body.targetGrade || studyClass.targetGrade;
         const updated = await studyClass.save();
-        res.json(updated);
+        res.status(200).json({ success: true, data: updated });
     } catch (error) {
         res.status(500).json({ message: 'Server error updating class', error: error.message });
     }
@@ -321,7 +997,7 @@ exports.deleteStudyClass = async (req, res) => {
         }
 
         await StudyClass.deleteOne({ _id: studyClass._id });
-        res.json({ message: 'Study Class deleted successfully' });
+        res.status(200).json({ success: true, message: 'Study Class deleted successfully' });
     } catch (error) {
         res.status(500).json({ message: 'Server error deleting class', error: error.message });
     }
@@ -339,7 +1015,7 @@ exports.updateBatch = async (req, res) => {
         
         // Return populated so frontend updates seamlessly
         const populatedBatch = await Batch.findById(updated._id).populate('students', 'name email').populate('studyClass', 'name targetGrade');
-        res.json(populatedBatch);
+        res.status(200).json({ success: true, data: populatedBatch });
     } catch (error) {
         res.status(500).json({ message: 'Server error updating batch', error: error.message });
     }
@@ -357,13 +1033,22 @@ exports.deleteBatch = async (req, res) => {
         }
 
         await Batch.deleteOne({ _id: batch._id });
-        res.json({ message: 'Batch deleted successfully' });
+        res.status(200).json({ success: true, message: 'Batch deleted successfully' });
     } catch (error) {
         res.status(500).json({ message: 'Server error deleting batch', error: error.message });
     }
 };
 
-// --- Student Management Mutators --- //
+// --- Student Management --- //
+
+exports.getStudents = async (req, res) => {
+    try {
+        const students = await Student.find({ role: 'student' }).sort({ name: 1 });
+        res.status(200).json({ success: true, data: students });
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching students', error: error.message });
+    }
+};
 
 exports.updateStudent = async (req, res) => {
     try {
@@ -384,10 +1069,65 @@ exports.updateStudent = async (req, res) => {
         const updatedStudent = await student.save();
 
         await logAction(req, 'Updated Student', `Student: ${updatedStudent.name}`, { targetId: updatedStudent._id, targetModel: 'Student' });
-
-        res.json(updatedStudent);
+        res.status(200).json({ success: true, data: updatedStudent });
     } catch (error) {
         res.status(500).json({ message: 'Error updating student', error: error.message });
+    }
+};
+
+exports.createStudent = async (req, res) => {
+    try {
+        const { name, email, password, studentClass, phone, parentName, parentPhone, school, dob, district } = req.body;
+
+        const userExists = await Student.findOne({ email });
+        if (userExists) return res.status(400).json({ message: 'Student already exists' });
+
+        const student = new Student({
+            name, email, password, studentClass, phone, parentName, parentPhone, school, dob, district,
+            isVerified: true, // Instructor created students are pre-verified
+            isActive: true
+        });
+
+        await student.save();
+
+        // Manual Batch Assignment
+        if (req.body.batchId) {
+            try {
+                const batch = await Batch.findById(req.body.batchId);
+                if (batch) {
+                    if (!batch.students.includes(student._id)) {
+                        batch.students.push(student._id);
+                        await batch.save();
+                        console.log(`[INSTRUCTOR-BATCH] Manually added student to batch: ${batch.name}`);
+                    }
+                }
+            } catch (err) {
+                console.error('Manual batch assignment fail:', err.message);
+            }
+        }
+
+        // Send Welcome Email
+        try {
+            const portalUrl = `${req.protocol}://${req.get('host')}`;
+            const html = `
+                <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
+                    <h2 style="color: #4f46e5;">Welcome to Base Learn, ${name}! 👋</h2>
+                    <p>Your student account has been created by your Instructor on Base Learn. You can now log in to your student portal.</p>
+                    <div style="background: #f9fafb; padding: 15px; border-radius: 8px; margin: 20px 0; border: 1px solid #e5e7eb;">
+                        <p style="margin: 5px 0;"><strong>Login URL:</strong> <a href="${portalUrl}/login">${portalUrl}/login</a></p>
+                        <p style="margin: 5px 0;"><strong>Email:</strong> ${email}</p>
+                        <p style="margin: 5px 0;"><strong>Password:</strong> ${password}</p>
+                    </div>
+                    <p style="color: #6b7280; font-size: 14px;">We recommend changing your password after your first login.</p>
+                </div>
+            `;
+            await sendEmail({ email, subject: 'Base Learn: Your Student Account Details', html });
+        } catch (emailErr) { console.error('Welcome email failed:', emailErr.message); }
+
+        await logAction(req, 'Created Student', `Student: ${student.name}`, { targetId: student._id, targetModel: 'Student' });
+        res.status(201).json({ success: true, data: student });
+    } catch (error) {
+        res.status(500).json({ message: 'Error creating student', error: error.message });
     }
 };
 
@@ -402,7 +1142,7 @@ exports.toggleStudentStatus = async (req, res) => {
         const action = updatedStudent.isActive ? 'Activated Student' : 'Blocked Student';
         await logAction(req, action, `Student: ${updatedStudent.name}`, { targetId: updatedStudent._id, targetModel: 'Student', details: { isActive: updatedStudent.isActive } });
 
-        res.json({ message: updatedStudent.isActive ? 'Student unblocked' : 'Student blocked', isActive: updatedStudent.isActive });
+        res.status(200).json({ success: true, message: updatedStudent.isActive ? 'Student unblocked' : 'Student blocked', data: { isActive: updatedStudent.isActive } });
     } catch (error) {
         res.status(500).json({ message: 'Error toggling student status', error: error.message });
     }
@@ -424,7 +1164,7 @@ exports.deleteStudent = async (req, res) => {
         await logAction(req, 'Removed Student', `Student: ${student.name}`, { targetId: student._id, targetModel: 'Student' });
 
         await Student.deleteOne({ _id: student._id });
-        res.json({ message: 'Student deleted successfully and removed from batches' });
+        res.status(200).json({ success: true, message: 'Student deleted successfully and removed from batches' });
     } catch (error) {
         res.status(500).json({ message: 'Error deleting student', error: error.message });
     }
@@ -438,40 +1178,91 @@ exports.getAssignments = async (req, res) => {
             .populate('assignedBatches', 'name')
             .populate('assignedClasses', 'name targetGrade')
             .populate('assignedStudents', 'name email');
-        res.status(200).json(assignments);
+        res.status(200).json({ success: true, data: assignments });
     } catch (error) {
-        res.status(500).json({ message: 'Error fetching assignments', error: error.message });
+        res.status(500).json({ success: false, message: 'Error fetching assignments', error: error.message });
     }
 };
 
 exports.distributeAssignment = async (req, res) => {
     try {
         const { id } = req.params;
-        const { targetType, targetId } = req.body; // targetType: 'batch', 'class', 'student'
+        const { targetType, targetId, type } = req.body; // targetType: 'batch', 'class', 'student', type: 'test' | 'assignment'
         
-        const assignment = await Assignment.findById(id);
-        if (!assignment) return res.status(404).json({ message: 'Assignment not found' });
+        const Model = type === 'test' ? Test : Assignment;
+        const assessment = await Model.findById(id);
+        if (!assessment) return res.status(404).json({ message: 'Assessment not found' });
         
         let updateField = '';
-        if (targetType === 'batch') updateField = 'assignedBatches';
-        else if (targetType === 'class') updateField = 'assignedClasses';
-        else if (targetType === 'student') updateField = 'assignedStudents';
-        else return res.status(400).json({ message: 'Invalid target type' });
+        if (targetType === 'batch') {
+            updateField = type === 'test' ? 'assignedTo' : 'assignedBatches';
+        } else if (targetType === 'class') {
+            updateField = 'assignedClasses';
+        } else if (targetType === 'student') {
+            updateField = 'assignedStudents';
+        } else {
+            return res.status(400).json({ message: 'Invalid target type' });
+        }
         
-        const updatedAssignment = await Assignment.findByIdAndUpdate(
+        const updatedAssessment = await Model.findByIdAndUpdate(
             id,
             { $addToSet: { [updateField]: targetId } },
             { new: true }
         )
-        .populate('assignedBatches', 'name')
+        .populate(type === 'test' ? 'assignedTo' : 'assignedBatches', 'name')
         .populate('assignedClasses', 'name targetGrade')
         .populate('assignedStudents', 'name email');
 
-        await logAction(req, 'Distributed Assignment', `Assignment: ${assignment.title}`, { targetId: assignment._id, targetModel: 'Assignment', details: { targetType, targetId } });
+        await logAction(req, 'Distributed Assessment', `Title: ${assessment.title}`, { targetId: assessment._id, targetModel: type === 'test' ? 'Test' : 'Assignment', details: { targetType, targetId } });
             
-        res.status(200).json(updatedAssignment);
+        res.status(200).json({ success: true, data: updatedAssessment });
     } catch (error) {
         res.status(500).json({ message: 'Error distributing assignment', error: error.message });
+    }
+};
+
+// GET /api/instructor/assessments/:id/:type/submissions
+exports.getAssessmentSubmissions = async (req, res) => {
+    try {
+        const { id, type } = req.params;
+        const Model = type === 'test' ? Test : Assignment;
+        
+        const assessment = await Model.findById(id).populate('submissions.studentId', 'name email').lean();
+        if (!assessment) return res.status(404).json({ message: 'Assessment not found' });
+        
+        // Return only submissions
+        res.status(200).json({ success: true, data: assessment.submissions || [] });
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching submissions', error: error.message });
+    }
+};
+
+// POST /api/instructor/assessments/:id/:type/forward/:studentId
+exports.forwardSubmissionToFaculty = async (req, res) => {
+    try {
+        const { id, type, studentId } = req.params;
+        const Model = type === 'test' ? Test : Assignment;
+        
+        const assessment = await Model.findById(id);
+        if (!assessment) return res.status(404).json({ message: 'Assessment not found' });
+        
+        const submission = assessment.submissions.find(s => s.studentId.toString() === studentId);
+        if (!submission) return res.status(404).json({ message: 'Submission not found' });
+        
+        if (submission.status === 'forwarded' || submission.status === 'graded') {
+            return res.status(400).json({ message: 'Submission already forwarded or graded' });
+        }
+        
+        submission.status = 'forwarded';
+        submission.forwardedAt = new Date();
+        
+        await assessment.save();
+        
+        await logAction(req, 'Forwarded Submission', `Assessment: ${assessment.title}, Student ID: ${studentId}`, { targetId: id, targetModel: type === 'test' ? 'Test' : 'Assignment' });
+        
+        res.status(200).json({ success: true, message: 'Submission forwarded to faculty successfully' });
+    } catch (error) {
+        res.status(500).json({ message: 'Error forwarding submission', error: error.message });
     }
 };
 
@@ -519,18 +1310,67 @@ exports.requestProfileUpdate = async (req, res) => {
             recipient: 'all_admins',
             sender: req.user.userId
         });
-
-        res.status(201).json(request);
+        res.status(201).json({ success: true, data: request });
     } catch (error) {
         res.status(500).json({ message: 'Error submitting profile update request', error: error.message });
+    }
+};
+
+// GET /api/instructor/assessments/active
+exports.getActiveAssessments = async (req, res) => {
+    try {
+        const tests = await Test.find({ status: 'published' })
+            .populate('subject', 'name')
+            .populate('chapter', 'name')
+            .populate('assignedTo', 'name')
+            .lean();
+            
+        const assignments = await Assignment.find({ status: 'published' })
+            .populate('subject', 'name')
+            .populate('chapter', 'name')
+            .populate('assignedBatches', 'name')
+            .lean();
+            
+        res.status(200).json({ 
+            success: true, 
+            data: { 
+                tests: tests.map(t => ({...t, assessmentType: 'test'})), 
+                assignments: assignments.map(a => ({...a, assessmentType: 'assignment'})) 
+            } 
+        });
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching active assessments', error: error.message });
     }
 };
 
 exports.getPendingProfileRequest = async (req, res) => {
     try {
         const pending = await ProfileUpdateRequest.findOne({ userId: req.user.userId, status: 'pending' });
-        res.status(200).json(pending || null);
+        res.status(200).json({ success: true, data: pending || null });
     } catch (error) {
         res.status(500).json({ message: 'Error fetching pending request', error: error.message });
+    }
+};
+
+// GET /api/instructor/batches-by-class
+exports.getBatchesByClass = async (req, res) => {
+    try {
+        const { className } = req.query;
+        if (!className) return res.status(400).json({ message: 'Class name is required' });
+
+        const studyClass = await StudyClass.findOne({ 
+            $or: [{ name: className }, { targetGrade: className }] 
+        });
+        
+        if (!studyClass) return res.status(200).json({ success: true, data: [] });
+
+        // Only return batches managed for this class
+        const batches = await Batch.find({ 
+            studyClass: studyClass._id
+        }).populate('instructor', 'name email');
+        
+        res.status(200).json({ success: true, data: batches });
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching batches', error: error.message });
     }
 };

@@ -12,6 +12,8 @@ const instructorSchema = new mongoose.Schema({
     teachingMode: { type: String, enum: ['online', 'offline', 'hybrid'], default: 'online' },
     isVerified: { type: Boolean, default: true },
     profilePhoto: { type: String, default: '' },
+    specialization: { type: String, default: '' },
+    about: { type: String, default: 'Educational leader and academic strategist.' },
     isActive: { type: Boolean, default: true }
 }, { timestamps: true });
 

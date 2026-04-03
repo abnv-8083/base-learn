@@ -13,7 +13,10 @@ const ProfileUpdateRequest = require('../models/ProfileUpdateRequest');
 const Notification = require('../models/Notification');
 const logAction = require('../utils/logAction');
 const sendEmail = require('../utils/sendEmail');
+const SystemSettings = require('../models/SystemSettings');
+const AdmissionEnquiry = require('../models/AdmissionEnquiry');
 const crypto = require('crypto');
+const whatsappService = require('../utils/whatsappService');
 
 // Helper to find a user across all collections
 const findUserById = async (id) => {
@@ -45,7 +48,7 @@ exports.getDashboardStats = asyncHandler(async (req, res) => {
     const paidStudents = await Student.countDocuments({ hasPaid: true });
     const revenue = `₹${(paidStudents * 3500).toLocaleString('en-IN')}`;
 
-    res.status(200).json({ students, faculty, instructors, classes, subjects, revenue, enrollments: paidStudents });
+    res.status(200).json({ success: true, data: { students, faculty, instructors, classes, subjects, revenue, enrollments: paidStudents } });
 });
 
 // GET /api/admin/users?role=student|faculty|instructor
@@ -55,7 +58,7 @@ exports.getUsers = asyncHandler(async (req, res) => {
     if (!Model) return res.status(400).json({ message: 'Invalid role requested' });
 
     const users = await Model.find({}).select('-password').sort({ createdAt: -1 });
-    res.status(200).json(users);
+    res.status(200).json({ success: true, data: users });
 });
 
 // POST /api/admin/users
@@ -70,10 +73,26 @@ exports.createUser = asyncHandler(async (req, res) => {
     if (exists) return res.status(400).json({ message: `A ${role} with this email already exists.` });
 
     const user = await Model.create({ name, email, password, role, isVerified: true, ...rest });
+
+    // --- NEW: Manual Batch Assignment for Admin-created Students ---
+    if (role === 'student' && req.body.batchId) {
+        try {
+            const batch = await Batch.findById(req.body.batchId);
+            if (batch) {
+                if (!batch.students.includes(user._id)) {
+                    batch.students.push(user._id);
+                    await batch.save();
+                    console.log(`[ADMIN-BATCH] Manually added student to batch: ${batch.name}`);
+                }
+            }
+        } catch (err) {
+            console.error('Manual batch assignment fail:', err.message);
+        }
+    }
     
     await logAction(req, `Created ${role}`, `User: ${user.name}`, { targetId: user._id, targetModel: role.charAt(0).toUpperCase() + role.slice(1) });
 
-    if (role === 'faculty' || role === 'instructor') {
+    if (role === 'faculty' || role === 'instructor' || role === 'student') {
         try {
             const portalUrl = `${req.protocol}://${req.get('host')}`;
             const detailsHtml = Object.entries(rest).map(([k, v]) => `<p style="margin: 4px 0; color: #475569;"><strong>${k}:</strong> ${v}</p>`).join('');
@@ -130,7 +149,7 @@ exports.createUser = asyncHandler(async (req, res) => {
         } catch (e) { console.error('Email fail:', e.message); }
     }
 
-    res.status(201).json(user);
+    res.status(201).json({ success: true, data: user });
 });
 
 // PUT /api/admin/users/:id
@@ -152,7 +171,7 @@ exports.updateUser = asyncHandler(async (req, res) => {
 
     if (!user) return res.status(404).json({ message: 'User not found' });
     await logAction(req, 'Updated User', `User: ${user.name}`, { targetId: user._id, targetModel: user.role });
-    res.status(200).json(user);
+    res.status(200).json({ success: true, data: user });
 });
 
 // DELETE /api/admin/users/:id
@@ -164,7 +183,7 @@ exports.deleteUser = asyncHandler(async (req, res) => {
     await logAction(req, 'Deleted User', `User: ${user.name}`, { targetId: user._id, targetModel: user.role });
     await Model.findByIdAndDelete(req.params.id);
     
-    res.status(200).json({ message: 'User deleted' });
+    res.status(200).json({ success: true, message: 'User deleted' });
 });
 
 // PATCH /api/admin/users/:id/status
@@ -179,34 +198,40 @@ exports.toggleUserStatus = asyncHandler(async (req, res) => {
     const action = user.isActive ? 'Activated User' : 'Blocked User';
     await logAction(req, action, `User: ${user.name}`, { targetId: user._id, targetModel: user.role });
 
-    res.status(200).json(user);
+    res.status(200).json({ success: true, data: user });
 });
 
 // ---- CLASS CRUD ----
 exports.getClasses = asyncHandler(async (req, res) => {
     const classes = await StudyClass.find({}).sort({ createdAt: -1 });
-    res.status(200).json(classes);
+    res.status(200).json({ success: true, data: classes });
 });
 
 exports.createClass = asyncHandler(async (req, res) => {
-    const { name, targetGrade } = req.body;
-    const instructor = await Instructor.findOne({}) || await Admin.findOne({});
+    const { name, targetGrade, instructorId } = req.body;
+    
+    // Find a valid instructor fallback if not provided
+    let instructor = instructorId;
+    if (!instructor) {
+        const foundInstructor = await Instructor.findOne({});
+        instructor = foundInstructor?._id || req.user.userId;
+    }
     
     const studyClass = await StudyClass.create({
         name,
-        targetGrade,
-        instructor: instructor?._id || req.user.userId
+        targetGrade: targetGrade || null,
+        instructor: instructor
     });
 
     await logAction(req, 'Created Class', `Class: ${name}`, { targetId: studyClass._id, targetModel: 'StudyClass' });
-    res.status(201).json(studyClass);
+    res.status(201).json({ success: true, data: studyClass });
 });
 
 exports.updateClass = asyncHandler(async (req, res) => {
     const studyClass = await StudyClass.findByIdAndUpdate(req.params.id, req.body, { new: true });
     if (!studyClass) return res.status(404).json({ message: 'Class not found' });
     await logAction(req, 'Updated Class', `Class: ${studyClass.name}`, { targetId: studyClass._id, targetModel: 'StudyClass' });
-    res.status(200).json(studyClass);
+    res.status(200).json({ success: true, data: studyClass });
 });
 
 exports.deleteClass = asyncHandler(async (req, res) => {
@@ -215,7 +240,7 @@ exports.deleteClass = asyncHandler(async (req, res) => {
         await logAction(req, 'Deleted Class', `Class: ${studyClass.name}`, { targetId: studyClass._id, targetModel: 'StudyClass' });
         await StudyClass.findByIdAndDelete(req.params.id);
     }
-    res.status(200).json({ message: 'Class deleted' });
+    res.status(200).json({ success: true, message: 'Class deleted' });
 });
 
 exports.getClassDetails = asyncHandler(async (req, res) => {
@@ -233,13 +258,80 @@ exports.getClassDetails = asyncHandler(async (req, res) => {
     }));
 
     res.status(200).json({
-        studyClass,
-        batches: result,
-        totalStudents: result.reduce((acc, b) => acc + b.studentCount, 0)
+        success: true,
+        data: {
+            studyClass,
+            batches: result,
+            totalStudents: result.reduce((acc, b) => acc + b.studentCount, 0)
+        }
     });
 });
 
+// GET /api/admin/batches-by-class
+exports.getBatchesByClass = asyncHandler(async (req, res) => {
+    const { className } = req.query;
+    if (!className) return res.status(400).json({ message: 'Class name is required' });
 
+    const studyClass = await StudyClass.findOne({ 
+        $or: [{ name: className }, { targetGrade: className }] 
+    });
+    
+    if (!studyClass) return res.status(200).json([]);
+
+    const batches = await Batch.find({ studyClass: studyClass._id })
+        .populate('instructor', 'name email');
+    
+    res.status(200).json({ success: true, data: batches });
+});
+
+// ---- BATCH CRUD (admin curriculum) ----
+exports.getBatches = asyncHandler(async (req, res) => {
+    const batches = await Batch.find({})
+        .populate('instructor', 'name email')
+        .populate('studyClass', 'name targetGrade')
+        .sort({ createdAt: -1 });
+    res.status(200).json({ success: true, data: batches });
+});
+
+exports.createBatch = asyncHandler(async (req, res) => {
+    const { name, studyClass, instructor, capacity, location, mode, description } = req.body;
+    if (!name || !studyClass || !instructor) {
+        return res.status(400).json({ message: 'Name, associated class, and instructor are required' });
+    }
+    const batch = await Batch.create({
+        name,
+        description: description || '',
+        studyClass,
+        instructor,
+        capacity: capacity !== undefined && capacity !== '' ? Number(capacity) : 30,
+        location: location || '',
+        mode: ['online', 'offline', 'hybrid'].includes(mode) ? mode : 'online'
+    });
+    const populated = await Batch.findById(batch._id)
+        .populate('instructor', 'name email')
+        .populate('studyClass', 'name targetGrade');
+    await logAction(req, 'Created Batch', `Batch: ${name}`, { targetId: batch._id, targetModel: 'Batch' });
+    res.status(201).json({ success: true, data: populated });
+});
+
+exports.updateBatch = asyncHandler(async (req, res) => {
+    const update = { ...req.body };
+    if (update.capacity !== undefined) update.capacity = Number(update.capacity);
+    const batch = await Batch.findByIdAndUpdate(req.params.id, update, { new: true })
+        .populate('instructor', 'name email')
+        .populate('studyClass', 'name targetGrade');
+    if (!batch) return res.status(404).json({ message: 'Batch not found' });
+    await logAction(req, 'Updated Batch', `Batch: ${batch.name}`, { targetId: batch._id, targetModel: 'Batch' });
+    res.status(200).json({ success: true, data: batch });
+});
+
+exports.deleteBatch = asyncHandler(async (req, res) => {
+    const batch = await Batch.findById(req.params.id);
+    if (!batch) return res.status(404).json({ message: 'Batch not found' });
+    await logAction(req, 'Deleted Batch', `Batch: ${batch.name}`, { targetId: batch._id, targetModel: 'Batch' });
+    await Batch.findByIdAndDelete(req.params.id);
+    res.status(200).json({ success: true, message: 'Batch deleted' });
+});
 
 // GET /api/admin/students/:id/details
 exports.getStudentDetails = asyncHandler(async (req, res) => {
@@ -252,7 +344,7 @@ exports.getStudentDetails = asyncHandler(async (req, res) => {
 
     const batches = await Batch.find({ students: studentId }).populate('studyClass');
 
-    res.status(200).json({ student, batches });
+    res.status(200).json({ success: true, data: { student, batches } });
 });
 
 // GET /api/admin/instructors/:id/details
@@ -271,13 +363,16 @@ exports.getInstructorDetails = asyncHandler(async (req, res) => {
     });
 
     res.status(200).json({
-        instructor,
-        studyClasses,
-        batches,
-        stats: {
-            totalClasses: studyClasses.length,
-            totalBatches: batches.length,
-            totalStudentsManaged
+        success: true,
+        data: {
+            instructor,
+            studyClasses,
+            batches,
+            stats: {
+                totalClasses: studyClasses.length,
+                totalBatches: batches.length,
+                totalStudentsManaged
+            }
         }
     });
 });
@@ -288,14 +383,20 @@ exports.uploadImage = asyncHandler(async (req, res) => {
         return res.status(400).json({ message: 'No file uploaded' });
     }
     const imageUrl = `/uploads/profiles/${req.file.filename}`;
-    res.status(200).json({ url: imageUrl });
+    res.status(200).json({ success: true, data: { url: imageUrl } });
 });
 
 exports.getActivityLogs = asyncHandler(async (req, res) => {
     const { role } = req.query;
     const filter = role && role !== 'all' ? { actorRole: role } : {};
     const logs = await ActivityLog.find(filter).sort({ createdAt: -1 }).limit(100);
-    res.status(200).json(logs);
+    res.status(200).json({ success: true, data: logs });
+});
+
+exports.clearActivityLogs = asyncHandler(async (req, res) => {
+    await ActivityLog.deleteMany({});
+    await logAction(req, 'Cleared Activity Logs', 'All system activity logs have been permanently deleted.');
+    res.status(200).json({ success: true, message: 'All logs cleared successfully' });
 });
 
 // GET /api/admin/faculty/:id/details
@@ -327,11 +428,14 @@ exports.getFacultyDetails = asyncHandler(async (req, res) => {
     const pendingRequests = await ProfileUpdateRequest.find({ faculty: id, status: 'pending' });
 
     res.status(200).json({
-        faculty,
-        stats,
-        recentClasses: recentLive,
-        uploadedContent,
-        pendingRequests
+        success: true,
+        data: {
+            faculty,
+            stats,
+            recentClasses: recentLive,
+            uploadedContent,
+            pendingRequests
+        }
     });
 });
 
@@ -364,7 +468,7 @@ exports.approveProfileRequest = asyncHandler(async (req, res) => {
             sender: req.user.userId
         });
 
-        return res.status(200).json({ message: 'Request rejected' });
+        return res.status(200).json({ success: true, message: 'Request rejected' });
     }
 
     const { userId: user, type, newValue } = request;
@@ -423,7 +527,7 @@ exports.approveProfileRequest = asyncHandler(async (req, res) => {
         });
     }
 
-    res.status(200).json({ message: 'Request approved and processed' });
+    res.status(200).json({ success: true, message: 'Request approved and processed' });
 });
 
 // ---- SUBJECT CRUD ----
@@ -434,12 +538,13 @@ exports.getSubjects = asyncHandler(async (req, res) => {
         .populate('faculty', 'name email role')
         .populate('assignedTo', 'name')
         .sort({ createdAt: -1 });
-    res.status(200).json(subjects);
+    res.status(200).json({ success: true, data: subjects });
 });
 
 // POST /api/admin/subjects
 exports.createSubject = asyncHandler(async (req, res) => {
-    const { name, description, targetGrade, instructorId, facultyId } = req.body;
+    const { name, description, targetGrade, instructorId, facultyId, faculty } = req.body;
+    const facultyRef = facultyId || faculty;
     if (!name) return res.status(400).json({ message: 'Subject name is required' });
 
     // Find a valid instructor — use provided or fallback to first available
@@ -455,7 +560,7 @@ exports.createSubject = asyncHandler(async (req, res) => {
         description: description || '',
         targetGrade: targetGrade || 'Class 10',
         instructor,
-        faculty: facultyId || null,
+        faculty: facultyRef || null,
         assignedTo: []
     });
 
@@ -464,7 +569,7 @@ exports.createSubject = asyncHandler(async (req, res) => {
         .populate('faculty', 'name email role');
 
     await logAction(req, 'Created Subject', `Subject: ${name}`, { targetId: subject._id, targetModel: 'Subject' });
-    res.status(201).json(populated);
+    res.status(201).json({ success: true, data: populated });
 });
 
 // PUT /api/admin/subjects/:id
@@ -484,7 +589,7 @@ exports.updateSubject = asyncHandler(async (req, res) => {
 
     if (!subject) return res.status(404).json({ message: 'Subject not found' });
     await logAction(req, 'Updated Subject', `Subject: ${subject.name}`, { targetId: subject._id, targetModel: 'Subject' });
-    res.status(200).json(subject);
+    res.status(200).json({ success: true, data: subject });
 });
 
 // DELETE /api/admin/subjects/:id
@@ -493,13 +598,13 @@ exports.deleteSubject = asyncHandler(async (req, res) => {
     if (!subject) return res.status(404).json({ message: 'Subject not found' });
     await logAction(req, 'Deleted Subject', `Subject: ${subject.name}`, { targetId: subject._id, targetModel: 'Subject' });
     await Subject.findByIdAndDelete(req.params.id);
-    res.status(200).json({ message: 'Subject deleted', id: req.params.id });
+    res.status(200).json({ success: true, message: 'Subject deleted', data: { id: req.params.id } });
 });
 
 // GET /api/admin/profile-requests
 exports.getProfileRequests = asyncHandler(async (req, res) => {
     const requests = await ProfileUpdateRequest.find({ status: 'pending' }).populate('userId', 'name email');
-    res.status(200).json(requests);
+    res.status(200).json({ success: true, data: requests });
 });
 
 // PUT /api/admin/profile-requests/:id/reject
@@ -518,5 +623,78 @@ exports.rejectProfileRequest = asyncHandler(async (req, res) => {
         sender: req.user.userId
     });
 
-    res.status(200).json({ message: 'Request rejected' });
+    res.status(200).json({ success: true, message: 'Request rejected' });
+});
+
+// GET /api/admin/enquiries
+exports.getAdmissionEnquiries = asyncHandler(async (req, res) => {
+    const list = await AdmissionEnquiry.find({}).sort({ createdAt: -1 }).limit(500);
+    res.status(200).json({ success: true, data: list });
+});
+
+// PATCH /api/admin/enquiries/:id
+exports.updateAdmissionEnquiry = asyncHandler(async (req, res) => {
+    const { status, notes } = req.body;
+    const enq = await AdmissionEnquiry.findById(req.params.id);
+    if (!enq) return res.status(404).json({ message: 'Enquiry not found' });
+    if (status && ['new', 'contacted', 'enrolled', 'dropped'].includes(status)) enq.status = status;
+    if (notes !== undefined) enq.notes = notes;
+    await enq.save();
+    await logAction(req, 'Updated admission enquiry', `Enquiry: ${enq.email}`, {
+        targetId: enq._id,
+        targetModel: 'AdmissionEnquiry',
+    });
+    res.status(200).json({ success: true, data: enq });
+});
+
+// DELETE /api/admin/enquiries/:id
+exports.deleteAdmissionEnquiry = asyncHandler(async (req, res) => {
+    const enq = await AdmissionEnquiry.findById(req.params.id);
+    if (!enq) return res.status(404).json({ message: 'Enquiry not found' });
+    
+    await logAction(req, 'Deleted admission enquiry', `Enquiry: ${enq.email}`, {
+        targetId: enq._id,
+        targetModel: 'AdmissionEnquiry',
+    });
+    
+    await AdmissionEnquiry.findByIdAndDelete(req.params.id);
+    res.status(200).json({ success: true, message: 'Enquiry deleted successfully' });
+});
+
+// GET /api/admin/settings
+exports.getSettings = asyncHandler(async (req, res) => {
+    const settings = await SystemSettings.getSettings();
+    res.status(200).json({ success: true, data: settings });
+});
+
+// PUT /api/admin/settings
+exports.updateSettings = asyncHandler(async (req, res) => {
+    let settings = await SystemSettings.findOne();
+    if (!settings) {
+        settings = new SystemSettings(req.body);
+    } else {
+        const b = req.body;
+        if (b.platformName !== undefined) settings.platformName = b.platformName;
+        if (b.supportEmail !== undefined) settings.supportEmail = b.supportEmail;
+        if (b.maintenanceMode !== undefined) settings.maintenanceMode = !!b.maintenanceMode;
+        if (b.maxUploadSizeMB !== undefined) settings.maxUploadSizeMB = Number(b.maxUploadSizeMB) || settings.maxUploadSizeMB;
+        if (b.allowRegistration !== undefined) settings.allowRegistration = !!b.allowRegistration;
+        if (b.admissionContactEmail !== undefined) settings.admissionContactEmail = b.admissionContactEmail;
+        if (b.admissionContactWhatsApp !== undefined) settings.admissionContactWhatsApp = b.admissionContactWhatsApp;
+        if (b.notificationPreference !== undefined) settings.notificationPreference = b.notificationPreference;
+    }
+    await settings.save();
+    res.status(200).json({ success: true, data: settings });
+});
+
+// GET /api/admin/whatsapp/status
+exports.getWhatsAppStatus = asyncHandler(async (req, res) => {
+    const status = whatsappService.getWhatsAppStatus();
+    res.status(200).json({ success: true, data: status });
+});
+
+// POST /api/admin/whatsapp/logout
+exports.logoutWhatsApp = asyncHandler(async (req, res) => {
+    await whatsappService.logoutWhatsApp();
+    res.status(200).json({ success: true, message: 'WhatsApp logged out and re-initializing' });
 });

@@ -37,20 +37,26 @@ const cloudinaryDocStorage = new CloudinaryStorage({
   }
 });
 
-// Cloudinary Mixed Storage (Handles MP4 and PDF in same request)
+// Cloudinary Mixed Storage (Handles MP4, PDF, and Images in same request)
 const cloudinaryMixedStorage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: async (req, file) => {
     const isVideo = file.mimetype.startsWith('video');
     const isPdf = file.mimetype === 'application/pdf' || file.originalname.toLowerCase().endsWith('.pdf');
+    const isImage = file.mimetype.startsWith('image');
     
     // For PDFs, we use 'raw' with a forced extension to guarantee browser compatibility.
-    // We use a simplified folder 'bl_materials' to bypass potential path restrictions.
-    const resourceType = isVideo ? 'video' : 'raw';
+    // For Images/Videos, use 'auto' or explicit resource types.
+    let resourceType = 'auto';
+    if (isVideo) resourceType = 'video';
+    else if (isPdf) resourceType = 'image';
+    else if (isImage) resourceType = 'image';
+    
     const extension = isPdf ? '.pdf' : '';
+    const folder = isVideo ? 'bl_videos' : (isImage ? 'bl_thumbnails' : 'bl_materials');
     
     return {
-      folder: isVideo ? 'bl_videos' : 'bl_materials',
+      folder: folder,
       resource_type: resourceType,
       access_mode: 'public',
       type: 'upload',
@@ -61,17 +67,17 @@ const cloudinaryMixedStorage = new CloudinaryStorage({
 
 const cloudinaryVideoUpload = multer({
   storage: cloudinaryVideoStorage,
-  limits: { fileSize: 100 * 1024 * 1024 } // Cloudinary standard limit approx 100MB for direct upload
+  limits: { fileSize: 4 * 1024 * 1024 * 1024 } // Support up to 4GB videos
 });
 
 const cloudinaryDocUpload = multer({
   storage: cloudinaryDocStorage,
-  limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit for PDFs
+  limits: { fileSize: 50 * 1024 * 1024 } // 50MB limit for PDFs
 });
 
 const cloudinaryMixedUpload = multer({
   storage: cloudinaryMixedStorage,
-  limits: { fileSize: 200 * 1024 * 1024 } // 200MB limit for mixed content
+  limits: { fileSize: 4 * 1024 * 1024 * 1024 } // Support up to 4GB for mixed content (videos/thumbnails)
 });
 
 // LOCAL STORAGE for Assignments (Workaround for Cloudinary 'Untrusted' block)
@@ -139,26 +145,28 @@ const uploadImage = multer({
   limits: { fileSize: 5 * 1024 * 1024 } // 5MB limit for images
 });
 
-const upload = multer({
-  storage: multer.diskStorage({
-    destination: (req, file, cb) => {
-      const isVideo = /mp4|mov|avi|mkv|webm/i.test(path.extname(file.originalname).toLowerCase());
-      cb(null, isVideo ? videoDir : documentDir);
-    },
-    filename: (req, file, cb) => {
-      const ext = path.extname(file.originalname);
-      cb(null, `${uuidv4()}${ext}`);
-    }
-  }),
-  fileFilter: (req, file, cb) => {
+// Unified Local Mixed Storage (For local-first fallback or specific local fields)
+const localMixedStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
     const ext = path.extname(file.originalname).toLowerCase();
     const isVideo = /mp4|mov|avi|mkv|webm/i.test(ext);
-    const isDoc = ext === '.pdf';
-    if (isVideo || isDoc) cb(null, true);
-    else cb(new Error('Only Video and PDF files allowed'), false);
+    const isImage = /jpg|jpeg|png|webp/i.test(ext);
+    if (isVideo) cb(null, videoDir);
+    else if (isImage) cb(null, profileDir);
+    else cb(null, documentDir);
   },
-  limits: { fileSize: 2 * 1024 * 1024 * 1024 }
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname);
+    cb(null, `${file.fieldname}-${Date.now()}-${uuidv4()}${ext}`);
+  }
 });
+
+const localMixedUpload = multer({
+  storage: localMixedStorage,
+  limits: { fileSize: 2 * 1024 * 1024 * 1024 } // 2GB
+});
+
+const upload = localMixedUpload; // Alias for general use
 
 module.exports = { 
   uploadVideo, 
@@ -167,5 +175,6 @@ module.exports = {
   cloudinaryVideoUpload, 
   cloudinaryDocUpload,
   cloudinaryMixedUpload,
-  localAssignmentUpload
+  localAssignmentUpload,
+  localMixedUpload
 };

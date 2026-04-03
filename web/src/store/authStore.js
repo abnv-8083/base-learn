@@ -1,0 +1,100 @@
+import { create } from 'zustand';
+import axios from 'axios';
+
+// Configure Axios defaults
+axios.defaults.withCredentials = true;
+
+const getTokenKey = (role) => `bl_token_${role || 'student'}`;
+
+// Create an interceptor to insert Bearer Token
+axios.interceptors.request.use(config => {
+  const token = useAuthStore.getState().token;
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+export const useAuthStore = create((set, get) => ({
+  user: null,
+  token: null,
+  loading: true,
+
+  // Simple setters
+  setUser: (user) => set({ user }),
+  setToken: (token) => set({ token }),
+  setLoading: (loading) => set({ loading }),
+
+  // Actions
+  login: async (email, password, role) => {
+    try {
+      set({ loading: true });
+      const res = await axios.post('/api/auth/login', { email, password, role });
+      const userData = res.data;
+      const assignedRole = userData.role || role;
+      
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem(getTokenKey(assignedRole), userData.token);
+        localStorage.setItem('last_active_role', assignedRole);
+      }
+      
+      set({ token: userData.token, user: userData, loading: false });
+      return userData;
+    } catch (err) {
+      set({ loading: false });
+      throw err;
+    }
+  },
+
+  logout: async (role) => {
+    try {
+      await axios.post('/api/auth/logout', { role });
+    } catch (err) {
+      console.error('Server logout failed:', err.message);
+    } finally {
+      if (typeof window !== 'undefined') {
+        sessionStorage.removeItem(getTokenKey(role));
+      }
+      set({ user: null, token: null });
+    }
+  },
+
+  syncPortalSession: (role) => {
+    if (typeof window !== 'undefined') {
+      const roleToken = sessionStorage.getItem(getTokenKey(role));
+      const currentToken = get().token;
+      
+      if (roleToken !== currentToken) {
+        set({ token: roleToken });
+        if (!roleToken) set({ user: null });
+      }
+    }
+  },
+
+  loadUser: async (role) => {
+    const roleToken = typeof window !== 'undefined' ? sessionStorage.getItem(getTokenKey(role)) : null;
+    if (!roleToken) {
+      set({ user: null, loading: false });
+      return;
+    }
+
+    try {
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('last_active_role', role);
+      }
+      const res = await axios.get('/api/auth/me', {
+        headers: { Authorization: `Bearer ${roleToken}` }
+      });
+      if (res.data.role === role) {
+        set({ user: res.data, token: roleToken });
+      } else {
+        set({ user: null, token: null });
+      }
+    } catch (error) {
+      console.warn('Silent user load failed:', error.message);
+      set({ user: null, token: null });
+    } finally {
+      set({ loading: false });
+    }
+  }
+}));

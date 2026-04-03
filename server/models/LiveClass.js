@@ -11,6 +11,8 @@ const liveClassSchema = new mongoose.Schema({
   status: { type: String, enum: ['upcoming', 'ongoing', 'completed', 'cancelled'], default: 'upcoming' },
   type: { type: String, enum: ['lecture', 'faq'], default: 'lecture' },
   chapter: { type: mongoose.Schema.Types.ObjectId, ref: 'Chapter' }, 
+  recordingUrl: { type: String }, // For BBB recording link
+  presentationUrl: { type: String }, // For lecture notes/presentation
   attendance: [
     {
       studentId: { type: String }, // Clerk User ID

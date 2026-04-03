@@ -27,26 +27,43 @@ router.route('/chapters/:id')
     .put(contentController.updateChapter)
     .delete(contentController.deleteChapter);
 router.patch('/chapters/:id/assign', contentController.assignChapter);
+router.get('/chapters/resources/pending', instructorController.getPendingChapterResources);
+router.get('/chapters/resources/recent', instructorController.getRecentChapterResources);
+router.patch('/chapters/:chapterId/resources/:resourceId/approve', instructorController.approveChapterResource);
+router.patch('/chapters/:chapterId/resources/:resourceId/reject', instructorController.rejectChapterResource);
 
 // Content Management (Recorded Classes & FAQ)
 router.get('/chapters/:chapterId/videos', contentController.getVideosByChapter);
 router.get('/videos/pending', instructorController.getPendingRecordedClasses);
+router.get('/videos/recent', instructorController.getRecentVideos);
 router.post('/videos/upload', contentController.uploadVideo);
 router.route('/videos/:id')
     .put(contentController.updateVideo)
     .delete(contentController.deleteVideo);
 router.patch('/videos/:id/assign', instructorController.assignRecordedClass);
+router.patch('/videos/:id/reject', instructorController.rejectRecordedClass);
 router.patch('/videos/:id/link', contentController.linkVideoToChapter);
 
+// Content Verification Queue (Unified)
+router.get('/content', instructorController.getContentForVerification);
+router.patch('/content/:id/status', instructorController.updateContentStatus);
+router.put('/content/:id/manage', instructorController.updateAssignedContent);
+router.delete('/content/:id/manage', instructorController.deleteAssignedContent);
+
 // Content Management (Assessments: Tests & Assignments)
+router.get('/assessments/active', instructorController.getActiveAssessments);
 router.get('/assessments/pending', instructorController.getPendingAssessments);
 router.patch('/assessments/:id/:type/approve', instructorController.approveAssessment);
+router.get('/assessments/:id/:type/submissions', instructorController.getAssessmentSubmissions);
+router.post('/assessments/:id/:type/forward/:studentId', instructorController.forwardSubmissionToFaculty);
 
 // Faculty Management
 router.get('/faculties', instructorController.getFaculties);
 
 // Student Analysis & Management
-router.get('/students', instructorController.getStudents);
+router.route('/students')
+    .get(instructorController.getStudents)
+    .post(instructorController.createStudent);
 router.route('/students/:id')
     .put(instructorController.updateStudent)
     .delete(instructorController.deleteStudent);
@@ -63,14 +80,19 @@ router.route('/classes/:id')
     .delete(instructorController.deleteStudyClass);
 
 // Batch Management
+router.get('/batches-by-class', instructorController.getBatchesByClass);
 router.route('/batches')
     .get(instructorController.getBatches)
     .post(instructorController.createBatch);
+router.get('/batches/:id', instructorController.getBatch);
 router.route('/batches/:id')
     .put(instructorController.updateBatch)
     .delete(instructorController.deleteBatch);
 router.patch('/batches/move-student', instructorController.moveStudentBatch);
 router.patch('/batches/:id/students', instructorController.updateBatchStudents);
+router.route('/batches/:id/subjects')
+    .get(instructorController.getBatchSubjects)
+    .patch(instructorController.updateBatchSubjects);
 
 // Notifications
 router.post('/notifications', instructorController.sendNotification);

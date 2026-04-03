@@ -7,22 +7,36 @@ const RecordedClass = require('../models/RecordedClass');
 // ============================
 exports.getSubjects = async (req, res) => {
     try {
-        const subjects = await Subject.find({ instructor: req.user.userId }).populate('assignedTo', 'name');
+        const query = req.user.role === 'admin' ? {} : { instructor: req.user.userId };
+        const subjects = await Subject.find(query)
+            .populate('assignedTo', 'name')
+            .populate('faculty', 'name');
         res.status(200).json(subjects);
     } catch (error) { res.status(500).json({ message: error.message }); }
 };
 
 exports.createSubject = async (req, res) => {
     try {
-        const { name } = req.body;
-        const subject = await Subject.create({ name, instructor: req.user.userId, assignedTo: [] });
+        const { name, targetGrade, faculty } = req.body;
+        const subject = await Subject.create({ 
+            name, 
+            targetGrade: targetGrade || 'Class 10',
+            faculty: faculty || null,
+            instructor: req.user.userId, 
+            assignedTo: [] 
+        });
         res.status(201).json(subject);
     } catch (error) { res.status(500).json({ message: error.message }); }
 };
 
 exports.updateSubject = async (req, res) => {
     try {
-        const subject = await Subject.findByIdAndUpdate(req.params.id, { name: req.body.name }, { new: true }).populate('assignedTo', 'name');
+        const { name, targetGrade, faculty } = req.body;
+        const subject = await Subject.findByIdAndUpdate(
+            req.params.id, 
+            { name, targetGrade, faculty: faculty || null }, 
+            { new: true }
+        ).populate('assignedTo', 'name').populate('faculty', 'name');
         res.status(200).json(subject);
     } catch (error) { res.status(500).json({ message: error.message }); }
 };

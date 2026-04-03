@@ -16,7 +16,8 @@ const facultySchema = new mongoose.Schema({
     teachingMode: { type: String, enum: ['online', 'offline', 'hybrid'], default: 'online' },
     isVerified: { type: Boolean, default: true },
     profilePhoto: { type: String, default: '' },
-    isActive: { type: Boolean, default: true }
+    isActive: { type: Boolean, default: true },
+    assignedInstructor: { type: mongoose.Schema.Types.ObjectId, ref: 'Instructor', default: null }
 }, { timestamps: true });
 
 facultySchema.pre('save', async function () {

@@ -34,3 +34,10 @@ logs/
 # Coverage
 coverage/
 tmp/
+.wwebjs_auth/
+.wwebjs_cache/
+*/public/uploads/
+*.mp4
+*.pdf
+*.jpg
+

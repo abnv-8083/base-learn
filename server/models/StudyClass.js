@@ -8,13 +8,13 @@ const studyClassSchema = new mongoose.Schema({
     },
     targetGrade: { 
         type: String, 
-        required: true,
+        required: false,
         trim: true
     },
     instructor: { 
         type: mongoose.Schema.Types.ObjectId, 
         ref: 'Instructor', 
-        required: true 
+        required: false 
     }
 }, { timestamps: true });
 

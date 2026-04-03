@@ -1,0 +1,120 @@
+[
+  {
+    "_id": "69c7c1a5d438922c6b449093",
+    "name": "Arabic",
+    "assignedTo": [],
+    "instructor": "69cab7af2702dc43012f0ea3",
+    "createdAt": "2026-03-28T11:55:17.377Z",
+    "updatedAt": "2026-03-30T19:10:59.567Z",
+    "__v": 0,
+    "description": "",
+    "faculty": "69bd4ccb4e3c026a5a5e00e1",
+    "targetGrade": "Class 10",
+    "chapters": []
+  },
+  {
+    "_id": "69ca3509306d811e75abbb83",
+    "name": "Englidh",
+    "description": "",
+    "targetGrade": "Class 10",
+    "assignedTo": [
+      "69c6489325e21388deb20d12",
+      "69caab5236be6692605961ff"
+    ],
+    "instructor": "69cab7af2702dc43012f0ea3",
+    "createdAt": "2026-03-30T08:32:09.793Z",
+    "updatedAt": "2026-03-30T19:10:59.567Z",
+    "__v": 0,
+    "faculty": "69caa058e14f93c66957936d",
+    "chapters": [
+      {
+        "_id": "69ca35d7026a1b35da851ae0",
+        "name": "csxdf"
+      }
+    ]
+  },
+  {
+    "_id": "69cabdaea48cd513a188c433",
+    "name": "Mathematics",
+    "description": "Mathematics course",
+    "targetGrade": "Class 10",
+    "faculty": "69ccb4c9db3d3acc20fef6ce",
+    "assignedTo": [
+      "69cabf481176970a2c562a37"
+    ],
+    "instructor": "69cab7af2702dc43012f0ea3",
+    "createdAt": "2026-03-30T18:15:10.766Z",
+    "updatedAt": "2026-04-01T07:03:35.601Z",
+    "__v": 0,
+    "chapters": [
+      {
+        "_id": "69cabdaea48cd513a188c435",
+        "name": "Algebra"
+      },
+      {
+        "_id": "69cabdaea48cd513a188c437",
+        "name": "Geometry"
+      },
+      {
+        "_id": "69cabdaea48cd513a188c43a",
+        "name": "Calculus"
+      }
+    ]
+  },
+  {
+    "_id": "69cabdaea48cd513a188c43c",
+    "name": "Science",
+    "description": "Science course",
+    "targetGrade": "Class 10",
+    "faculty": "69cab7af2702dc43012f0ea0",
+    "assignedTo": [
+      "69cabf481176970a2c562a37"
+    ],
+    "instructor": "69cab7af2702dc43012f0ea3",
+    "createdAt": "2026-03-30T18:15:10.906Z",
+    "updatedAt": "2026-03-30T19:10:59.567Z",
+    "__v": 0,
+    "chapters": [
+      {
+        "_id": "69cabdaea48cd513a188c43e",
+        "name": "Physics"
+      },
+      {
+        "_id": "69cabdaea48cd513a188c440",
+        "name": "Chemistry"
+      },
+      {
+        "_id": "69cabdafa48cd513a188c442",
+        "name": "Biology"
+      }
+    ]
+  },
+  {
+    "_id": "69cabdafa48cd513a188c444",
+    "name": "History",
+    "description": "History course",
+    "targetGrade": "Class 10",
+    "faculty": "69cab7af2702dc43012f0ea0",
+    "assignedTo": [
+      "69cabf481176970a2c562a37"
+    ],
+    "instructor": "69cab7af2702dc43012f0ea3",
+    "createdAt": "2026-03-30T18:15:11.041Z",
+    "updatedAt": "2026-03-30T19:10:59.567Z",
+    "__v": 0,
+    "chapters": [
+      {
+        "_id": "69cabdafa48cd513a188c446",
+        "name": "Ancient Civilizations"
+      },
+      {
+        "_id": "69cabdafa48cd513a188c448",
+        "name": "Middle Ages"
+      },
+      {
+        "_id": "69cabdafa48cd513a188c44a",
+        "name": "Modern Era"
+      }
+    ]
+  }
+]

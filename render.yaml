@@ -1,0 +1,31 @@
+services:
+  # Backend API Server Configuration for Render
+  - type: web
+    name: base-learn-api
+    env: node
+    region: singapore # Change to 'frankfurt', 'ohio', or 'oregon' based on your location
+    rootDir: server
+    buildCommand: npm install
+    startCommand: npm start
+    autoDeploy: true # Automatically deploys when you push to GitHub
+    
+    # Environment Variables to map
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 5000
+        
+      # The following must be manually added as secrets in the Render Dashboard once deployed:
+      - key: MONGO_URI
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false
+      - key: CLIENT_URL
+        sync: false
