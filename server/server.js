@@ -120,7 +120,7 @@ app.get('/api/debug-smtp', asyncHandler(async (req, res) => {
             subject: 'Render Deployment Email Test',
             html: '<p>If you see this, Resend is working correctly on your deployment.</p>'
         });
-        res.json({ success: true, message: 'Email passed to Resend successfully.', data: result, apiKeyPrefix: process.env.RESEND_API_KEY ? process.env.RESEND_API_KEY.substring(0, 5) + '...' : 'MISSING' });
+        res.json({ success: true, message: 'Email passed to Brevo successfully.', data: result, apiKeyPrefix: process.env.BREVO_API_KEY ? process.env.BREVO_API_KEY.substring(0, 5) + '...' : 'MISSING' });
     } catch (e) {
         res.status(500).json({ success: false, error: e.message, stack: e.stack });
     }
