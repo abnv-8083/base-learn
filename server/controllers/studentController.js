@@ -47,7 +47,7 @@ const getDashboard = asyncHandler(async (req, res) => {
 
     liveCount = await LiveClass.countDocuments({ 
         status: { $in: ['upcoming', 'ongoing'] },
-        batch: studentBatchId 
+        batches: studentBatchId 
     });
 
     // 2. Accurate assignments count
@@ -232,12 +232,41 @@ const getRecordedClasses = asyncHandler(async (req, res) => {
   res.status(200).json({ success: true, count: finalData.length, data: finalData });
 });
 
-// @desc    Get upcoming and past live classes
+// @desc    Get upcoming and past live classes for the student's batch
 // @route   GET /api/student/live-classes
 // @access  Private (Student)
 const getLiveClasses = asyncHandler(async (req, res) => {
-  const upcoming = await LiveClass.find({ status: 'upcoming' }).sort('scheduledAt');
-  const past = await LiveClass.find({ status: { $in: ['completed', 'cancelled'] } }).sort('-scheduledAt');
+  const studentId = req.user._id;
+
+  // Find which batch this student belongs to
+  const studentBatch = await Batch.findOne({ students: studentId }).lean();
+
+  if (!studentBatch) {
+    return res.status(200).json({ success: true, data: { upcoming: [], past: [] } });
+  }
+
+  const batchId = studentBatch._id;
+
+  // Filter live classes where this batch is in the 'batches' array
+  const selectFields = 'title subject faculty scheduledAt duration status type meetingLink recordingUrl';
+
+  const upcoming = await LiveClass.find({ 
+    status: { $in: ['upcoming', 'ongoing'] }, 
+    batches: batchId 
+  })
+    .select(selectFields)
+    .populate('faculty', 'name')
+    .sort('scheduledAt')
+    .lean();
+
+  const past = await LiveClass.find({ 
+    status: { $in: ['completed', 'cancelled'] }, 
+    batches: batchId 
+  })
+    .select(selectFields)
+    .populate('faculty', 'name')
+    .sort('-scheduledAt')
+    .lean();
 
   res.status(200).json({
     success: true,
@@ -261,7 +290,11 @@ const joinLiveClass = asyncHandler(async (req, res) => {
         return res.status(400).json({ message: errorMsg });
     }
 
-    const studentBatch = await Batch.findOne({ _id: liveClass.batch, students: studentId });
+    // Verify the student is in one of the batches assigned to this live class
+    const assignedBatchIds = liveClass.batches || [];
+    const studentBatch = assignedBatchIds.length > 0
+        ? await Batch.findOne({ _id: { $in: assignedBatchIds }, students: studentId })
+        : null;
     if (!studentBatch && req.user.role !== 'admin') {
         return res.status(403).json({ message: 'Unauthorized. You are not enrolled in the batch for this live class.' });
     }
@@ -413,9 +446,10 @@ const getLiveFaqSessions = asyncHandler(async (req, res) => {
     }
 
     const sessions = await LiveClass.find({
-        batch: studentBatch._id,
+        batches: studentBatch._id,
         type: 'faq'
     })
+    .select('title subject faculty scheduledAt duration status type meetingLink recordingUrl')
     .populate('faculty', 'name')
     .sort({ scheduledAt: -1 });
 
@@ -444,7 +478,7 @@ const getCalendar = asyncHandler(async (req, res) => {
     const batchId = studentBatch._id;
     const events = [];
 
-    const liveSessions = await LiveClass.find({ batch: batchId })
+    const liveSessions = await LiveClass.find({ batches: batchId })
         .select('title subject scheduledAt duration status type')
         .lean();
     for (const s of liveSessions) {

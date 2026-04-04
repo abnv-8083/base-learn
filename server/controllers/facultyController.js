@@ -286,6 +286,26 @@ exports.endLiveClass = asyncHandler(async (req, res) => {
     res.status(200).json({ success: true, message: 'Class ended and moved to results' });
 });
 
+// DELETE /api/faculty/live-classes/:id
+exports.deleteLiveClass = asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    const liveClass = await LiveClass.findById(id);
+    if (!liveClass) return res.status(404).json({ message: 'Live class not found' });
+
+    if (liveClass.faculty.toString() !== req.user.userId.toString()) {
+        return res.status(403).json({ message: 'Unauthorized to delete this class' });
+    }
+
+    if (liveClass.status === 'ongoing') {
+        return res.status(400).json({ message: 'Cannot delete an ongoing class. Please end it first.' });
+    }
+
+    await LiveClass.findByIdAndDelete(id);
+    await logAction(req, 'Deleted Live Class', liveClass.title, { targetId: liveClass._id, targetModel: 'LiveClass' });
+
+    res.status(200).json({ success: true, message: 'Live class deleted successfully' });
+});
+
 // GET /api/faculty/content
 // Aggregates all uploaded resource types for the faculty dashboard overview
 exports.getAllContent = asyncHandler(async (req, res) => {

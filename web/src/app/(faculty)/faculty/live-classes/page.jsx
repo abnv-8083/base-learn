@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Video, Calendar, Clock, MapPin, Play, Plus, X } from 'lucide-react';
+import { Video, Calendar, Clock, MapPin, Play, Plus, X, Trash2 } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import { useConfirmStore } from '@/store/confirmStore';
 import toast from 'react-hot-toast';
@@ -54,9 +54,17 @@ export default function FacultyLiveClasses() {
   };
 
   const handleSave = async () => {
+    if (!form.title?.trim()) return toast.error('Session title is required.');
+    if (!form.subject) return toast.error('Please select a subject.');
+    if (!form.date || !form.time) return toast.error('Date and time are required.');
     setSaving(true);
     try {
-      await axios.post('/api/faculty/live-classes', form);
+      // Find the selected subject object to send its name (not _id)
+      const selectedSubject = subjects.find(s => s._id === form.subject);
+      await axios.post('/api/faculty/live-classes', {
+        ...form,
+        subject: selectedSubject ? selectedSubject.name : form.subject,
+      });
       toast.success('Live class scheduled successfully!');
       setShowModal(false);
       fetchClasses();
@@ -65,6 +73,23 @@ export default function FacultyLiveClasses() {
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleDelete = (id, title) => {
+    confirm({
+      title: 'Delete Live Class?',
+      message: `Are you sure you want to delete "${title}"? This cannot be undone.`,
+      confirmText: 'Delete',
+      onConfirm: async () => {
+        try {
+          await axios.delete(`/api/faculty/live-classes/${id}`);
+          toast.success('Live class deleted.');
+          fetchClasses();
+        } catch (err) {
+          toast.error(err.response?.data?.message || 'Failed to delete class.');
+        }
+      }
+    });
   };
 
   const handleStartSession = async (id) => {
@@ -164,28 +189,31 @@ export default function FacultyLiveClasses() {
                 </div>
                 
                 <div style={{ padding: '20px 24px', background: 'white', borderTop: '1px solid #f1f5f9', display: 'flex', gap: '12px' }}>
-                   {session.status === 'completed' ? (
-                      <div style={{ width: '100%', display: 'flex', gap: '8px' }}>
-                         <button className="btn btn-secondary" style={{ flex: 1, padding: '12px', borderRadius: '12px', fontSize: '13px', fontWeight: '800', opacity: 0.6 }} disabled>
-                            Archive Ready
+                    {session.status === 'completed' ? (
+                       <div style={{ width: '100%', display: 'flex', gap: '8px' }}>
+                          <button className="btn btn-secondary" style={{ flex: 1, padding: '12px', borderRadius: '12px', fontSize: '13px', fontWeight: '800', opacity: 0.6 }} disabled>
+                             Archive Ready
+                          </button>
+                          <button onClick={() => handleDelete(session._id, session.title)} className="btn" style={{ padding: '12px 16px', borderRadius: '12px', fontSize: '13px', fontWeight: '800', background: '#fee2e2', color: '#ef4444', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                             <Trash2 size={15} /> Delete
+                          </button>
+                       </div>
+                    ) : (
+                       <>
+                         <button onClick={() => handleStartSession(session._id)} className="btn btn-primary" style={{ flex: 2, display: 'flex', gap: '8px', alignItems: 'center', justifyContent: 'center', padding: '12px', borderRadius: '12px', fontWeight: '800' }}>
+                           <Play size={18} /> {session.status === 'ongoing' ? 'Resume Class' : 'Start Studio'}
                          </button>
-                         <button className="btn btn-ghost" style={{ flex: 1, padding: '12px', borderRadius: '12px', fontSize: '13px', fontWeight: '800', border: '1.5px solid #e2e8f0' }}>
-                            View Report
+                         {session.status === 'ongoing' && (
+                            <button onClick={() => handleEndSession(session._id)} className="btn btn-ghost" style={{ flex: 1, color: '#ef4444', border: '1.5px solid #fee2e2', borderRadius: '12px', fontWeight: '800', fontSize: '13px' }}>
+                               End
+                            </button>
+                         )}
+                         <button onClick={() => handleDelete(session._id, session.title)} className="btn" style={{ padding: '12px 14px', borderRadius: '12px', background: '#fff1f2', color: '#ef4444', border: '1.5px solid #fee2e2', cursor: 'pointer', display: 'flex', alignItems: 'center' }} title="Delete">
+                           <Trash2 size={16} />
                          </button>
-                      </div>
-                   ) : (
-                      <>
-                        <button onClick={() => handleStartSession(session._id)} className="btn btn-primary" style={{ flex: 2, display: 'flex', gap: '8px', alignItems: 'center', justifyContent: 'center', padding: '12px', borderRadius: '12px', fontWeight: '800' }}>
-                          <Play size={18} /> {session.status === 'ongoing' ? 'Resume Class' : 'Start Studio'}
-                        </button>
-                        {session.status === 'ongoing' && (
-                           <button onClick={() => handleEndSession(session._id)} className="btn btn-ghost" style={{ flex: 1, color: '#ef4444', border: '1.5px solid #fee2e2', borderRadius: '12px', fontWeight: '800', fontSize: '13px' }}>
-                              End
-                           </button>
-                        )}
-                      </>
-                   )}
-                </div>
+                       </>
+                    )}
+                 </div>
               </div>
             );
           })}
