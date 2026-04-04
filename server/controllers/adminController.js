@@ -160,7 +160,7 @@ exports.createUser = asyncHandler(async (req, res) => {
                         <p style="color: #94a3b8; font-size: 12px; text-align: center; margin: 0;">© ${new Date().getFullYear()} Base Learn Education Platform. This is an automated message.</p>
                     </div>
                 </div>`;
-            sendEmail({ email: user.email, subject: `Welcome to Base Learn - Your ${role.charAt(0).toUpperCase() + role.slice(1)} Portal Access`, html }).catch(e => console.error('Email fail:', e.message));
+            await sendEmail({ email: user.email, subject: `Welcome to Base Learn - Your ${role.charAt(0).toUpperCase() + role.slice(1)} Portal Access`, html });
         } catch (e) { console.error('Email preparation fail:', e.message); }
     }
 
