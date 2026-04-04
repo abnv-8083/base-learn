@@ -1,53 +1,34 @@
-const nodemailer = require('nodemailer');
+const { Resend } = require('resend');
 
 const sendEmail = async (options) => {
-    let transporter;
-
-    if (process.env.SMTP_HOST && process.env.SMTP_USER) {
-        transporter = nodemailer.createTransport({
-            service: 'gmail',
-            auth: {
-                user: process.env.SMTP_USER,
-                pass: (process.env.SMTP_PASS || '').replace(/\s/g, '')
-            },
-            tls: {
-                rejectUnauthorized: false
-            }
-        });
-    } else {
-        // Fallback for local testing without SMTP details by creating a test account dynamically
-        const testAccount = await nodemailer.createTestAccount();
-        transporter = nodemailer.createTransport({
-            host: "smtp.ethereal.email",
-            port: 587,
-            secure: false,
-            auth: {
-                user: testAccount.user,
-                pass: testAccount.pass,
-            },
-        });
+    // Check if the API key is provided
+    if (!process.env.RESEND_API_KEY) {
+        console.warn("RESEND_API_KEY is missing. Email functionality will be bypassed.");
+        return null;
     }
 
-    const mailOptions = {
-        from: `${process.env.FROM_NAME || 'Base Learn Education'} <${process.env.SMTP_USER}>`,
-        to: options.email,
-        subject: options.subject,
-        text: options.message,
-        html: options.html
-    };
+    const resend = new Resend(process.env.RESEND_API_KEY);
+
+    const fromName = process.env.FROM_NAME || 'Base Learn Education';
+    const fromEmail = process.env.FROM_EMAIL || 'onboarding@resend.dev';
 
     try {
-        const info = await transporter.sendMail(mailOptions);
+        const { data, error } = await resend.emails.send({
+            from: `${fromName} <${fromEmail}>`,
+            to: options.email,
+            subject: options.subject,
+            html: options.html,
+            text: options.message || '',
+        });
 
-        // Automatically log the preview URL to terminal if using the test account
-        if (!process.env.SMTP_HOST) {
-            console.log(`✉️ Simulated Email sent: ${info.messageId}`);
-            console.log(`URL link to view the simulated OTP email safely in your Browser: ${nodemailer.getTestMessageUrl(info)}`);
-        } else {
-            console.log(`Email successfully routed via SMTP: ${info.messageId}`);
+        if (error) {
+            throw error;
         }
+
+        console.log(`Email successfully routed via Resend: ${data.id}`);
+        return data;
     } catch (error) {
-        console.error('Nodemailer Error:', error);
+        console.error('Resend Error:', error);
         throw error;
     }
 };
