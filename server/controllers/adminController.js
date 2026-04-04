@@ -90,6 +90,20 @@ exports.createUser = asyncHandler(async (req, res) => {
             console.error('Manual batch assignment fail:', err.message);
         }
     }
+
+    // --- NEW: Manual Subject Assignment for Admin-created Faculty ---
+    if (role === 'faculty' && req.body.subject) {
+        try {
+            const Subject = require('../models/Subject');
+            const subject = await Subject.findById(req.body.subject);
+            if (subject) {
+                subject.faculty = user._id;
+                await subject.save();
+            }
+        } catch (err) {
+            console.error('Manual subject assignment fail:', err.message);
+        }
+    }
     
     await logAction(req, `Created ${role}`, `User: ${user.name}`, { targetId: user._id, targetModel: role.charAt(0).toUpperCase() + role.slice(1) });
 
@@ -146,8 +160,8 @@ exports.createUser = asyncHandler(async (req, res) => {
                         <p style="color: #94a3b8; font-size: 12px; text-align: center; margin: 0;">© ${new Date().getFullYear()} Base Learn Education Platform. This is an automated message.</p>
                     </div>
                 </div>`;
-            await sendEmail({ email: user.email, subject: `Welcome to Base Learn - Your ${role.charAt(0).toUpperCase() + role.slice(1)} Portal Access`, html });
-        } catch (e) { console.error('Email fail:', e.message); }
+            sendEmail({ email: user.email, subject: `Welcome to Base Learn - Your ${role.charAt(0).toUpperCase() + role.slice(1)} Portal Access`, html }).catch(e => console.error('Email fail:', e.message));
+        } catch (e) { console.error('Email preparation fail:', e.message); }
     }
 
     res.status(201).json({ success: true, data: user });
