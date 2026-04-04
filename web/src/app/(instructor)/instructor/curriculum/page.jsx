@@ -107,7 +107,7 @@ export default function InstructorCurriculum() {
       }
     });
   };
- bitumen
+
   // CHAPTER ACTIONS
   const handleSaveChapter = async () => {
     if (!form.name || !form.subjectId) return toast.error('Chapter name is required');
