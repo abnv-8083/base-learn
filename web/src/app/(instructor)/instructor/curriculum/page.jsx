@@ -210,7 +210,7 @@ export default function InstructorCurriculum() {
                 </div>
 
                 <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                  <button onClick={() => { setForm({ ...subject, faculty: subject.faculty?._id || subject.faculty }); setErrors({}); setShowSubjectModal(true); }}
+                  <button onClick={() => { setForm({ ...subject }); setErrors({}); setShowSubjectModal(true); }}
                     style={{ width: '34px', height: '34px', borderRadius: '8px', border: 'none', background: '#ede9fe', color: '#7c3aed', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <Pencil size={15} />
                   </button>
@@ -283,12 +283,6 @@ export default function InstructorCurriculum() {
                 <SSelect value={form.targetGrade || ''} onChange={e => setForm({...form, targetGrade: e.target.value})}>
                   <option value="">Select target grade…</option>
                   {classes.map(c => <option key={c._id} value={c.name}>{c.name}</option>)}
-                </SSelect>
-              </FormField>
-              <FormField label="Assigned Faculty Member">
-                <SSelect value={form.faculty || ''} onChange={e => setForm({...form, faculty: e.target.value})}>
-                  <option value="">Select Faculty…</option>
-                  {faculties.map(f => <option key={f._id} value={f._id}>{f.name}</option>)}
                 </SSelect>
               </FormField>
             </div>

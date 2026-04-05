@@ -79,9 +79,9 @@ export default function AdminCurriculum() {
 
   useEffect(() => {
     fetchData();
-    if (activeTab === 'batches') fetchLookups(['instructors', 'classes']);
+    if (activeTab === 'batches') fetchLookups(['classes']);
     if (activeTab === 'classes') fetchLookups([]);
-    if (activeTab === 'subjects') fetchLookups(['faculties', 'classes']);
+    if (activeTab === 'subjects') fetchLookups(['classes']);
   }, [activeTab]);
 
   const fetchData = async () => {
@@ -114,7 +114,6 @@ export default function AdminCurriculum() {
       else if (v.trim().length < 2) err = 'Name must be at least 2 characters';
     }
     if (f === 'studyClass' && activeTab === 'batches' && !v) err = 'Please select a class';
-    if (f === 'instructor' && activeTab === 'batches' && !v) err = 'Please select an instructor';
     if (f === 'capacity') {
       const n = parseInt(v);
       if (isNaN(n) || n < 1) err = 'Capacity must be a positive number';
@@ -131,7 +130,6 @@ export default function AdminCurriculum() {
     else if (form.name.trim().length < 2) newErrors.name = 'Name must be at least 2 characters';
     if (activeTab === 'batches') {
       if (!form.studyClass) newErrors.studyClass = 'Please select a class';
-      if (!form.instructor) newErrors.instructor = 'Please select an instructor';
     }
     setErrors(newErrors);
     if (Object.keys(newErrors).length > 0) { toast.error('Please fix the highlighted errors'); return; }
@@ -140,8 +138,8 @@ export default function AdminCurriculum() {
     try {
       const endpoint = activeTab === 'batches' ? '/api/admin/batches' : activeTab === 'classes' ? '/api/admin/classes' : '/api/admin/subjects';
       let payload = { ...form };
-      if (activeTab === 'classes') payload = { name: form.name, description: form.description, targetGrade: form.gradeLevel ? String(form.gradeLevel) : undefined, instructorId: form.instructorId || form.instructor || undefined };
-      else if (activeTab === 'subjects') payload = { name: form.name, description: form.description, facultyId: form.faculty || undefined, targetGrade: form.targetGrade };
+      if (activeTab === 'classes') payload = { name: form.name, description: form.description, targetGrade: form.gradeLevel ? String(form.gradeLevel) : undefined };
+      else if (activeTab === 'subjects') payload = { name: form.name, description: form.description, targetGrade: form.targetGrade };
       if (form._id) { await axios.put(`${endpoint}/${form._id}`, payload); toast.success('Record updated'); }
       else { await axios.post(endpoint, payload); toast.success('Record created'); }
       setShowModal(false); fetchData();
@@ -164,7 +162,7 @@ export default function AdminCurriculum() {
   };
 
   const handleEdit = (item) => {
-    setForm({ ...item, instructor: item.instructor?._id || item.instructor, studyClass: item.studyClass?._id || item.studyClass, faculty: item.faculty?._id || item.faculty, gradeLevel: item.targetGrade || item.gradeLevel });
+    setForm({ ...item, studyClass: item.studyClass?._id || item.studyClass, gradeLevel: item.targetGrade || item.gradeLevel });
     setErrors({});
     setShowModal(true);
   };
@@ -310,12 +308,6 @@ export default function AdminCurriculum() {
                     {lookups.classes.map(c => <option key={c._id} value={c._id}>{c.name}</option>)}
                   </SSelect>
                 </FormField>
-                <FormField label="Primary Instructor" required error={errors.instructor}>
-                  <SSelect value={form.instructor || ''} onChange={e => { setForm({...form, instructor: e.target.value}); if (errors.instructor) validate('instructor', e.target.value); }} error={errors.instructor} onBlur={() => validate('instructor', form.instructor)}>
-                    <option value="">Select instructor…</option>
-                    {lookups.instructors.map(i => <option key={i._id} value={i._id}>{i.name}</option>)}
-                  </SSelect>
-                </FormField>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                   <FormField label="Learning Mode">
                     <SSelect value={form.mode || 'online'} onChange={e => setForm({...form, mode: e.target.value})}>
@@ -344,12 +336,6 @@ export default function AdminCurriculum() {
                   <SSelect value={form.targetGrade || ''} onChange={e => setForm({...form, targetGrade: e.target.value})}>
                     <option value="">Select target grade…</option>
                     {lookups.classes.map(c => <option key={c._id} value={c.name}>{c.name}</option>)}
-                  </SSelect>
-                </FormField>
-                <FormField label="Assigned Faculty Member">
-                  <SSelect value={form.faculty || ''} onChange={e => setForm({...form, faculty: e.target.value})}>
-                    <option value="">No faculty assigned yet…</option>
-                    {lookups.faculties.map(f => <option key={f._id} value={f._id}>{f.name}</option>)}
                   </SSelect>
                 </FormField>
               </>)}
