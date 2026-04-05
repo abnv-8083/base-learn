@@ -5,13 +5,15 @@ const fs = require('fs');
 
 let client;
 let qrCodeData = null;
-let clientStatus = 'initializing'; // 'initializing', 'qr', 'loading', 'ready', 'authenticated', 'disconnected'
+let clientStatus = 'initializing'; // 'initializing', 'qr', 'loading', 'ready', 'authenticated', 'disconnected', 'error'
 let initTimeout = null;
+let clientError = null;
 
 const initializeWhatsApp = async () => {
     console.log('[WhatsApp] Initializing...');
     clientStatus = 'initializing';
     qrCodeData = null;
+    clientError = null;
 
     if (client) {
         try {
@@ -64,11 +66,13 @@ const initializeWhatsApp = async () => {
     client.on('auth_failure', (msg) => {
         console.error('[WhatsApp] Auth Failure:', msg);
         clientStatus = 'disconnected';
+        clientError = msg;
     });
 
     client.on('disconnected', async (reason) => {
         console.log('[WhatsApp] Client disconnected:', reason);
         clientStatus = 'disconnected';
+        clientError = reason;
         if (client) {
             try { await client.destroy(); } catch (e) {}
         }
@@ -78,7 +82,8 @@ const initializeWhatsApp = async () => {
 
     client.initialize().catch(err => {
         console.error('[WhatsApp] Initialization Error:', err);
-        clientStatus = 'disconnected';
+        clientStatus = 'error';
+        clientError = err.message || err.toString();
     });
 };
 
@@ -90,7 +95,8 @@ const getWhatsAppStatus = () => {
     return {
         status: clientStatus,
         qrCode: qrCodeData,
-        wid: wid
+        wid: wid,
+        error: clientError
     };
 };
 

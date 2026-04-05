@@ -435,6 +435,11 @@ export default function AdminSystem() {
                             ⚠️ Disconnected. Reset to generate a new QR code.
                           </div>
                         )}
+                        {waStatus.status === 'error' && (
+                          <div style={{ padding: '12px 14px', background: '#fef2f2', border: '1px solid #fca5a5', borderRadius: '8px', fontSize: '12px', color: '#7f1d1d', marginBottom: '14px', lineHeight: '1.5' }}>
+                            ⚠️ Initialization Error: {waStatus.error || 'Failed to start WhatsApp gateway.'}
+                          </div>
+                        )}
                         {(waStatus.status === 'initializing' || waStatus.status === 'loading') && (
                           <div style={{ padding: '12px 14px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '12px', color: '#475569', marginBottom: '14px', lineHeight: '1.5' }}>
                             ⏳ Starting up WhatsApp service...
