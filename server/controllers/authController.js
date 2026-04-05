@@ -444,6 +444,31 @@ const dismissNotification = async (req, res) => {
     }
 };
 
+const dismissAllNotifications = async (req, res) => {
+    try {
+        await Notification.updateMany(
+            {
+                $and: [
+                    {
+                        $or: [
+                            { recipient: req.user.userId.toString() },
+                            { recipient: 'all' },
+                            ...(req.user.role === 'admin' ? [{ recipient: 'all_admins' }] : [])
+                        ]
+                    },
+                    { dismissedBy: { $ne: req.user.userId } }
+                ]
+            },
+            {
+                $addToSet: { dismissedBy: req.user.userId }
+            }
+        );
+        res.status(200).json({ message: 'All notifications dismissed' });
+    } catch (error) {
+        res.status(500).json({ message: 'Error dismissing all notifications' });
+    }
+};
+
 const refreshToken = async (req, res) => {
     try {
         const { role } = req.body;
@@ -705,6 +730,7 @@ module.exports = {
     verifyOTP,
     getNotifications,
     dismissNotification,
+    dismissAllNotifications,
     refreshToken,
     logoutUser,
     submitAdmissionEnquiry,

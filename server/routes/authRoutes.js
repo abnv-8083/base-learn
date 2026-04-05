@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { 
     registerUser, loginUser, getMe, verifyOTP, 
-    getNotifications, dismissNotification, 
+    getNotifications, dismissNotification, dismissAllNotifications,
     submitAdmissionEnquiry, forgotPassword, resetPassword, 
     getStatusWhatsApp, resetWhatsApp,
     updateProfile, updatePassword,
@@ -43,6 +43,7 @@ router.post('/verify-otp', verifyOTP);
 router.post('/login', loginUser);
 router.get('/me', protect, getMe);
 router.get('/notifications', protect, getNotifications);
+router.delete('/notifications', protect, dismissAllNotifications);
 router.delete('/notifications/:id', protect, dismissNotification);
 router.get('/whatsapp-status', protect, authorizeRoles('admin', 'instructor'), getStatusWhatsApp);
 router.post('/reset-whatsapp', protect, authorizeRoles('admin'), resetWhatsApp);

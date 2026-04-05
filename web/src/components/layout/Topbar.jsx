@@ -133,6 +133,28 @@ export default function Topbar() {
     }
   };
 
+  const handleDismissAll = async (e) => {
+    e.stopPropagation();
+    try {
+      await axios.delete(`/api/auth/notifications`);
+      setNotifications([]);
+      toast.success('All notifications cleared');
+    } catch (err) {
+      toast.error('Failed to dismiss notifications');
+    }
+  };
+
+  useEffect(() => {
+    if (!notifOpen) return;
+    const handleClickOutside = (e) => {
+      if (!e.target.closest('#notif-dropdown') && !e.target.closest('#notif-bell-btn')) {
+        setNotifOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [notifOpen]);
+
   useEffect(() => {
     const sidebar = document.getElementById("app-sidebar");
     if (!sidebar) return;
@@ -227,6 +249,7 @@ export default function Topbar() {
           {/* Notification bell */}
           <div style={{ position: 'relative' }}>
             <button
+              id="notif-bell-btn"
               onClick={() => setNotifOpen(n => !n)}
               style={{
                 width: '38px', height: '38px', borderRadius: '10px',
@@ -250,7 +273,7 @@ export default function Topbar() {
             </button>
 
             {notifOpen && (
-              <div style={{
+              <div id="notif-dropdown" style={{
                 position: 'absolute', top: '46px', right: 0,
                 width: '320px', background: 'var(--color-surface)',
                 borderRadius: '16px', border: '1px solid var(--color-border)',
@@ -259,9 +282,16 @@ export default function Topbar() {
               }} className="animate-in fade-in slide-in-from-top-2 duration-200">
                 <div style={{ padding: '16px 18px', borderBottom: '1px solid var(--color-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div style={{ fontWeight: '800', fontSize: '15px', color: 'var(--color-text-primary)' }}>Broadcasts</div>
-                  <span style={{ fontSize: '10px', fontWeight: '800', padding: '2px 8px', background: 'var(--color-bg)', color: 'var(--color-text-secondary)', borderRadius: '6px' }}>
-                    {notifications.length} Alerts
-                  </span>
+                  <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                    {notifications.length > 0 && (
+                      <button onClick={handleDismissAll} style={{ fontSize: '11px', fontWeight: '700', color: 'var(--color-primary)', background: 'transparent', border: 'none', cursor: 'pointer', padding: 0, transition: 'color 0.2s' }} className="hover:text-indigo-600">
+                        Mark all
+                      </button>
+                    )}
+                    <span style={{ fontSize: '10px', fontWeight: '800', padding: '2px 8px', background: 'var(--color-bg)', color: 'var(--color-text-secondary)', borderRadius: '6px' }}>
+                      {notifications.length} Alerts
+                    </span>
+                  </div>
                 </div>
                 
                 <div style={{ maxHeight: '380px', overflowY: 'auto' }}>
@@ -287,7 +317,7 @@ export default function Topbar() {
                         <div style={{ flex: 1 }}>
                           <p style={{ fontSize: '13px', color: 'var(--color-text-primary)', fontWeight: '500', lineHeight: 1.4 }}>{notif.message}</p>
                           <p style={{ fontSize: '11px', color: 'var(--color-text-muted)', marginTop: '4px' }}>
-                            {new Date(notif.date).toLocaleDateString()}
+                            {new Date(notif.createdAt).toLocaleDateString()}
                           </p>
                         </div>
                         <button 
