@@ -81,7 +81,7 @@ export default function AdminCurriculum() {
     fetchData();
     if (activeTab === 'batches') fetchLookups(['instructors', 'classes']);
     if (activeTab === 'classes') fetchLookups([]);
-    if (activeTab === 'subjects') fetchLookups(['faculties']);
+    if (activeTab === 'subjects') fetchLookups(['faculties', 'classes']);
   }, [activeTab]);
 
   const fetchData = async () => {
@@ -141,7 +141,7 @@ export default function AdminCurriculum() {
       const endpoint = activeTab === 'batches' ? '/api/admin/batches' : activeTab === 'classes' ? '/api/admin/classes' : '/api/admin/subjects';
       let payload = { ...form };
       if (activeTab === 'classes') payload = { name: form.name, description: form.description, targetGrade: form.gradeLevel ? String(form.gradeLevel) : undefined, instructorId: form.instructorId || form.instructor || undefined };
-      else if (activeTab === 'subjects') payload = { name: form.name, description: form.description, facultyId: form.faculty || undefined, targetGrade: form.targetGrade || 'Class 10' };
+      else if (activeTab === 'subjects') payload = { name: form.name, description: form.description, facultyId: form.faculty || undefined, targetGrade: form.targetGrade };
       if (form._id) { await axios.put(`${endpoint}/${form._id}`, payload); toast.success('Record updated'); }
       else { await axios.post(endpoint, payload); toast.success('Record created'); }
       setShowModal(false); fetchData();
@@ -340,8 +340,11 @@ export default function AdminCurriculum() {
               )}
 
               {activeTab === 'subjects' && (<>
-                <FormField label="Target Grade" hint="e.g. Class 10">
-                  <SInput value={form.targetGrade || ''} onChange={e => setForm({...form, targetGrade: e.target.value})} placeholder="Class 10" />
+                <FormField label="Target Grade" hint="Select a class">
+                  <SSelect value={form.targetGrade || ''} onChange={e => setForm({...form, targetGrade: e.target.value})}>
+                    <option value="">Select target grade…</option>
+                    {lookups.classes.map(c => <option key={c._id} value={c.name}>{c.name}</option>)}
+                  </SSelect>
                 </FormField>
                 <FormField label="Assigned Faculty Member">
                   <SSelect value={form.faculty || ''} onChange={e => setForm({...form, faculty: e.target.value})}>

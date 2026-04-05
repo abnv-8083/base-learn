@@ -57,8 +57,9 @@ export default function InstructorCurriculum() {
   const [errors, setErrors] = useState({});
   const [saving, setSaving] = useState(false);
   const [faculties, setFaculties] = useState([]);
+  const [classes, setClasses] = useState([]);
 
-  useEffect(() => { fetchSubjects(); fetchFaculties(); }, []);
+  useEffect(() => { fetchSubjects(); fetchFaculties(); fetchClasses(); }, []);
 
   const fetchSubjects = async () => {
     setLoading(true);
@@ -78,6 +79,13 @@ export default function InstructorCurriculum() {
     try {
       const res = await axios.get('/api/instructor/faculties');
       setFaculties(res.data.data?.available || []);
+    } catch {}
+  };
+
+  const fetchClasses = async () => {
+    try {
+      const res = await axios.get('/api/instructor/classes');
+      setClasses(res.data.data || []);
     } catch {}
   };
 
@@ -154,7 +162,7 @@ export default function InstructorCurriculum() {
           <h1 className="page-title">Academic Curriculum</h1>
           <p className="page-subtitle">Organize your subjects and chapters to structure the learning path.</p>
         </div>
-        <button className="btn btn-primary" onClick={() => { setForm({ targetGrade: 'Class 10' }); setErrors({}); setShowSubjectModal(true); }}
+        <button className="btn btn-primary" onClick={() => { setForm({}); setErrors({}); setShowSubjectModal(true); }}
           style={{ display: 'flex', alignItems: 'center', gap: '8px', borderRadius: '12px', padding: '12px 20px', fontWeight: '700', boxShadow: '0 4px 12px rgba(15,45,107,0.3)' }}>
           <Plus size={18} /> New Subject
         </button>
@@ -271,8 +279,11 @@ export default function InstructorCurriculum() {
                 <SInput value={form.name || ''} onChange={e => { setForm({...form, name: e.target.value}); if (errors.name) validateField('name', e.target.value); }}
                   onBlur={() => validateField('name', form.name)} error={errors.name} placeholder="e.g. Mathematics" />
               </FormField>
-              <FormField label="Target Grade / Level">
-                <SInput value={form.targetGrade || ''} onChange={e => setForm({...form, targetGrade: e.target.value})} placeholder="e.g. Class 10 Foundation" />
+              <FormField label="Target Grade / Level" hint="Select a class">
+                <SSelect value={form.targetGrade || ''} onChange={e => setForm({...form, targetGrade: e.target.value})}>
+                  <option value="">Select target grade…</option>
+                  {classes.map(c => <option key={c._id} value={c.name}>{c.name}</option>)}
+                </SSelect>
               </FormField>
               <FormField label="Assigned Faculty Member">
                 <SSelect value={form.faculty || ''} onChange={e => setForm({...form, faculty: e.target.value})}>
