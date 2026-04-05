@@ -1,4 +1,4 @@
-const { makeWASocket, useMultiFileAuthState, DisconnectReason, Browsers } = require('@whiskeysockets/baileys');
+const { makeWASocket, useMultiFileAuthState, DisconnectReason, Browsers, fetchLatestBaileysVersion } = require('@whiskeysockets/baileys');
 const qrcode = require('qrcode');
 const path = require('path');
 const fs = require('fs');
@@ -19,11 +19,16 @@ const initializeWhatsApp = async () => {
     try {
         const authPath = path.join(__dirname, '../.wwebjs_auth');
         const { state, saveCreds } = await useMultiFileAuthState(authPath);
+        
+        // Fetch the absolute latest WhatsApp Web version to prevent 405 (Method Not Allowed) rejections
+        const { version, isLatest } = await fetchLatestBaileysVersion();
+        console.log(`[WhatsApp/Baileys] Using WA v${version.join('.')}, isLatest: ${isLatest}`);
 
         sock = makeWASocket({
+            version,
             auth: state,
             printQRInTerminal: false,
-            browser: Browsers.macOS('Desktop'), // Better session reliability 
+            browser: ['BaseLearn Admin', 'Chrome', '1.0.0'], // Safe custom browser footprint
             syncFullHistory: false, // Massive RAM reduction
             logger: pino({ level: 'silent' }) // Disable noisy engine logs
         });
