@@ -55,7 +55,7 @@ export default function Landing() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: '#f8faff' }}>
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: '#f8faff', width: '100%', overflowX: 'hidden' }}>
 
       {/* ── Navbar ────────────────────────────────────────── */}
       <header style={{
@@ -75,19 +75,19 @@ export default function Landing() {
           </span>
         </Link>
 
-        <nav style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <nav style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
           {!user ? (
             <>
-              <Link href="#enquiry" style={{ padding: '9px 18px', borderRadius: '9px', fontSize: '14px', fontWeight: '600', color: scrolled ? '#4A5680' : 'rgba(255,255,255,0.85)', textDecoration: 'none', transition: 'color 0.2s' }}>
+              <Link href="#enquiry" className="hide-mobile" style={{ padding: '9px 14px', borderRadius: '9px', fontSize: '13px', fontWeight: '600', color: scrolled ? '#4A5680' : 'rgba(255,255,255,0.85)', textDecoration: 'none' }}>
                 Enquire
               </Link>
-              <Link href="/login" style={{ padding: '9px 20px', borderRadius: '9px', fontSize: '14px', fontWeight: '700', color: scrolled ? 'white' : '#0D1B3E', background: scrolled ? '#0F2D6B' : '#00C2FF', textDecoration: 'none', boxShadow: '0 3px 12px rgba(0,194,255,0.3)', transition: 'all 0.2s' }}>
-                Student Login
+              <Link href="/login" style={{ padding: '8px 16px', borderRadius: '9px', fontSize: '13px', fontWeight: '700', color: scrolled ? 'white' : '#0D1B3E', background: scrolled ? '#0F2D6B' : '#00C2FF', textDecoration: 'none', boxShadow: '0 3px 12px rgba(0,194,255,0.3)' }}>
+                Login
               </Link>
             </>
           ) : (
-            <Link href={`/${user.role}/dashboard`} style={{ padding: '10px 22px', borderRadius: '9px', fontSize: '14px', fontWeight: '700', color: 'white', background: 'linear-gradient(135deg, #0F2D6B, #00C2FF)', textDecoration: 'none', boxShadow: '0 4px 14px rgba(0,194,255,0.35)' }}>
-              Go to Dashboard →
+            <Link href={`/${user.role}/dashboard`} style={{ padding: '10px 18px', borderRadius: '9px', fontSize: '13px', fontWeight: '700', color: 'white', background: 'linear-gradient(135deg, #0F2D6B, #00C2FF)', textDecoration: 'none' }}>
+              Dashboard →
             </Link>
           )}
         </nav>
@@ -136,11 +136,11 @@ export default function Landing() {
           </div>
 
           {/* Stats bar */}
-          <div style={{ display:'flex', justifyContent:'center', gap:'0', marginTop:'64px', background:'rgba(255,255,255,0.05)', borderRadius:'16px', border:'1px solid rgba(255,255,255,0.1)', overflow:'hidden', backdropFilter:'blur(8px)', flexWrap:'wrap' }}>
+          <div className="grid-4-col" style={{ marginTop: '64px', background: 'rgba(255,255,255,0.05)', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.1)', overflow: 'hidden', backdropFilter: 'blur(8px)', gap: 0 }}>
             {STATS.map((s, i) => (
-              <div key={i} style={{ flex:'1', minWidth:'100px', padding:'20px 24px', textAlign:'center', borderRight: i < STATS.length-1 ? '1px solid rgba(255,255,255,0.08)' : 'none' }}>
-                <div style={{ fontSize:'28px', fontWeight:'900', color:'#00C2FF', fontFamily:'var(--font-heading)', letterSpacing:'-0.03em' }}>{s.value}</div>
-                <div style={{ fontSize:'12px', color:'rgba(255,255,255,0.55)', marginTop:'4px', fontWeight:'500' }}>{s.label}</div>
+              <div key={i} style={{ padding: '20px 24px', textAlign: 'center', borderRight: i < STATS.length - 1 ? '1px solid rgba(255,255,255,0.08)' : 'none' }}>
+                <div style={{ fontSize: '28px', fontWeight: '900', color: '#00C2FF', fontFamily: 'var(--font-heading)', letterSpacing: '-0.03em' }}>{s.value}</div>
+                <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.55)', marginTop: '4px', fontWeight: '500' }}>{s.label}</div>
               </div>
             ))}
           </div>
@@ -184,8 +184,8 @@ export default function Landing() {
       </section>
 
       {/* ── Why Choose Us ─────────────────────────────────── */}
-      <section style={{ padding:'80px clamp(20px,5vw,80px)', background:'linear-gradient(135deg, #0F2D6B, #1A3F8F)' }}>
-        <div style={{ maxWidth:'1100px', margin:'0 auto', display:'grid', gridTemplateColumns:'1fr 1fr', gap:'64px', alignItems:'center' }}>
+      <section style={{ padding: '80px clamp(20px,5vw,80px)', background: 'linear-gradient(135deg, #0F2D6B, #1A3F8F)' }}>
+        <div className="grid-2-col" style={{ maxWidth: '1100px', margin: '0 auto', alignItems: 'center' }}>
           <div>
             <div style={{ display:'inline-flex', alignItems:'center', gap:'6px', padding:'6px 14px', borderRadius:'99px', background:'rgba(0,194,255,0.12)', border:'1px solid rgba(0,194,255,0.25)', marginBottom:'20px' }}>
               <CheckCircle size={13} color='#00C2FF' />
@@ -207,7 +207,7 @@ export default function Landing() {
             ))}
           </div>
 
-          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'16px' }}>
+          <div className="grid-2-col">
             {[
               { value:'8th', caption:'Foundation', color:'#00C2FF' },
               { value:'9th', caption:'Intermediate', color:'#6366f1' },
@@ -255,7 +255,7 @@ export default function Landing() {
               </div>
             ) : (
               <form onSubmit={handleEnquiry}>
-                <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'16px', marginBottom:'16px' }}>
+                <div className="grid-2-col" style={{ marginBottom: '16px' }}>
                   {[
                     { label:'Parent / Guardian Name *', key:'name', type:'text', placeholder:'Full name' },
                     { label:'Phone Number *', key:'phone', type:'tel', placeholder:'+91 98765 43210' },
@@ -271,7 +271,7 @@ export default function Landing() {
                   ))}
                 </div>
 
-                <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'16px', marginBottom:'16px' }}>
+                <div className="grid-2-col" style={{ marginBottom: '16px' }}>
                   <div>
                     <label style={{ display:'block', fontSize:'13px', fontWeight:'700', color:'#0D1B3E', marginBottom:'8px' }}>Email Address</label>
                     <input type="email" placeholder="email@example.com" value={form.email} onChange={e => setForm(p => ({...p, email:e.target.value}))}
@@ -369,10 +369,10 @@ export default function Landing() {
       </footer>
 
       <style>{`
-        @media (max-width: 768px) {
-          section > div[style*="grid-template-columns: 1fr 1fr"] {
-            grid-template-columns: 1fr !important;
-          }
+        @media (max-width: 640px) {
+          .hide-mobile { display: none !important; }
+          .grid-4-col > div { border-right: none !important; border-bottom: 1px solid rgba(255,255,255,0.08); }
+          .grid-4-col > div:last-child { border-bottom: none !important; }
         }
       `}</style>
     </div>
