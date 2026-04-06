@@ -3,6 +3,9 @@ import axios from 'axios';
 
 // Configure Axios defaults
 axios.defaults.withCredentials = true;
+if (process.env.NEXT_PUBLIC_API_URL) {
+  axios.defaults.baseURL = process.env.NEXT_PUBLIC_API_URL.replace(/\/$/, "");
+}
 
 const getTokenKey = (role) => `bl_token_${role || 'student'}`;
 
