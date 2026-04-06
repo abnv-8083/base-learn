@@ -18,9 +18,17 @@ const VideoPlayer = ({ src, title, description, onClose, poster }) => {
   }, [src, quality]);
 
   const getTransformedUrl = (url, q) => {
-    if (!url || typeof url !== 'string' || !url.includes('cloudinary.com')) return url;
+    if (!url || typeof url !== 'string') return url;
+
+    // Handle Local Uploads: if it contains /uploads/, force it to relative path so Next.js rewrites handle it smoothly and bypass CORS issues
+    if (url.includes('/uploads/')) {
+        const uIdx = url.indexOf('/uploads/');
+        return url.substring(uIdx);
+    }
     
-    // Support both /upload/ and /authenticated/
+    // Cloudinary processing
+    if (!url.includes('cloudinary.com')) return url;
+    
     const isUpload = url.includes('/upload/');
     const separator = isUpload ? '/upload/' : '/authenticated/';
     const parts = url.split(separator);
@@ -103,7 +111,7 @@ const VideoPlayer = ({ src, title, description, onClose, poster }) => {
         <video 
           ref={videoRef}
           src={videoSrc} 
-          poster={poster}
+          poster={poster?.includes('/uploads/') ? poster.substring(poster.indexOf('/uploads/')) : poster}
           onLoadedMetadata={handleLoadedMetadata}
           onError={(e) => {
             console.error("Video error on src:", videoSrc, e);

@@ -268,7 +268,8 @@ export default function StudentRecordedClasses() {
           <div key={item._id || idx} className="card hover-lift" 
             onClick={() => {
               if (item.isResource) {
-                 window.open(item.fileUrl, '_blank');
+                 const finalUrl = item.fileUrl?.includes('/uploads/') ? item.fileUrl.substring(item.fileUrl.indexOf('/uploads/')) : item.fileUrl;
+                 window.open(finalUrl, '_blank');
               } else {
                  handleVideoSelect(item);
               }
@@ -304,7 +305,11 @@ export default function StudentRecordedClasses() {
                
                {item.assignmentUrl && (
                   <button 
-                    onClick={(e) => { e.stopPropagation(); window.open(item.assignmentUrl, '_blank'); }}
+                    onClick={(e) => { 
+                      e.stopPropagation(); 
+                      const finalUrl = item.assignmentUrl?.includes('/uploads/') ? item.assignmentUrl.substring(item.assignmentUrl.indexOf('/uploads/')) : item.assignmentUrl;
+                      window.open(finalUrl, '_blank'); 
+                    }}
                     style={{ marginBottom: '20px', padding: '10px 16px', borderRadius: '12px', background: '#fffbeb', border: '1px dashed #f59e0b', color: '#b45309', fontSize: '12px', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '10px', width: 'fit-content' }}
                   >
                     <FileText size={14} /> Supplementary Worksheet
@@ -331,16 +336,24 @@ export default function StudentRecordedClasses() {
 
   return (
     <div style={{ paddingBottom: '100px', height: '100%', color: 'white' }}>
-      {activeVideo && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: '#000', display: 'flex', flexDirection: 'column', animation: 'fadeIn 0.3s ease' }}>
-           <VideoPlayer src={activeVideo.fileUrl} title={activeVideo.title} poster={activeVideo.thumbnail} onClose={() => setActiveVideo(null)} />
+      {activeVideo ? (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', animation: 'fadeIn 0.3s ease' }}>
+           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+             <button onClick={() => setActiveVideo(null)} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 18px', borderRadius: '12px', background: 'rgba(255,255,255,0.1)', color: 'white', border: '1px solid rgba(255,255,255,0.2)', cursor: 'pointer', fontWeight: '600', transition: 'all 0.2s' }} onMouseOver={e => e.currentTarget.style.background = 'rgba(255,255,255,0.15)'} onMouseOut={e => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}>
+               <ArrowLeft size={16} /> Back to Content
+             </button>
+           </div>
            
-           <div style={{ padding: '40px 60px', background: '#05080f', borderTop: '1px solid rgba(255,255,255,0.08)', overflowY: 'auto' }}>
-              <div style={{ maxWidth: '1400px', margin: '0 auto', display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 350px', gap: '60px' }}>
+           <div style={{ width: '100%', aspectRatio: '16/9', maxHeight: '70vh', background: '#000', borderRadius: '24px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)' }}>
+              <VideoPlayer src={activeVideo.fileUrl} title={activeVideo.title} poster={activeVideo.thumbnail} />
+           </div>
+           
+           <div style={{ padding: '32px 40px', background: 'rgba(255,255,255,0.02)', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.08)' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 350px', gap: '40px' }}>
                  
                  {/* Left Column: Metadata */}
-                 <div style={{ animation: 'slideUp 0.4s ease-out' }}>
-                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginBottom: '20px' }}>
+                 <div>
+                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginBottom: '16px' }}>
                        <span style={{ fontSize: '11px', fontWeight: '950', color: 'var(--color-primary)', background: 'rgba(99, 102, 241, 0.1)', padding: '6px 14px', borderRadius: '30px', border: '1px solid rgba(99, 102, 241, 0.2)', textTransform: 'uppercase', letterSpacing: '0.15em' }}>
                           Now Playing
                        </span>
@@ -351,156 +364,118 @@ export default function StudentRecordedClasses() {
                        )}
                     </div>
                     
-                    <h2 style={{ margin: '0 0 16px', fontSize: '42px', fontWeight: '950', color: 'white', letterSpacing: '-0.04em', lineHeight: '1.1' }}>
+                    <h2 style={{ margin: '0 0 16px', fontSize: '36px', fontWeight: '950', color: 'white', letterSpacing: '-0.03em', lineHeight: '1.2' }}>
                        {activeVideo.title}
                     </h2>
                     
-                    <div style={{ display: 'flex', gap: '20px', alignItems: 'center', marginBottom: '32px', color: '#94a3b8', fontSize: '14px', fontWeight: '600' }}>
+                    <div style={{ display: 'flex', gap: '20px', alignItems: 'center', marginBottom: '24px', color: '#94a3b8', fontSize: '14px', fontWeight: '600' }}>
                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                           <Clock size={16} /> {new Date(activeVideo.createdAt).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })}
                        </div>
                     </div>
 
-                    <div style={{ background: 'rgba(255,255,255,0.02)', padding: '32px', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.05)' }}>
-                       <h3 style={{ margin: '0 0 12px', fontSize: '14px', fontWeight: '900', color: 'white', textTransform: 'uppercase', letterSpacing: '0.05em', opacity: 0.5 }}>About this session</h3>
-                       <p style={{ margin: 0, fontSize: '17px', color: '#cbd5e1', lineHeight: '1.7', whiteSpace: 'pre-wrap' }}>
-                          {activeVideo.description || 'Master the concepts presented in this high-definition educational recording. Designed to provide deep insights and practical understanding of the subject matter.'}
+                    <div style={{ background: 'rgba(255,255,255,0.02)', padding: '24px', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                       <h3 style={{ margin: '0 0 10px', fontSize: '13px', fontWeight: '900', color: 'white', textTransform: 'uppercase', letterSpacing: '0.05em', opacity: 0.5 }}>About this session</h3>
+                       <p style={{ margin: 0, fontSize: '16px', color: '#cbd5e1', lineHeight: '1.7', whiteSpace: 'pre-wrap' }}>
+                          {activeVideo.description || 'Master the concepts presented in this educational recording.'}
                        </p>
                     </div>
                  </div>
 
                  {/* Right Column: Faculty & Resources */}
-                 <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', animation: 'slideUp 0.5s ease-out' }}>
-                    
-                    {/* Faculty Card */}
-                    <div style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.01) 100%)', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.1)', padding: '24px', backdropFilter: 'blur(20px)' }}>
-                       <h4 style={{ margin: '0 0 16px', fontSize: '11px', fontWeight: '800', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Instructor</h4>
-                       <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                          <div style={{ width: '56px', height: '56px', borderRadius: '18px', background: 'var(--color-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', fontWeight: '900', color: 'white', boxShadow: '0 8px 16px rgba(0,0,0,0.3)' }}>
+                 <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                    <div style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.01) 100%)', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.1)', padding: '20px', backdropFilter: 'blur(20px)' }}>
+                       <h4 style={{ margin: '0 0 12px', fontSize: '11px', fontWeight: '800', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Instructor</h4>
+                       <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                          <div style={{ width: '48px', height: '48px', borderRadius: '16px', background: 'var(--color-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', fontWeight: '900', color: 'white', boxShadow: '0 8px 16px rgba(0,0,0,0.3)' }}>
                              {activeVideo.faculty?.name?.charAt(0) || 'I'}
                           </div>
                           <div>
-                             <div style={{ fontSize: '18px', fontWeight: '800', color: 'white' }}>{activeVideo.faculty?.name || 'Assigned Faculty'}</div>
-                             <div style={{ fontSize: '13px', color: '#94a3b8', fontWeight: '500' }}>Senior Educator</div>
+                             <div style={{ fontSize: '16px', fontWeight: '800', color: 'white' }}>{activeVideo.faculty?.name || 'Assigned Faculty'}</div>
+                             <div style={{ fontSize: '12px', color: '#94a3b8', fontWeight: '500' }}>Senior Educator</div>
                           </div>
                        </div>
                     </div>
 
-                    {/* Resources Area */}
                     {activeVideo.assignmentUrl && (
-                      <div style={{ background: 'rgba(245, 158, 11, 0.03)', borderRadius: '24px', border: '1.5px dashed rgba(245, 158, 11, 0.2)', padding: '24px' }}>
-                         <div style={{ display: 'flex', gap: '12px', alignItems: 'center', marginBottom: '16px' }}>
-                            <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                               <FileText size={18} />
+                      <div style={{ background: 'rgba(245, 158, 11, 0.03)', borderRadius: '20px', border: '1.5px dashed rgba(245, 158, 11, 0.2)', padding: '20px' }}>
+                         <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginBottom: '12px' }}>
+                            <div style={{ width: '28px', height: '28px', borderRadius: '8px', background: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                               <FileText size={16} />
                             </div>
-                            <h4 style={{ margin: 0, fontSize: '14px', fontWeight: '800', color: '#f59e0b' }}>Learning Resource</h4>
+                            <h4 style={{ margin: 0, fontSize: '13px', fontWeight: '800', color: '#f59e0b' }}>Learning Resource</h4>
                          </div>
-                         <p style={{ margin: '0 0 20px 0', fontSize: '13px', color: '#94a3b8', lineHeight: '1.5' }}>Download the supplementary worksheet to practice what you learned in this video.</p>
-                         <button 
-                            onClick={() => window.open(activeVideo.assignmentUrl, '_blank')}
-                            style={{ 
-                               width: '100%',
-                               padding: '12px', 
-                               borderRadius: '14px', 
-                               background: '#f59e0b', 
-                               color: '#000', 
-                               fontSize: '14px', 
-                               fontWeight: '850', 
-                               border: 'none',
-                               display: 'flex', 
-                               alignItems: 'center', 
-                               justifyContent: 'center',
-                               gap: '10px', 
-                               cursor: 'pointer',
-                               transition: 'all 0.3s'
-                            }}
-                            onMouseOver={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 10px 20px -5px rgba(245, 158, 11, 0.4)'; }}
-                            onMouseOut={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; }}
-                         >
-                            <MonitorPlay size={18} /> OPEN WORKSHEET
+                         <p style={{ margin: '0 0 16px 0', fontSize: '12px', color: '#94a3b8', lineHeight: '1.5' }}>Download the supplementary worksheet to practice what you learned in this video.</p>
+                         <button onClick={() => {
+                            const finalUrl = activeVideo.assignmentUrl?.includes('/uploads/') ? activeVideo.assignmentUrl.substring(activeVideo.assignmentUrl.indexOf('/uploads/')) : activeVideo.assignmentUrl;
+                            window.open(finalUrl, '_blank');
+                         }}
+                            style={{ width: '100%', padding: '10px', borderRadius: '12px', background: '#f59e0b', color: '#000', fontSize: '13px', fontWeight: '850', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', cursor: 'pointer', transition: 'all 0.3s' }}>
+                            <MonitorPlay size={16} /> OPEN WORKSHEET
                          </button>
                       </div>
                     )}
-
                  </div>
               </div>
            </div>
         </div>
-      )}
-
-      <div style={{ 
-        position: 'relative',
-        padding: '80px 60px',
-        borderRadius: '40px',
-        background: 'linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%)',
-        border: '1px solid rgba(255,255,255,0.1)',
-        marginBottom: '48px',
-        overflow: 'hidden',
-        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)'
-      }}>
-        {/* Animated Glow Orbs */}
-        <div style={{ position: 'absolute', top: '-100px', right: '-100px', width: '400px', height: '400px', background: 'var(--color-student)', filter: 'blur(160px)', opacity: 0.15, borderRadius: '50%' }}></div>
-        <div style={{ position: 'absolute', bottom: '-150px', left: '-50px', width: '350px', height: '350px', background: '#ec4899', filter: 'blur(140px)', opacity: 0.12, borderRadius: '50%' }}></div>
-        
-        <div style={{ position: 'relative', zIndex: 1 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '20px' }}>
-              <div style={{ padding: '8px', background: 'rgba(99, 102, 241, 0.1)', borderRadius: '12px', border: '1px solid rgba(99, 102, 241, 0.2)' }}>
-                <GraduationCap size={22} color="var(--color-student)" />
-              </div>
-              <span style={{ fontSize: '13px', fontWeight: '800', color: 'var(--color-student)', textTransform: 'uppercase', letterSpacing: '0.25em' }}>Student Learning Portal</span>
-          </div>
-          <h1 style={{ fontSize: '52px', fontWeight: '950', marginBottom: '16px', letterSpacing: '-0.03em', color: 'white', lineHeight: '1.1' }}>
-             {viewCategory ? (viewCategory === 'video' ? 'Recorded Lectures' : (viewCategory === 'progress' ? 'Course Progress' : viewCategory.charAt(0).toUpperCase() + viewCategory.slice(1) + 's')) : 'Your Learning Hub'}
-          </h1>
-          <p style={{ fontSize: '19px', color: '#94a3b8', maxWidth: '650px', lineHeight: '1.7', fontWeight: '400' }}>Master your subjects with high-definition recordings and curated resources designed for excellence.</p>
-        </div>
-      </div>
-
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '48px', gap: '24px', flexWrap: 'wrap' }}>
-         <Breadcrumbs />
-         <div style={{ position: 'relative', width: '100%', maxWidth: '420px' }}>
-            <Search size={20} style={{ position: 'absolute', left: '18px', top: '50%', transform: 'translateY(-50%)', color: '#64748b' }} />
-            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Filter resources by name..."
-              style={{ 
-                width: '100%', 
-                padding: '18px 20px 18px 54px', 
-                borderRadius: '20px', 
-                background: 'rgba(255,255,255,0.7)', 
-                border: '1px solid #e2e8f0', 
-                fontSize: '15px', 
-                color: '#1e293b',
-                outline: 'none',
-                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                backdropFilter: 'blur(10px)',
-                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)'
-              }}
-              onFocus={e => {
-                e.currentTarget.style.borderColor = 'var(--color-student)';
-                e.currentTarget.style.background = '#fff';
-                e.currentTarget.style.boxShadow = '0 10px 15px -3px rgba(99, 102, 241, 0.1)';
-              }}
-              onBlur={e => {
-                e.currentTarget.style.borderColor = '#e2e8f0';
-                e.currentTarget.style.background = 'rgba(255,255,255,0.7)';
-                e.currentTarget.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.05)';
-              }} 
-            />
-         </div>
-      </div>
-
-      {loading ? (
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px', marginTop: '15vh' }}>
-          <div className="spinner" style={{ width: '50px', height: '50px', border: '3px solid rgba(255,255,255,0.05)', borderTopColor: 'var(--color-primary)' }}></div>
-          <p style={{ color: '#94a3b8', fontWeight: '500', letterSpacing: '0.05em' }}>FETCHING YOUR KNOWLEDGE HUB...</p>
-        </div>
       ) : (
-        <div className="fade-in" style={{ animation: 'slideUp 0.6s ease-out' }}>
-          {!viewCategory && renderHub()}
-          {viewCategory === 'progress' && renderProgression()}
-          {viewCategory && viewCategory !== 'progress' && !currentSubject && renderSubjects()}
-          {currentSubject && !currentChapter && renderChapters()}
-          {currentChapter && renderVideos()}
-        </div>
+        <>
+          <div style={{ 
+            position: 'relative',
+            padding: '80px 60px',
+            borderRadius: '40px',
+            background: 'linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%)',
+            border: '1px solid rgba(255,255,255,0.1)',
+            marginBottom: '48px',
+            overflow: 'hidden',
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)'
+          }}>
+            {/* Animated Glow Orbs */}
+            <div style={{ position: 'absolute', top: '-100px', right: '-100px', width: '400px', height: '400px', background: 'var(--color-student)', filter: 'blur(160px)', opacity: 0.15, borderRadius: '50%' }}></div>
+            <div style={{ position: 'absolute', bottom: '-150px', left: '-50px', width: '350px', height: '350px', background: '#ec4899', filter: 'blur(140px)', opacity: 0.12, borderRadius: '50%' }}></div>
+            
+            <div style={{ position: 'relative', zIndex: 1 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '20px' }}>
+                  <div style={{ padding: '8px', background: 'rgba(99, 102, 241, 0.1)', borderRadius: '12px', border: '1px solid rgba(99, 102, 241, 0.2)' }}>
+                    <GraduationCap size={22} color="var(--color-student)" />
+                  </div>
+                  <span style={{ fontSize: '13px', fontWeight: '800', color: 'var(--color-student)', textTransform: 'uppercase', letterSpacing: '0.25em' }}>Student Learning Portal</span>
+              </div>
+              <h1 style={{ fontSize: '52px', fontWeight: '950', marginBottom: '16px', letterSpacing: '-0.03em', color: 'white', lineHeight: '1.1' }}>
+                 {viewCategory ? (viewCategory === 'video' ? 'Recorded Lectures' : (viewCategory === 'progress' ? 'Course Progress' : viewCategory.charAt(0).toUpperCase() + viewCategory.slice(1) + 's')) : 'Your Learning Hub'}
+              </h1>
+              <p style={{ fontSize: '19px', color: '#94a3b8', maxWidth: '650px', lineHeight: '1.7', fontWeight: '400' }}>Master your subjects with high-definition recordings and curated resources designed for excellence.</p>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '48px', gap: '24px', flexWrap: 'wrap' }}>
+             <Breadcrumbs />
+             <div style={{ position: 'relative', width: '100%', maxWidth: '420px' }}>
+                <Search size={20} style={{ position: 'absolute', left: '18px', top: '50%', transform: 'translateY(-50%)', color: '#64748b' }} />
+                <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Filter resources by name..."
+                  style={{ width: '100%', padding: '18px 20px 18px 54px', borderRadius: '20px', background: 'rgba(255,255,255,0.7)', border: '1px solid #e2e8f0', fontSize: '15px', color: '#1e293b', outline: 'none', transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)', backdropFilter: 'blur(10px)', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)' }}
+                  onFocus={e => { e.currentTarget.style.borderColor = 'var(--color-student)'; e.currentTarget.style.background = '#fff'; e.currentTarget.style.boxShadow = '0 10px 15px -3px rgba(99, 102, 241, 0.1)'; }}
+                  onBlur={e => { e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.background = 'rgba(255,255,255,0.7)'; e.currentTarget.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.05)'; }} 
+                />
+             </div>
+          </div>
+
+          {loading ? (
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px', marginTop: '15vh' }}>
+              <div className="spinner" style={{ width: '50px', height: '50px', border: '3px solid rgba(255,255,255,0.05)', borderTopColor: 'var(--color-primary)' }}></div>
+              <p style={{ color: '#94a3b8', fontWeight: '500', letterSpacing: '0.05em' }}>FETCHING YOUR KNOWLEDGE HUB...</p>
+            </div>
+          ) : (
+            <div className="fade-in" style={{ animation: 'slideUp 0.6s ease-out' }}>
+              {!viewCategory && renderHub()}
+              {viewCategory === 'progress' && renderProgression()}
+              {viewCategory && viewCategory !== 'progress' && !currentSubject && renderSubjects()}
+              {currentSubject && !currentChapter && renderChapters()}
+              {currentChapter && renderVideos()}
+            </div>
+          )}
+        </>
       )}
 
       <style jsx>{`
