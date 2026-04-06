@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { 
   Search, Calendar, Clock, Video, FileText, CheckCircle, 
   XCircle, Users, Share2, Link as LinkIcon, AlertCircle, X, Upload,
-  BarChart2
+  BarChart2, Play
 } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import { useConfirmStore } from '@/store/confirmStore';
