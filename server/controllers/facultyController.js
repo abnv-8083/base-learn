@@ -207,13 +207,28 @@ exports.uploadContent = asyncHandler(async (req, res) => {
 // GET /api/faculty/live-classes
 exports.getLiveClasses = asyncHandler(async (req, res) => {
     try {
+        // Find all classes first
         const classes = await LiveClass.find({ faculty: req.user.userId })
-            .populate('subject', 'name')
             .populate('batches', 'name')
             .populate('attendance.studentId', 'name email image')
             .sort({ scheduledAt: 1 });
+
+        // Manually populate subjects only for those that have valid ObjectIDs
+        // This avoids 500 errors when Mongoose tries to populate a string like "STANDARD MODULE"
+        const populatedClasses = await Promise.all(classes.map(async (cls) => {
+            const clsObj = cls.toObject();
+            if (cls.subject && typeof cls.subject !== 'string' && cls.subject.toString().match(/^[0-9a-fA-F]{24}$/)) {
+                try {
+                    const Subject = require('../models/Subject');
+                    clsObj.subject = await Subject.findById(cls.subject).select('name');
+                } catch (e) {
+                    console.warn(`[LiveClasses] Skip populate for subject ${cls.subject}`);
+                }
+            }
+            return clsObj;
+        }));
         
-        res.status(200).json({ success: true, data: classes || [] });
+        res.status(200).json({ success: true, data: populatedClasses });
     } catch (error) {
         console.error('[LiveClasses API Error]:', error.message);
         res.status(500).json({ success: false, message: 'Failed to retrieve live sessions', error: error.message });
