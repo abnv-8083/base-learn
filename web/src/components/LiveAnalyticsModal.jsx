@@ -63,11 +63,18 @@ export default function LiveAnalyticsModal({ session, onClose }) {
                   </div>
 
                   <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
-                    <div style={{ textAlign: 'right' }}>
-                      <div style={{ fontSize: '11px', fontWeight: '800', color: '#94a3b8', textTransform: 'uppercase' }}>Join • Exit</div>
-                      <div style={{ fontSize: '13px', fontWeight: '600', color: '#475569' }}>
-                        {record.joinTime ? new Date(record.joinTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--'} • 
-                        {record.leaveTime ? new Date(record.leaveTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Active'}
+                    <div style={{ display: 'flex', gap: '32px' }}>
+                      <div style={{ textAlign: 'right' }}>
+                        <div style={{ fontSize: '10px', fontWeight: '800', color: '#94a3b8', textTransform: 'uppercase', marginBottom: '2px' }}>Join Time</div>
+                        <div style={{ fontSize: '13px', fontWeight: '700', color: '#1e293b' }}>
+                          {record.joinTime ? new Date(record.joinTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--'}
+                        </div>
+                      </div>
+                      <div style={{ textAlign: 'right' }}>
+                        <div style={{ fontSize: '10px', fontWeight: '800', color: '#94a3b8', textTransform: 'uppercase', marginBottom: '2px' }}>Exit Time</div>
+                        <div style={{ fontSize: '13px', fontWeight: '700', color: '#1e293b' }}>
+                          {record.leaveTime ? new Date(record.leaveTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : (record.joinTime ? 'Active' : '--:--')}
+                        </div>
                       </div>
                     </div>
 

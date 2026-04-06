@@ -70,8 +70,13 @@ class BigBlueButton {
     try {
       const response = await axios.get(fullUrl);
       const result = await this.parser.parseStringPromise(response.data);
-      return result.response.running === 'true';
+      const isRunning = result.response.running === 'true';
+      if (!isRunning) {
+        console.log(`[BBB-DEBUG] Meeting ${meetingId} is NOT running. Raw:`, result.response.running);
+      }
+      return isRunning;
     } catch (error) {
+      console.error(`[BBB-DEBUG] Error checking isMeetingRunning for ${meetingId}:`, error.message);
       return false;
     }
   }

@@ -6,74 +6,82 @@ const Notification = require('../models/Notification');
 
 const syncLiveSessions = async () => {
     try {
-        // Find all sessions marked as ongoing
         const ongoingSessions = await LiveClass.find({ status: 'ongoing' }).populate('faculty', 'name email');
+        if (ongoingSessions.length > 0) {
+            console.log(`[JOB-DEBUG] Checking status for ${ongoingSessions.length} ongoing sessions...`);
+        }
         
         for (const session of ongoingSessions) {
-            const isRunning = await bbb.isMeetingRunning(session._id.toString());
-            
-            if (!isRunning) {
-                console.log(`Live Session ${session.title} (${session._id}) has ended. Processing analytics...`);
+            try {
+                const isRunning = await bbb.isMeetingRunning(session._id.toString());
                 
-                // 1. Fetch detailed meeting info for attendance
-                const info = await bbb.getMeetingInfo(session._id.toString());
-                if (info && info.attendees) {
-                    const bbbAttendees = Array.isArray(info.attendees.attendee) 
-                        ? info.attendees.attendee 
-                        : (info.attendees.attendee ? [info.attendees.attendee] : []);
-
-                    let updatedAttendance = [...session.attendance];
-
-                    // Map BBB attendees back to our students
-                    // NOTE: This assumes the student join name or metadata matches studentId or email
-                    // In a production app, we usually pass studentId as 'userID' in the join URL.
-                    for (const att of bbbAttendees) {
-                        // BBB userID is usually set to the student ID string in our join logic
-                        const studentId = att.userID; 
-                        const studentIndex = updatedAttendance.findIndex(a => a.studentId.toString() === studentId);
-                        
-                        if (studentIndex > -1) {
-                            updatedAttendance[studentIndex].attended = true;
-                            // Check if timestamps are available (depends on BBB version/config)
-                            // Basic tracking: if they are in the final report, they attended.
-                            
-                            // 80% Attendance Logic:
-                            // We compare the meeting duration from BBB with their participation
-                            // For simplicity if BBB doesn't provide precise per-user total seconds here,
-                            // we use the session duration.
-                            const sessionDurationSeconds = (session.duration || 60) * 60;
-                            const attendedSeconds = parseInt(att.totalTime) || sessionDurationSeconds; // totalTime in seconds
-                            
-                            const attendancePercentage = (attendedSeconds / sessionDurationSeconds) * 100;
-                            
-                            if (attendancePercentage >= 80) {
-                                updatedAttendance[studentIndex].status = 'present';
-                            } else {
-                                updatedAttendance[studentIndex].status = 'late';
-                            }
-                            updatedAttendance[studentIndex].totalDurationSeconds = attendedSeconds;
-                        }
+                if (!isRunning) {
+                    console.log(`[JOB-DEBUG] Session "${session.title}" (${session._id}) ended in BBB. Closing platform status...`);
+                    
+                    // 1. Attempt to fetch detailed meeting info for attendance
+                    let info = null;
+                    try {
+                        info = await bbb.getMeetingInfo(session._id.toString());
+                    } catch (e) {
+                        console.warn(`[JOB-DEBUG] Could not fetch meeting info for ${session._id} (Meeting likely purged from BBB cache).`);
                     }
-                    session.attendance = updatedAttendance;
+
+                    if (info && info.attendees) {
+                        const bbbAttendees = Array.isArray(info.attendees.attendee) 
+                            ? info.attendees.attendee 
+                            : (info.attendees.attendee ? [info.attendees.attendee] : []);
+
+                        let updatedAttendance = [...session.attendance];
+
+                        for (const att of bbbAttendees) {
+                            const studentId = att.userID; 
+                            const studentIndex = updatedAttendance.findIndex(a => a.studentId.toString() === studentId);
+                            
+                            if (studentIndex > -1) {
+                                updatedAttendance[studentIndex].attended = true;
+                                updatedAttendance[studentIndex].leaveTime = new Date(); // Approximate leave time if meeting just ended
+                                
+                                const sessionDurationSeconds = (session.duration || 60) * 60;
+                                const attendedSeconds = parseInt(att.totalTime) || sessionDurationSeconds;
+                                
+                                const attendancePercentage = (attendedSeconds / sessionDurationSeconds) * 100;
+                                
+                                if (attendancePercentage >= 80) {
+                                    updatedAttendance[studentIndex].status = 'present';
+                                } else {
+                                    updatedAttendance[studentIndex].status = 'late';
+                                }
+                                updatedAttendance[studentIndex].totalDurationSeconds = attendedSeconds;
+                            }
+                        }
+                        session.attendance = updatedAttendance;
+                    }
+
+                    // 2. Mark session as completed (ESSENTIAL: Do this even if info fetch fails)
+                    session.status = 'completed';
+                    await session.save();
+                    console.log(`[JOB-DEBUG] Session "${session.title}" marked as COMPLETED.`);
+
+                    // 3. Process recording
+                    await processRecording(session);
                 }
-
-                // 2. Mark session as completed
-                session.status = 'completed';
-                await session.save();
-
-                // 3. Start checking for recording (will re-process in next iterations if not ready)
-                await processRecording(session);
+            } catch (sessionError) {
+                console.error(`[JOB-DEBUG] Error processing session ${session._id}:`, sessionError.message);
             }
         }
 
-        // Also check sessions that are completed but not yet "processed" into RecordedClass
+        // Process pending completed sessions for recordings
         const pendingProcessing = await LiveClass.find({ status: 'completed', processed: false });
         for (const session of pendingProcessing) {
-            await processRecording(session);
+            try {
+                await processRecording(session);
+            } catch (e) {
+                console.error(`[JOB-DEBUG] Error processing recording for ${session._id}:`, e.message);
+            }
         }
 
     } catch (error) {
-        console.error('Sync Live Sessions Error:', error.message);
+        console.error('[JOB-CRITICAL] Sync Live Sessions Loop Error:', error.message);
     }
 };
 
