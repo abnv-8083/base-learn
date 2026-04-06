@@ -69,7 +69,7 @@ export default function StudentProgression() {
                  </div>
 
                  {/* Embedded Stats */}
-                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', borderTop: '1px solid var(--color-border)', paddingTop: '16px' }}>
+                 <div className="grid-3-col" style={{ gap: '12px', borderTop: '1px solid var(--color-border)', paddingTop: '16px' }}>
                    <div style={{ textAlign: 'center' }}>
                      <div style={{ fontSize: '16px', fontWeight: '800', color: 'var(--color-text-primary)' }}>{item.stats?.videos || 0}</div>
                      <div style={{ fontSize: '11px', color: 'var(--color-text-secondary)', textTransform: 'uppercase' }}><MonitorPlay size={12} style={{marginRight: '4px'}}/>Lecs</div>

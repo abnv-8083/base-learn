@@ -168,7 +168,7 @@ export default function InstructorStudentAnalytics() {
       </div>
 
       {/* Stats Row */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '32px' }}>
+      <div className="grid-4-col" style={{ marginBottom: '32px' }}>
         <StatCard icon={Video} value={totalVideos} label="Videos Watched" color="#6366f1" bg="#eef2ff" />
         <StatCard icon={Radio} value={`${attendedLive}/${totalLive}`} label="Live Sessions" color="#22c55e" bg="#f0fdf4" />
         <StatCard icon={Clock} value={formatDuration(totalWatchSecs)} label="Total Watch Time" color="#f59e0b" bg="#fffbeb" />
@@ -192,7 +192,7 @@ export default function InstructorStudentAnalytics() {
 
       {/* Tab: Overview */}
       {tab === 'overview' && (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
+        <div className="grid-2-col">
           <div className="card" style={{ padding: '24px' }}>
             <h3 style={{ margin: '0 0 20px', fontSize: '16px', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '8px' }}>
               <TrendingUp size={18} color="var(--color-primary)" /> Activity Breakdown

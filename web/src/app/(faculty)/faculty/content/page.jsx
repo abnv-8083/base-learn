@@ -212,7 +212,7 @@ export default function FacultyContent() {
       </div>
 
       {loading ? <div className="spinner" style={{ margin: 'auto', display: 'block', marginTop: '20vh' }}></div> : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', gap: '24px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '24px' }}>
           {filteredContent.length === 0 ? (
             <div style={{ gridColumn: '1 / -1', padding: '80px', textAlign: 'center', background: 'var(--color-bg)', borderRadius: '16px', border: '2px dashed var(--color-border)' }}>
               <ListPlus size={48} color="var(--color-primary)" style={{ margin: '0 auto 16px', opacity: 0.5 }} />
@@ -306,7 +306,7 @@ export default function FacultyContent() {
               </div>
               
               <div style={{ padding: '32px', overflowY: 'auto', flex: 1 }}>
-                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', marginBottom: '32px' }}>
+                 <div className="grid-3-col" style={{ marginBottom: '32px' }}>
                     <div style={{ background: 'var(--color-bg)', padding: '20px', borderRadius: '16px', textAlign: 'center' }}>
                        <div style={{ color: 'var(--color-text-secondary)', fontSize: '12px', textTransform: 'uppercase', fontWeight: 'bold', marginBottom: '8px' }}>Total Views</div>
                        <div style={{ fontSize: '28px', fontWeight: '800', color: 'var(--color-primary)' }}>{analysisItem.totalViews || 0}</div>
@@ -373,7 +373,7 @@ export default function FacultyContent() {
             </div>
             <div style={{ padding: '24px', maxHeight: '70vh', overflowY: 'auto' }}>
               
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
+              <div className="grid-2-col" style={{ marginBottom: '16px' }}>
                 <div className="form-group">
                   <label className="form-label">Material Target Subject <span style={{color: 'red'}}>*</span></label>
                   <select className="form-select" value={form.subjectId || ''} onChange={e => setForm({...form, subjectId: e.target.value, chapterId: ''})}>
@@ -418,7 +418,7 @@ export default function FacultyContent() {
                 </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
+              <div className="grid-2-col" style={{ marginBottom: '16px' }}>
                  <div className="form-group">
                    <label className="form-label">Title <span style={{color: 'red'}}>*</span></label>
                    <input type="text" className="form-input" value={form.title} onChange={e => setForm({...form, title: e.target.value})} placeholder="E.g. Algebra pt 1" />

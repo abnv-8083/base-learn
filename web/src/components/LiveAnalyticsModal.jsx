@@ -27,7 +27,7 @@ export default function LiveAnalyticsModal({ session, onClose }) {
         </div>
 
         {/* Hero Stats */}
-        <div style={{ padding: '24px', display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '20px', background: '#f8fafc' }}>
+        <div style={{ padding: '24px', background: '#f8fafc' }} className="grid-3-col">
           <div style={{ background: 'white', padding: '16px', borderRadius: '16px', border: '1px solid #e2e8f0', textAlign: 'center' }}>
             <span style={{ fontSize: '12px', fontWeight: '800', color: '#94a3b8', textTransform: 'uppercase' }}>Participation</span>
             <div style={{ fontSize: '24px', fontWeight: '900', color: 'var(--color-primary)' }}>{presentCount}/{totalStudents}</div>
@@ -51,7 +51,7 @@ export default function LiveAnalyticsModal({ session, onClose }) {
               {attendance.length === 0 ? (
                 <div style={{ padding: '40px', textAlign: 'center', color: '#64748b' }}>No student data captured for this session.</div>
               ) : attendance.map((record, i) => (
-                <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px', background: '#fff', borderRadius: '16px', border: '1px solid #f1f5f9' }}>
+                <div key={i} style={{ padding: '16px', background: '#fff', borderRadius: '16px', border: '1px solid #f1f5f9' }} className="flex-stack-mobile">
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                     <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#64748b' }}>
                       <User size={20} />
@@ -62,8 +62,8 @@ export default function LiveAnalyticsModal({ session, onClose }) {
                     </div>
                   </div>
 
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
-                    <div style={{ display: 'flex', gap: '32px' }}>
+                  <div className="flex-stack-mobile" style={{ width: '100%', justifyContent: 'space-between' }}>
+                    <div className="flex-stack-mobile" style={{ gap: '24px' }}>
                       <div style={{ textAlign: 'right' }}>
                         <div style={{ fontSize: '10px', fontWeight: '800', color: '#94a3b8', textTransform: 'uppercase', marginBottom: '2px' }}>Join Time</div>
                         <div style={{ fontSize: '13px', fontWeight: '700', color: '#1e293b' }}>
