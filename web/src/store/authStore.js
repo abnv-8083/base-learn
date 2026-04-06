@@ -11,7 +11,14 @@ const getTokenKey = (role) => `bl_token_${role || 'student'}`;
 
 // Create an interceptor to insert Bearer Token
 axios.interceptors.request.use(config => {
-  const token = useAuthStore.getState().token;
+  let token = useAuthStore.getState().token;
+  
+  // Fallback to storage for rehydration resilience
+  if (!token && typeof window !== 'undefined') {
+    const role = localStorage.getItem('last_active_role') || 'student';
+    token = sessionStorage.getItem(`bl_token_${role}`);
+  }
+
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
