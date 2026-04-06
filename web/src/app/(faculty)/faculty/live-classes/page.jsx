@@ -177,9 +177,9 @@ export default function FacultyLiveClasses() {
                    </div>
                    
                    <h3 style={{ fontSize: '22px', fontWeight: '900', marginBottom: '6px', color: '#0f172a', lineHeight: '1.3' }}>{session.title}</h3>
-                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--color-primary)', fontWeight: '800', fontSize: '13px', textTransform: 'uppercase', marginBottom: '24px' }}>
-                      <MapPin size={14} /> {session.subject || 'Standard Module'}
-                   </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--color-primary)', fontWeight: '800', fontSize: '13px', textTransform: 'uppercase', marginBottom: '24px' }}>
+                       <MapPin size={14} /> {session.subject?.name || (typeof session.subject === 'string' ? session.subject : 'Standard Module')}
+                    </div>
 
                    <div style={{ background: '#f8fafc', padding: '16px', borderRadius: '16px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', border: '1px solid #f1f5f9' }}>
                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
