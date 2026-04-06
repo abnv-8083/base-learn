@@ -23,12 +23,22 @@ export default function FacultyLiveClasses() {
   const [selectedAnalytics, setSelectedAnalytics] = useState(null);
 
   useEffect(() => {
+    let interval;
     if (user?.role === 'faculty') {
       fetchClasses();
       fetchSubjects();
       fetchBatches();
+
+      // Set up a polling interval to catch BBB meeting endings automatically
+      interval = setInterval(() => {
+        const hasOngoing = liveClasses.some(c => c.status === 'ongoing');
+        if (hasOngoing) {
+          fetchClasses();
+        }
+      }, 30000);
     }
-  }, [user]);
+    return () => clearInterval(interval);
+  }, [user, liveClasses.some(c => c.status === 'ongoing')]);
 
   const fetchClasses = async () => {
     setLoading(true);

@@ -128,7 +128,7 @@ const processRecording = async (session) => {
 // Start the job
 const startJob = () => {
     console.log('Live Session Lifecycle Job Started.');
-    setInterval(syncLiveSessions, 60000); // Check every minute
+    setInterval(syncLiveSessions, 30000); // Check every 30 seconds for faster synchronization
 };
 
 module.exports = { startJob };

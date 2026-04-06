@@ -71,16 +71,29 @@ export default function InstructorLiveClasses() {
   const [selectedAnalytics, setSelectedAnalytics] = useState(null);
 
   useEffect(() => {
-    if (user) { fetchClasses(); fetchBatches(); }
+    let interval;
+    if (user) { 
+      fetchClasses(); 
+      fetchBatches(); 
+
+      // Auto-refresh every 30s to detect completed sessions
+      interval = setInterval(() => {
+        fetchClasses(false); 
+      }, 30000);
+    }
+    return () => clearInterval(interval);
   }, [user]);
 
-  const fetchClasses = async () => {
-    setLoading(true);
+  const fetchClasses = async (showLoader = true) => {
+    if (showLoader) setLoading(true);
     try {
       const { data } = await axios.get('/api/instructor/live-classes');
       setClasses(data.data || []);
-    } catch { toast.error('Failed to load live classes'); }
-    finally { setLoading(false); }
+    } catch { 
+      if (showLoader) toast.error('Failed to load live classes'); 
+    } finally { 
+      if (showLoader) setLoading(false); 
+    }
   };
 
   const fetchBatches = async () => {
