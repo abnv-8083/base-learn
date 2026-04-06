@@ -11,6 +11,7 @@ import {
 import { useAuthStore } from '@/store/authStore';
 import { useConfirmStore } from '@/store/confirmStore';
 import toast from 'react-hot-toast';
+import LiveAnalyticsModal from '@/components/LiveAnalyticsModal';
 
 // --- Sub-components ---
 
@@ -67,6 +68,7 @@ export default function InstructorLiveClasses() {
   const [recordingUrl, setRecordingUrl] = useState('');
   const [notesUrl, setNotesUrl] = useState('');
   const [mediaSubmitting, setMediaSubmitting] = useState(false);
+  const [selectedAnalytics, setSelectedAnalytics] = useState(null);
 
   useEffect(() => {
     if (user) { fetchClasses(); fetchBatches(); }
@@ -116,7 +118,7 @@ export default function InstructorLiveClasses() {
 
   const openMediaModal = (cls) => {
     setMediaClass(cls);
-    setRecordingUrl(cls.recording?.videoUrl !== 'pending' ? (cls.recording?.videoUrl || '') : '');
+    setRecordingUrl(cls.recording?.videoUrl !== 'pending' ? (cls.recording?.videoUrl || cls.recordingUrl || '') : (cls.recordingUrl || ''));
     setNotesUrl(cls.presentationUrl || '');
     setShowMediaModal(true);
   };
@@ -218,7 +220,7 @@ export default function InstructorLiveClasses() {
               activeTab={activeTab}
               onAssignBatches={() => openAssignModal(cls)}
               onManageMedia={() => openMediaModal(cls)}
-              onViewAnalytics={() => router.push(`/instructor/live-classes/${cls._id}/analytics`)}
+              onViewAnalytics={() => setSelectedAnalytics(cls)}
             />
           ))}
         </div>
@@ -305,6 +307,8 @@ export default function InstructorLiveClasses() {
           />
         </Modal>
       )}
+
+      {selectedAnalytics && <LiveAnalyticsModal session={selectedAnalytics} onClose={() => setSelectedAnalytics(null)} />}
     </div>
   );
 }
@@ -358,8 +362,8 @@ function LiveClassCard({ cls, activeTab, onAssignBatches, onManageMedia, onViewA
             color: hasRecording ? '#166534' : '#854d0e',
             display: 'flex', alignItems: 'center', gap: '6px'
           }}>
-            {hasRecording ? <CheckCircle size={14} /> : <AlertCircle size={14} />}
-            {hasRecording ? 'Recording published to batches' : 'Recording not yet published'}
+            {hasRecording ? <CheckCircle size={14} /> : (cls.recordingUrl ? <Play size={14} /> : <AlertCircle size={14} />)}
+            {hasRecording ? 'Recording published to batches' : (cls.recordingUrl ? 'Recording Ready for Review (Auto-Fetched)' : 'Recording not yet published')}
           </div>
         )}
 

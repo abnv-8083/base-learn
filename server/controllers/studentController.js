@@ -248,7 +248,7 @@ const getLiveClasses = asyncHandler(async (req, res) => {
   const batchId = studentBatch._id;
 
   // Filter live classes where this batch is in the 'batches' array
-  const selectFields = 'title subject faculty scheduledAt duration status type meetingLink recordingUrl';
+  const selectFields = 'title subject faculty scheduledAt duration status type meetingLink recordingUrl presentationUrl';
 
   const upcoming = await LiveClass.find({ 
     status: { $in: ['upcoming', 'ongoing'] }, 

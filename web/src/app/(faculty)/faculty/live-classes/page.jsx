@@ -2,10 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Video, Calendar, Clock, MapPin, Play, Plus, X, Trash2 } from 'lucide-react';
+import { Video, Calendar, Clock, MapPin, Play, Plus, X, Trash2, BarChart2 } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import { useConfirmStore } from '@/store/confirmStore';
 import toast from 'react-hot-toast';
+import LiveAnalyticsModal from '@/components/LiveAnalyticsModal';
 
 export default function FacultyLiveClasses() {
   const { user } = useAuthStore();
@@ -19,6 +20,7 @@ export default function FacultyLiveClasses() {
   
   const [subjects, setSubjects] = useState([]);
   const [batches, setBatches] = useState([]);
+  const [selectedAnalytics, setSelectedAnalytics] = useState(null);
 
   useEffect(() => {
     if (user?.role === 'faculty') {
@@ -202,8 +204,8 @@ export default function FacultyLiveClasses() {
                 <div style={{ padding: '20px 24px', background: 'white', borderTop: '1px solid #f1f5f9', display: 'flex', gap: '12px' }}>
                     {session.status === 'completed' ? (
                        <div style={{ width: '100%', display: 'flex', gap: '8px' }}>
-                          <button className="btn btn-secondary" style={{ flex: 1, padding: '12px', borderRadius: '12px', fontSize: '13px', fontWeight: '800', opacity: 0.6 }} disabled>
-                             Archive Ready
+                          <button onClick={() => setSelectedAnalytics(session)} className="btn btn-secondary" style={{ flex: 1, padding: '12px', borderRadius: '12px', fontSize: '13px', fontWeight: '800', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                             <BarChart2 size={16} /> View Analytics
                           </button>
                           <button onClick={() => handleDelete(session._id, session.title)} className="btn" style={{ padding: '12px 16px', borderRadius: '12px', fontSize: '13px', fontWeight: '800', background: '#fee2e2', color: '#ef4444', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
                              <Trash2 size={15} /> Delete
@@ -286,6 +288,8 @@ export default function FacultyLiveClasses() {
           </div>
         </div>
       )}
+      
+      {selectedAnalytics && <LiveAnalyticsModal session={selectedAnalytics} onClose={() => setSelectedAnalytics(null)} />}
     </div>
   );
 }

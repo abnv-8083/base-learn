@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
-import { Video, Calendar, Clock, Play, AlertCircle, RefreshCw } from 'lucide-react';
+import { Video, Calendar, Clock, Play, AlertCircle, RefreshCw, FileText } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 // Helper: detect if a string looks like a MongoDB ObjectId (24 hex chars)
@@ -143,9 +143,31 @@ export default function StudentLiveClasses() {
 
                 <div style={{ padding: '16px 24px', background: 'var(--color-bg)', borderTop: '1px solid var(--color-border)' }}>
                   {isCompleted ? (
-                    <button className="btn" disabled style={{ width: '100%', display: 'flex', gap: '8px', alignItems: 'center', justifyContent: 'center', opacity: 0.6 }}>
-                      <AlertCircle size={18} /> Broadcast Ended
-                    </button>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      {item.recordingUrl ? (
+                        <button 
+                          onClick={() => window.open(item.recordingUrl, '_blank')}
+                          className="btn btn-primary" 
+                          style={{ width: '100%', display: 'flex', gap: '8px', alignItems: 'center', justifyContent: 'center' }}
+                        >
+                          <Play size={18} /> Watch Recording
+                        </button>
+                      ) : (
+                        <button className="btn" disabled style={{ width: '100%', display: 'flex', gap: '8px', alignItems: 'center', justifyContent: 'center', opacity: 0.6 }}>
+                          <AlertCircle size={18} /> Broadcast Ended
+                        </button>
+                      )}
+                      
+                      {item.presentationUrl && (
+                        <button 
+                          onClick={() => window.open(item.presentationUrl, '_blank')}
+                          className="btn btn-secondary" 
+                          style={{ width: '100%', display: 'flex', gap: '8px', alignItems: 'center', justifyContent: 'center' }}
+                        >
+                          <FileText size={18} /> View Whiteboard Notes
+                        </button>
+                      )}
+                    </div>
                   ) : (
                     <button
                       onClick={() => handleJoinSession(item._id)}

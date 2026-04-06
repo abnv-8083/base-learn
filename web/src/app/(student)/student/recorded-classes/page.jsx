@@ -270,6 +270,8 @@ export default function StudentRecordedClasses() {
               if (item.isResource) {
                  const finalUrl = item.fileUrl?.includes('/uploads/') ? item.fileUrl.substring(item.fileUrl.indexOf('/uploads/')) : item.fileUrl;
                  window.open(finalUrl, '_blank');
+              } else if (item.contentType === 'liveRecording') {
+                 window.open(item.videoUrl, '_blank');
               } else {
                  handleVideoSelect(item);
               }
@@ -312,7 +314,7 @@ export default function StudentRecordedClasses() {
                     }}
                     style={{ marginBottom: '20px', padding: '10px 16px', borderRadius: '12px', background: '#fffbeb', border: '1px dashed #f59e0b', color: '#b45309', fontSize: '12px', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '10px', width: 'fit-content' }}
                   >
-                    <FileText size={14} /> Supplementary Worksheet
+                    <FileText size={14} /> {item.contentType === 'liveRecording' ? 'Class Notes / Whiteboard' : 'Supplementary Worksheet'}
                   </button>
                )}
 
