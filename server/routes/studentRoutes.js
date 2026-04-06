@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { protect, authorizeRoles } = require('../middleware/authMiddleware');
-const { upload } = require('../middleware/uploadMiddleware');
+const { cloudinaryMixedUpload } = require('../middleware/uploadMiddleware');
 const {
   getDashboard,
   getRecordedClasses,
@@ -40,7 +40,7 @@ router.post('/live-classes/:id/device-event', trackDeviceEvent);
 router.get('/assignments', getAssignments);
 router.get('/tests', getTests);
 router.get('/assessments', getAllAssessments);
-router.post('/assessments/:id/submit', upload.single('file'), submitAssessment);
+router.post('/assessments/:id/submit', cloudinaryMixedUpload.single('file'), submitAssessment);
 router.get('/main-assessments', getMainAssessments);
 router.get('/faq/live-sessions', getLiveFaqSessions);
 router.get('/calendar', getCalendar);
