@@ -1423,40 +1423,58 @@ exports.getLiveClasses = async (req, res) => {
         const Subject = require('../models/Subject');
         const LiveClass = require('../models/LiveClass');
         const Faculty = require('../models/Faculty');
+        const Batch = require('../models/Batch');
 
+        // 1. Get Subject IDs assigned to instructor
         const subjectQuery = req.user.role === 'admin' ? {} : { instructor: userId };
         const instructorSubjects = await Subject.find(subjectQuery).select('_id');
         const subjectIds = instructorSubjects.map(s => s._id);
 
+        // 2. Get Faculty IDs assigned to instructor
         const facultyQuery = req.user.role === 'admin' ? {} : { assignedInstructor: userId };
         const assignedFaculties = await Faculty.find(facultyQuery).select('_id');
         const facultyIds = assignedFaculties.map(f => f._id);
 
+        // 3. Get Batch IDs managed by instructor (NEW: Essential for visibility)
+        const managedBatches = await Batch.find({ instructor: userId }).select('_id');
+        const managedBatchIds = managedBatches.map(b => b._id);
+
         const query = req.user.role === 'admin' ? {} : {
             $or: [
                 { subject: { $in: subjectIds } },
-                { faculty: { $in: facultyIds } }
+                { faculty: { $in: facultyIds } },
+                { batches: { $in: managedBatchIds } }
             ]
         };
 
         const classes = await LiveClass.find(query)
             .populate('faculty', 'name email image')
             .populate('batches', 'name')
-            .sort({ scheduledAt: -1 })
-            .lean();
+            .sort({ scheduledAt: -1 });
 
-        // Check for associated recordings
+        // Check for associated recordings and handle legacy string subjects defensively
         const RecordedClass = require('../models/RecordedClass');
-        const results = await Promise.all(classes.map(async (c) => {
-            if (c.status === 'completed') {
-                const recording = await RecordedClass.findOne({ liveClass: c._id }).lean();
-                return { ...c, recording };
+        const results = await Promise.all(classes.map(async (cls) => {
+            const clsObj = cls.toObject();
+            
+            // Defensive Populate for Subject (handles legacy string titles)
+            if (cls.subject && typeof cls.subject !== 'string' && cls.subject.toString().match(/^[0-9a-fA-F]{24}$/)) {
+                try {
+                    clsObj.subject = await Subject.findById(cls.subject).select('name');
+                } catch (e) {
+                    // It's a string title, leave as is
+                }
             }
-            return c;
+
+            if (cls.status === 'completed') {
+                clsObj.recording = await RecordedClass.findOne({ liveClass: cls._id }).lean();
+            }
+            return clsObj;
         }));
 
         res.status(200).json({ success: true, data: results });
     } catch (error) {
+        console.error('[Instructor LiveClasses API Error]:', error.message);
         res.status(500).json({ success: false, message: 'Error fetching live classes', error: error.message });
     }
 };
