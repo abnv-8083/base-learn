@@ -28,6 +28,7 @@ const protect = async (req, res, next) => {
             const user = await Model.findById(decoded.id).select('-password');
             
             if (!user) {
+                console.warn(`[AUTH] User not found in DB: ID ${decoded.id} Role ${decoded.role}`);
                 return res.status(401).json({ message: 'Not authorized, user no longer exists' });
             }
             
@@ -36,10 +37,11 @@ const protect = async (req, res, next) => {
 
             next();
         } catch (error) {
-            console.error('[AUTH] Token verification failed:', error.message);
+            console.error('[AUTH] Token verification failed:', error.message, 'Token Prefix:', token ? token.substring(0, 10) : 'NONE');
             res.status(401).json({ message: 'Not authorized, token expired or invalid' });
         }
     } else {
+        console.warn('[AUTH] No Bearer token provided in headers');
         res.status(401).json({ message: 'Not authorized, no token provided' });
     }
 };
