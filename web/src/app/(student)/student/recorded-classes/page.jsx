@@ -335,11 +335,11 @@ export default function StudentRecordedClasses() {
   };
 
   return (
-    <div style={{ paddingBottom: '100px', height: '100%', color: 'white' }}>
+    <div style={{ paddingBottom: '100px', height: '100%', color: 'var(--color-text-primary)' }}>
       {activeVideo ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', animation: 'fadeIn 0.3s ease' }}>
            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-             <button onClick={() => setActiveVideo(null)} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 18px', borderRadius: '12px', background: 'rgba(255,255,255,0.1)', color: 'white', border: '1px solid rgba(255,255,255,0.2)', cursor: 'pointer', fontWeight: '600', transition: 'all 0.2s' }} onMouseOver={e => e.currentTarget.style.background = 'rgba(255,255,255,0.15)'} onMouseOut={e => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}>
+             <button onClick={() => setActiveVideo(null)} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 18px', borderRadius: '12px', background: 'var(--color-surface)', color: 'var(--color-text-primary)', border: '1.5px solid var(--color-border)', cursor: 'pointer', fontWeight: '600', transition: 'all 0.2s', boxShadow: 'var(--shadow-sm)' }} onMouseOver={e => e.currentTarget.style.background = 'var(--color-bg)'} onMouseOut={e => e.currentTarget.style.background = 'var(--color-surface)'}>
                <ArrowLeft size={16} /> Back to Content
              </button>
            </div>
@@ -348,7 +348,7 @@ export default function StudentRecordedClasses() {
               <VideoPlayer src={activeVideo.fileUrl} title={activeVideo.title} poster={activeVideo.thumbnail} />
            </div>
            
-           <div style={{ padding: '32px 40px', background: 'rgba(255,255,255,0.02)', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.08)' }}>
+           <div style={{ padding: '32px 40px', background: 'var(--color-surface)', borderRadius: '24px', border: '1px solid var(--color-border)', boxShadow: 'var(--shadow-md)' }}>
               <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 350px', gap: '40px' }}>
                  
                  {/* Left Column: Metadata */}
@@ -358,25 +358,25 @@ export default function StudentRecordedClasses() {
                           Now Playing
                        </span>
                        {activeVideo.type && (
-                         <span style={{ fontSize: '11px', fontWeight: '950', color: '#94a3b8', background: 'rgba(255, 255, 255, 0.05)', padding: '6px 14px', borderRadius: '30px', textTransform: 'uppercase', letterSpacing: '0.15em' }}>
+                         <span style={{ fontSize: '11px', fontWeight: '950', color: 'var(--color-text-secondary)', background: 'var(--color-bg)', padding: '6px 14px', borderRadius: '30px', textTransform: 'uppercase', letterSpacing: '0.15em' }}>
                             {activeVideo.type}
                          </span>
                        )}
                     </div>
                     
-                    <h2 style={{ margin: '0 0 16px', fontSize: '36px', fontWeight: '950', color: 'white', letterSpacing: '-0.03em', lineHeight: '1.2' }}>
+                    <h2 style={{ margin: '0 0 16px', fontSize: '36px', fontWeight: '950', color: 'var(--color-text-primary)', letterSpacing: '-0.03em', lineHeight: '1.2' }}>
                        {activeVideo.title}
                     </h2>
                     
-                    <div style={{ display: 'flex', gap: '20px', alignItems: 'center', marginBottom: '24px', color: '#94a3b8', fontSize: '14px', fontWeight: '600' }}>
+                    <div style={{ display: 'flex', gap: '20px', alignItems: 'center', marginBottom: '24px', color: 'var(--color-text-secondary)', fontSize: '14px', fontWeight: '600' }}>
                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                           <Clock size={16} /> {new Date(activeVideo.createdAt).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })}
                        </div>
                     </div>
 
                     <div style={{ background: 'rgba(255,255,255,0.02)', padding: '24px', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.05)' }}>
-                       <h3 style={{ margin: '0 0 10px', fontSize: '13px', fontWeight: '900', color: 'white', textTransform: 'uppercase', letterSpacing: '0.05em', opacity: 0.5 }}>About this session</h3>
-                       <p style={{ margin: 0, fontSize: '16px', color: '#cbd5e1', lineHeight: '1.7', whiteSpace: 'pre-wrap' }}>
+                       <h3 style={{ margin: '0 0 10px', fontSize: '13px', fontWeight: '900', color: 'var(--color-text-primary)', textTransform: 'uppercase', letterSpacing: '0.05em', opacity: 0.7 }}>About this session</h3>
+                       <p style={{ margin: 0, fontSize: '16px', color: 'var(--color-text-secondary)', lineHeight: '1.7', whiteSpace: 'pre-wrap' }}>
                           {activeVideo.description || 'Master the concepts presented in this educational recording.'}
                        </p>
                     </div>
@@ -384,15 +384,15 @@ export default function StudentRecordedClasses() {
 
                  {/* Right Column: Faculty & Resources */}
                  <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                    <div style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.01) 100%)', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.1)', padding: '20px', backdropFilter: 'blur(20px)' }}>
-                       <h4 style={{ margin: '0 0 12px', fontSize: '11px', fontWeight: '800', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Instructor</h4>
+                    <div style={{ background: 'var(--color-surface)', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.1)', padding: '20px', backdropFilter: 'blur(20px)' }}>
+                       <h4 style={{ margin: '0 0 12px', fontSize: '11px', fontWeight: '800', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Instructor</h4>
                        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
                           <div style={{ width: '48px', height: '48px', borderRadius: '16px', background: 'var(--color-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', fontWeight: '900', color: 'white', boxShadow: '0 8px 16px rgba(0,0,0,0.3)' }}>
                              {activeVideo.faculty?.name?.charAt(0) || 'I'}
                           </div>
                           <div>
-                             <div style={{ fontSize: '16px', fontWeight: '800', color: 'white' }}>{activeVideo.faculty?.name || 'Assigned Faculty'}</div>
-                             <div style={{ fontSize: '12px', color: '#94a3b8', fontWeight: '500' }}>Senior Educator</div>
+                             <div style={{ fontSize: '16px', fontWeight: '800', color: 'var(--color-text-primary)' }}>{activeVideo.faculty?.name || 'Assigned Faculty'}</div>
+                             <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)', fontWeight: '500' }}>Senior Educator</div>
                           </div>
                        </div>
                     </div>
@@ -405,7 +405,7 @@ export default function StudentRecordedClasses() {
                             </div>
                             <h4 style={{ margin: 0, fontSize: '13px', fontWeight: '800', color: '#f59e0b' }}>Learning Resource</h4>
                          </div>
-                         <p style={{ margin: '0 0 16px 0', fontSize: '12px', color: '#94a3b8', lineHeight: '1.5' }}>Download the supplementary worksheet to practice what you learned in this video.</p>
+                         <p style={{ margin: '0 0 16px 0', fontSize: '12px', color: 'var(--color-text-secondary)', lineHeight: '1.5' }}>Download the supplementary worksheet to practice what you learned in this video.</p>
                          <button onClick={() => {
                             const finalUrl = activeVideo.assignmentUrl?.includes('/uploads/') ? activeVideo.assignmentUrl.substring(activeVideo.assignmentUrl.indexOf('/uploads/')) : activeVideo.assignmentUrl;
                             window.open(finalUrl, '_blank');
@@ -513,8 +513,8 @@ function NoContent({ icon: Icon, message }) {
         <Icon size={48} color="#475569" style={{ opacity: 0.6 }} />
       </div>
       <div>
-        <h3 style={{ color: 'white', fontSize: '22px', fontWeight: '800', marginBottom: '8px' }}>Nothing here yet</h3>
-        <p style={{ color: '#94a3b8', fontSize: '16px', fontWeight: '500', margin: 0, maxWidth: '400px' }}>{message}</p>
+        <h3 style={{ color: 'var(--color-text-primary)', fontSize: '22px', fontWeight: '800', marginBottom: '8px' }}>Nothing here yet</h3>
+        <p style={{ color: 'var(--color-text-secondary)', fontSize: '16px', fontWeight: '500', margin: 0, maxWidth: '400px' }}>{message}</p>
       </div>
     </div>
   );
