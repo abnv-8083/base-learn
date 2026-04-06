@@ -17,7 +17,15 @@ class BigBlueButton {
   }
 
   async createMeeting(meetingId, name, attendeePW, moderatorPW) {
-    const query = `name=${encodeURIComponent(name)}&meetingID=${meetingId}&attendeePW=${attendeePW}&moderatorPW=${moderatorPW}&record=true`;
+    const privacyParams = [
+      'lockSettingsHideUserList=true',
+      'webcamsOnlyForModerator=true',
+      'lockSettingsDisableCam=false', // Allow students to share cam (so moderator can see them)
+      'lockSettingsDisablePublicChat=false',
+      'lockSettingsDisablePrivateChat=false'
+    ].join('&');
+
+    const query = `name=${encodeURIComponent(name)}&meetingID=${meetingId}&attendeePW=${attendeePW}&moderatorPW=${moderatorPW}&record=true&${privacyParams}`;
     const checksum = this.generateChecksum('create', query);
     const fullUrl = `${this.url}/create?${query}&checksum=${checksum}`;
 
