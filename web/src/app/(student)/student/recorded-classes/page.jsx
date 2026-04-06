@@ -350,8 +350,8 @@ export default function StudentRecordedClasses() {
               <VideoPlayer src={activeVideo.fileUrl} title={activeVideo.title} poster={activeVideo.thumbnail} />
            </div>
            
-           <div style={{ padding: '32px 40px', background: 'var(--color-surface)', borderRadius: '24px', border: '1px solid var(--color-border)', boxShadow: 'var(--shadow-md)' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 350px', gap: '40px' }}>
+           <div className="player-meta-container" style={{ padding: '32px 40px', background: 'var(--color-surface)', borderRadius: '24px', border: '1px solid var(--color-border)', boxShadow: 'var(--shadow-md)' }}>
+              <div className="player-meta-grid" style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 350px', gap: '40px' }}>
                  
                  {/* Left Column: Metadata */}
                  <div>
@@ -366,7 +366,7 @@ export default function StudentRecordedClasses() {
                        )}
                     </div>
                     
-                    <h2 style={{ margin: '0 0 16px', fontSize: '36px', fontWeight: '950', color: 'var(--color-text-primary)', letterSpacing: '-0.03em', lineHeight: '1.2' }}>
+                    <h2 className="player-title" style={{ margin: '0 0 16px', fontSize: '36px', fontWeight: '950', color: 'var(--color-text-primary)', letterSpacing: '-0.03em', lineHeight: '1.2' }}>
                        {activeVideo.title}
                     </h2>
                     
@@ -444,7 +444,7 @@ export default function StudentRecordedClasses() {
                   </div>
                   <span style={{ fontSize: '13px', fontWeight: '800', color: 'var(--color-student)', textTransform: 'uppercase', letterSpacing: '0.25em' }}>Student Learning Portal</span>
               </div>
-              <h1 style={{ fontSize: '52px', fontWeight: '950', marginBottom: '16px', letterSpacing: '-0.03em', color: 'white', lineHeight: '1.1' }}>
+              <h1 className="hero-title" style={{ fontSize: '52px', fontWeight: '950', marginBottom: '16px', letterSpacing: '-0.03em', color: 'white', lineHeight: '1.1' }}>
                  {viewCategory ? (viewCategory === 'video' ? 'Recorded Lectures' : (viewCategory === 'progress' ? 'Course Progress' : viewCategory.charAt(0).toUpperCase() + viewCategory.slice(1) + 's')) : 'Your Learning Hub'}
               </h1>
               <p style={{ fontSize: '19px', color: '#94a3b8', maxWidth: '650px', lineHeight: '1.7', fontWeight: '400' }}>Master your subjects with high-definition recordings and curated resources designed for excellence.</p>
@@ -490,6 +490,15 @@ export default function StudentRecordedClasses() {
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         .hover-lift:hover {
           transform: translateY(-8px);
+        }
+        @media (max-width: 1024px) {
+          .player-meta-grid { grid-template-columns: 1fr !important; gap: 24px !important; }
+        }
+        @media (max-width: 640px) {
+           .player-meta-container { padding: 20px !important; }
+           .player-title { fontSize: 24px !important; }
+           .hero-title { fontSize: 32px !important; }
+           .player-meta-grid { gap: 20px !important; }
         }
       `}</style>
     </div>
