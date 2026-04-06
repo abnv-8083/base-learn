@@ -61,7 +61,17 @@ exports.getDashboardStats = asyncHandler(async (req, res) => {
 
 // GET /api/faculty/subjects
 exports.getAssignedSubjects = asyncHandler(async (req, res) => {
-    const subjects = await Subject.find({ faculty: req.user.userId }).lean();
+    const facultyUser = await require('../models/Faculty').findById(req.user.userId);
+    
+    // Fetch subjects explicitly assigned to this faculty
+    let subjects = await Subject.find({ faculty: req.user.userId }).lean();
+    
+    // Implicit fallback: If they have no explicitly assigned subjects, let them see subjects 
+    // owned by their assigned instructor (to prevent empty dashboard states)
+    if (subjects.length === 0 && facultyUser && facultyUser.assignedInstructor) {
+        subjects = await Subject.find({ instructor: facultyUser.assignedInstructor }).lean();
+    }
+
     const result = await Promise.all(subjects.map(async (sub) => {
         const chapters = await Chapter.find({ subject: sub._id }).select('name').lean();
         return { ...sub, chapters };
