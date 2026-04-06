@@ -4,7 +4,9 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuthStore } from "@/store/authStore";
 import { useRouter } from "next/navigation";
-import { LogOut, User } from "lucide-react";
+import { LogOut, User, X } from "lucide-react";
+import { useLayoutStore } from "@/store/layoutStore";
+
 
 const ROLE_COLORS = {
   admin:      { accent: '#ef4444', light: 'rgba(239,68,68,0.15)',      badge: '#fef2f2', badgeText: '#991b1b'   },
@@ -23,9 +25,11 @@ const ROLE_LABELS = {
 export default function Sidebar({ menuItems, role }) {
   const pathname = usePathname();
   const { user, logout } = useAuthStore();
+  const { isSidebarOpen, setSidebarOpen } = useLayoutStore();
   const router = useRouter();
   const home = `/${role}/dashboard`;
   const roleStyle = ROLE_COLORS[role] || ROLE_COLORS.student;
+
 
   const handleLogout = async () => {
     await logout(role);
@@ -37,7 +41,21 @@ export default function Sidebar({ menuItems, role }) {
     : '?';
 
   return (
-    <aside id="app-sidebar" className="sidebar">
+    <aside id="app-sidebar" className={`sidebar ${isSidebarOpen ? "open" : ""}`}>
+      {/* Mobile Close Button */}
+      <button 
+        onClick={() => setSidebarOpen(false)}
+        className="mobile-only"
+        style={{
+          position: 'absolute', top: '16px', right: '16px', 
+          background: 'rgba(255,255,255,0.05)', border: 'none', 
+          borderRadius: '8px', padding: '8px', color: 'white',
+          cursor: 'pointer', zIndex: 10
+        }}
+      >
+        <X size={20} />
+      </button>
+
       {/* Top accent gradient */}
       <div style={{
         position: 'absolute', top: 0, left: 0, right: 0, height: '3px',

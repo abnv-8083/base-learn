@@ -225,7 +225,7 @@ export default function InstructorLiveClasses() {
           </p>
         </div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(380px, 1fr))', gap: '24px' }}>
+        <div className="card-grid">
           {filtered.map(cls => (
             <LiveClassCard
               key={cls._id}

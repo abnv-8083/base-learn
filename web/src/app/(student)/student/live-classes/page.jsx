@@ -90,7 +90,7 @@ export default function StudentLiveClasses() {
       {loading ? (
         <div className="spinner" style={{ margin: 'auto', display: 'block', marginTop: '20vh' }} />
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', gap: '24px' }}>
+        <div className="card-grid">
           {allClasses.length === 0 ? (
             <div style={{ gridColumn: '1 / -1', padding: '60px', textAlign: 'center', background: 'var(--color-bg)', borderRadius: '16px', border: '2px dashed var(--color-border)' }}>
               <Video size={48} color="var(--color-text-muted)" style={{ margin: '0 auto 16px' }} />

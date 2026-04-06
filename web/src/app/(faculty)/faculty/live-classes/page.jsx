@@ -167,7 +167,7 @@ export default function FacultyLiveClasses() {
       </div>
 
       {loading ? <div className="spinner" style={{ margin: 'auto', display: 'block', marginTop: '20vh' }}></div> : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(380px, 1fr))', gap: '32px' }}>
+        <div className="card-grid" style={{ gap: '32px' }}>
           {liveClasses.length === 0 ? (
             <div style={{ gridColumn: '1 / -1', padding: '100px 40px', textAlign: 'center', background: 'white', borderRadius: '24px', border: '2px dashed #e2e8f0' }}>
               <Video size={56} color="#94a3b8" style={{ margin: '0 auto 20px' }} />

@@ -6,6 +6,8 @@ import Link from "next/link";
 import axios from "axios";
 import { useAuthStore } from "@/store/authStore";
 import { Bell, User, Menu, X, Search, ChevronRight, Trash2 } from "lucide-react";
+import { useLayoutStore } from "@/store/layoutStore";
+
 import toast from "react-hot-toast";
 
 const ROLE_COLORS = {
@@ -89,7 +91,8 @@ export default function Topbar() {
   const { user } = useAuthStore();
   const router = useRouter();
   const pathname = usePathname();
-  const [menuOpen, setMenuOpen] = useState(false);
+  const { isSidebarOpen, toggleSidebar, setSidebarOpen } = useLayoutStore();
+
   const [scrolled, setScrolled] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
@@ -101,8 +104,9 @@ export default function Topbar() {
     : '?';
 
   useEffect(() => {
-    setMenuOpen(false);
+    setSidebarOpen(false);
     setNotifOpen(false);
+
   }, [pathname]);
 
   const fetchNotifications = async () => {
@@ -155,12 +159,8 @@ export default function Topbar() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [notifOpen]);
 
-  useEffect(() => {
-    const sidebar = document.getElementById("app-sidebar");
-    if (!sidebar) return;
-    if (menuOpen) sidebar.classList.add("open");
-    else sidebar.classList.remove("open");
-  }, [menuOpen]);
+  // (Removed manual DOM manipulation, now handled via layout store state)
+
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 10);
@@ -174,10 +174,11 @@ export default function Topbar() {
     <>
       <div
         id="sidebar-backdrop"
-        className={`sidebar-backdrop ${menuOpen ? "open" : ""}`}
-        onClick={() => setMenuOpen(false)}
+        className={`sidebar-backdrop ${isSidebarOpen ? "open" : ""}`}
+        onClick={() => setSidebarOpen(false)}
         aria-hidden
       />
+
 
       <header style={{
         height: '64px',
@@ -199,11 +200,12 @@ export default function Topbar() {
           <button
             type="button"
             className="topbar-menu-btn"
-            onClick={() => setMenuOpen(m => !m)}
+            onClick={toggleSidebar}
             aria-label="Toggle menu"
           >
-            {menuOpen ? <X size={20} /> : <Menu size={20} />}
+            {isSidebarOpen ? <X size={20} /> : <Menu size={20} />}
           </button>
+
 
           {/* Dynamic Breadcrumbs */}
           <nav style={{ display: 'flex', alignItems: 'center', gap: '4px' }} aria-label="Breadcrumb">

@@ -33,7 +33,7 @@ export default function StudentProgression() {
       </div>
 
       {loading ? <div className="spinner" style={{ margin: 'auto', display: 'block', marginTop: '20vh' }}></div> : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '24px' }}>
+        <div className="card-grid">
           {subjects.length === 0 ? (
             <div style={{ gridColumn: '1 / -1', padding: '60px', textAlign: 'center', background: 'var(--color-bg)', borderRadius: '16px', border: '2px dashed var(--color-border)' }}>
               <BookOpen size={48} color="var(--color-text-muted)" style={{ margin: '0 auto 16px' }} />

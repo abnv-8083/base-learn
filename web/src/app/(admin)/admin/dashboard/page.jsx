@@ -58,7 +58,7 @@ export default function AdminDashboard() {
       </div>
 
       {/* Stat Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '20px', marginBottom: '32px' }}>
+      <div className="stats-grid">
         {statCards.map((s, i) => {
           const Icon = s.icon;
           return (
@@ -78,7 +78,7 @@ export default function AdminDashboard() {
       </div>
 
       {/* Real Data Charts */}
-      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '32px', marginBottom: '32px' }}>
+      <div className="dash-layout-grid">
         <div className="card">
           <div className="card-header" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
              <TrendingUp size={18} color="var(--color-primary)" />

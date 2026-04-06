@@ -115,7 +115,7 @@ export default function FacultyDashboard() {
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '32px', marginTop: '32px' }}>
+      <div className="dash-layout-grid">
         
         {/* Content by Type Bar Chart (real data) */}
         <div className="card">

@@ -60,7 +60,7 @@ export default function InstructorDashboard() {
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '24px', marginBottom: '32px' }}>
+      <div className="stats-grid">
         {[
           { label: 'Assigned Batches', value: stats.totalBatches, icon: Layers, color: '#3b82f6', bg: '#eff6ff' },
           { label: 'Total Students', value: stats.totalStudents, icon: Users, color: '#10b981', bg: '#ecfdf5' },
@@ -79,7 +79,7 @@ export default function InstructorDashboard() {
         ))}
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '24px' }}>
+      <div className="dash-layout-grid">
         {/* Students per Batch Bar Chart (real data) */}
         <div className="card">
           <div className="card-header" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
