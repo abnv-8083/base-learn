@@ -206,7 +206,10 @@ exports.uploadContent = asyncHandler(async (req, res) => {
 
 // GET /api/faculty/live-classes
 exports.getLiveClasses = asyncHandler(async (req, res) => {
-    const classes = await LiveClass.find({ faculty: req.user.userId }).populate('batches', 'name').sort({ scheduledAt: 1 });
+    const classes = await LiveClass.find({ faculty: req.user.userId })
+        .populate('subject', 'name')
+        .populate('batches', 'name')
+        .sort({ scheduledAt: 1 });
     res.status(200).json({ success: true, data: classes });
 });
 

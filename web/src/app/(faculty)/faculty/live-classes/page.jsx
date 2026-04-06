@@ -18,11 +18,13 @@ export default function FacultyLiveClasses() {
   const [saving, setSaving] = useState(false);
   
   const [subjects, setSubjects] = useState([]);
+  const [batches, setBatches] = useState([]);
 
   useEffect(() => {
     if (user?.role === 'faculty') {
       fetchClasses();
       fetchSubjects();
+      fetchBatches();
     }
   }, [user]);
 
@@ -48,22 +50,31 @@ export default function FacultyLiveClasses() {
     }
   };
 
+  const fetchBatches = async () => {
+    try {
+      const res = await axios.get('/api/faculty/batches');
+      setBatches(Array.isArray(res.data.data) ? res.data.data : []);
+    } catch {
+      console.error('Failed to load batches');
+    }
+  };
+
   const handleCreate = () => {
-    setForm({ title: '', subject: '', date: '', time: '', duration: 60 });
+    setForm({ title: '', subject: '', batchId: '', date: '', time: '', duration: 60 });
     setShowModal(true);
   };
 
   const handleSave = async () => {
     if (!form.title?.trim()) return toast.error('Session title is required.');
     if (!form.subject) return toast.error('Please select a subject.');
+    if (!form.batchId) return toast.error('Please select a target batch.');
     if (!form.date || !form.time) return toast.error('Date and time are required.');
     setSaving(true);
     try {
-      // Find the selected subject object to send its name (not _id)
-      const selectedSubject = subjects.find(s => s._id === form.subject);
       await axios.post('/api/faculty/live-classes', {
         ...form,
-        subject: selectedSubject ? selectedSubject.name : form.subject,
+        // Since we updated the model, we now send the subject ID directly
+        subject: form.subject 
       });
       toast.success('Live class scheduled successfully!');
       setShowModal(false);
@@ -239,6 +250,14 @@ export default function FacultyLiveClasses() {
                 <select className="form-select" style={{ height: '48px', borderRadius: '12px' }} value={form.subject || ''} onChange={e => setForm({...form, subject: e.target.value})}>
                   <option value="">Select subject context...</option>
                   {subjects.map(s => <option key={s._id} value={s._id}>{s.name} ({s.targetGrade})</option>)}
+                </select>
+              </div>
+
+              <div className="form-group" style={{ marginBottom: '20px' }}>
+                <label className="form-label" style={{ fontWeight: '800', fontSize: '13px', color: '#475569' }}>Target Batch <span style={{color: 'red'}}>*</span></label>
+                <select className="form-select" style={{ height: '48px', borderRadius: '12px' }} value={form.batchId || ''} onChange={e => setForm({...form, batchId: e.target.value})}>
+                  <option value="">Select target audience...</option>
+                  {batches.map(b => <option key={b._id} value={b._id}>{b.name} ({b.studyClass?.name})</option>)}
                 </select>
               </div>
               

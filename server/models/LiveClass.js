@@ -7,7 +7,7 @@ const deviceEventSchema = new mongoose.Schema({
 
 const liveClassSchema = new mongoose.Schema({
   title: { type: String, required: true },
-  subject: { type: String, required: true },
+  subject: { type: mongoose.Schema.Types.ObjectId, ref: 'Subject', required: true },
   faculty: { type: mongoose.Schema.Types.ObjectId, ref: 'Faculty', required: true },
   batches: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Batch' }],
   description: { type: String },
