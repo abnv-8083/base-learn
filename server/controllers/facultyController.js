@@ -206,12 +206,18 @@ exports.uploadContent = asyncHandler(async (req, res) => {
 
 // GET /api/faculty/live-classes
 exports.getLiveClasses = asyncHandler(async (req, res) => {
-    const classes = await LiveClass.find({ faculty: req.user.userId })
-        .populate('subject', 'name')
-        .populate('batches', 'name')
-        .populate('attendance.studentId', 'name email image')
-        .sort({ scheduledAt: 1 });
-    res.status(200).json({ success: true, data: classes });
+    try {
+        const classes = await LiveClass.find({ faculty: req.user.userId })
+            .populate('subject', 'name')
+            .populate('batches', 'name')
+            .populate('attendance.studentId', 'name email image')
+            .sort({ scheduledAt: 1 });
+        
+        res.status(200).json({ success: true, data: classes || [] });
+    } catch (error) {
+        console.error('[LiveClasses API Error]:', error.message);
+        res.status(500).json({ success: false, message: 'Failed to retrieve live sessions', error: error.message });
+    }
 });
 
 // POST /api/faculty/live-classes
