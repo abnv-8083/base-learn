@@ -52,6 +52,7 @@ app.use('/api', limiter);
 app.use(cors({
   origin: [
     process.env.CLIENT_URL || 'http://localhost:3000',
+    'https://base-learn-five.vercel.app',
     'http://localhost:3000',
     'http://localhost:5173'
   ],
