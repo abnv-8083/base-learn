@@ -276,25 +276,6 @@ exports.endLiveClass = asyncHandler(async (req, res) => {
     liveClass.status = 'completed';
     await liveClass.save();
 
-    // Auto-create a recorded class entry so students can see it in curriculum
-    // We link it here, but actual recording URL processing would happen later if needed
-    try {
-        await RecordedClass.create({
-            title: `Recording: ${liveClass.title}`,
-            description: `Session conducted on ${new Date(liveClass.scheduledAt).toLocaleDateString()}`,
-            subject: liveClass.subject,
-            chapter: liveClass.chapter,
-            faculty: req.user.userId,
-            liveClass: liveClass._id,
-            contentType: 'liveRecording',
-            status: 'draft', 
-            videoUrl: 'pending', // Recording link takes time to process
-            thumbnail: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80' // Default placeholder
-        });
-    } catch (rcErr) {
-        console.error('Failed to auto-create recorded class:', rcErr.message);
-    }
-
     await logAction(req, 'Ended Live Class', liveClass.title, { targetId: liveClass._id, targetModel: 'LiveClass' });
     
     res.status(200).json({ success: true, message: 'Class ended and moved to results' });

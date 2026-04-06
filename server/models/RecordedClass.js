@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const recordedClassSchema = new mongoose.Schema({
   title: { type: String, required: true },
   description: { type: String },
-  subject: { type: mongoose.Schema.Types.ObjectId, ref: 'Subject' },
+  subject: { type: mongoose.Schema.Types.Mixed, ref: 'Subject' },
   chapter: { type: mongoose.Schema.Types.ObjectId, ref: 'Chapter' },
   videoUrl: { type: String, required: true },
   assignmentUrl: { type: String }, // Optional supplementary assignment file (PDF)
