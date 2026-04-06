@@ -39,8 +39,9 @@ class BigBlueButton {
     }
   }
 
-  getJoinUrl(meetingId, fullName, password) {
-    const query = `meetingID=${meetingId}&fullName=${encodeURIComponent(fullName)}&password=${password}`;
+  getJoinUrl(meetingId, fullName, password, userId) {
+    let query = `meetingID=${meetingId}&fullName=${encodeURIComponent(fullName)}&password=${password}`;
+    if (userId) query += `&userID=${userId}`;
     const checksum = this.generateChecksum('join', query);
     return `${this.url}/join?${query}&checksum=${checksum}`;
   }
@@ -53,10 +54,45 @@ class BigBlueButton {
     try {
       const response = await axios.get(fullUrl);
       const result = await this.parser.parseStringPromise(response.data);
+      if (result.response.returncode === 'FAILED') return null;
       return result.response;
     } catch (error) {
       console.error('BBB Meeting Info Error:', error.message);
-      throw error;
+      return null;
+    }
+  }
+
+  async isMeetingRunning(meetingId) {
+    const query = `meetingID=${meetingId}`;
+    const checksum = this.generateChecksum('isMeetingRunning', query);
+    const fullUrl = `${this.url}/isMeetingRunning?${query}&checksum=${checksum}`;
+
+    try {
+      const response = await axios.get(fullUrl);
+      const result = await this.parser.parseStringPromise(response.data);
+      return result.response.running === 'true';
+    } catch (error) {
+      return false;
+    }
+  }
+
+  async getRecordings(meetingId) {
+    const query = `meetingID=${meetingId}`;
+    const checksum = this.generateChecksum('getRecordings', query);
+    const fullUrl = `${this.url}/getRecordings?${query}&checksum=${checksum}`;
+
+    try {
+      const response = await axios.get(fullUrl);
+      const result = await this.parser.parseStringPromise(response.data);
+      if (result.response.returncode === 'SUCCESS' && result.response.recordings) {
+          // BBB returns an array even if one recording, but sometimes just an object if only one
+          const recs = result.response.recordings.recording;
+          return Array.isArray(recs) ? recs : [recs];
+      }
+      return [];
+    } catch (error) {
+      console.error('BBB Get Recordings Error:', error.message);
+      return [];
     }
   }
   

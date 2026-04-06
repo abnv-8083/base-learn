@@ -19,10 +19,12 @@ const liveClassSchema = new mongoose.Schema({
   chapter: { type: mongoose.Schema.Types.ObjectId, ref: 'Chapter' }, 
   recordingUrl: { type: String },
   presentationUrl: { type: String },
+  processed: { type: Boolean, default: false }, // Flag for post-session automation
   attendance: [
     {
       studentId: { type: mongoose.Schema.Types.ObjectId, ref: 'Student', required: true },
       attended: { type: Boolean, default: false },
+      status: { type: String, enum: ['present', 'absent', 'late'], default: 'absent' },
       joinTime: { type: Date },
       leaveTime: { type: Date },
       totalDurationSeconds: { type: Number, default: 0 }, // computed on leave

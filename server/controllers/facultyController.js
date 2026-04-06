@@ -209,6 +209,7 @@ exports.getLiveClasses = asyncHandler(async (req, res) => {
     const classes = await LiveClass.find({ faculty: req.user.userId })
         .populate('subject', 'name')
         .populate('batches', 'name')
+        .populate('attendance.studentId', 'name email image')
         .sort({ scheduledAt: 1 });
     res.status(200).json({ success: true, data: classes });
 });
@@ -246,7 +247,7 @@ exports.startLiveClass = asyncHandler(async (req, res) => {
     const moderatorPW = 'mod123';
     
     await bbb.createMeeting(meetingId, name, attendeePW, moderatorPW);
-    const joinUrl = bbb.getJoinUrl(meetingId, liveClass.faculty.name, moderatorPW);
+    const joinUrl = bbb.getJoinUrl(meetingId, liveClass.faculty.name, moderatorPW, req.user.userId);
     
     liveClass.status = 'ongoing';
     await liveClass.save();

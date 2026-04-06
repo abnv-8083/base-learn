@@ -302,7 +302,7 @@ const joinLiveClass = asyncHandler(async (req, res) => {
     const meetingId = liveClass._id.toString();
     const attendeePW = 'viewer123';
     
-    const joinUrl = bbb.getJoinUrl(meetingId, req.user.name, attendeePW);
+    const joinUrl = bbb.getJoinUrl(meetingId, req.user.name, attendeePW, req.user._id);
     
     // Non-blocking Attendance Tracking
     const existingAttendance = await LiveClass.findOne({ _id: id, 'attendance.studentId': studentId });
