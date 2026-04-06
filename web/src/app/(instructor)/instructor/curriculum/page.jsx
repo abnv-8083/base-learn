@@ -204,7 +204,7 @@ export default function InstructorCurriculum() {
                       <span>·</span>
                       <span>{subject.chapters?.length || 0} Chapters</span>
                       <span>·</span>
-                      <span>Fac: {(typeof subject.faculty === 'object' ? subject.faculty?.name : faculties.find(f => f._id === subject.faculty)?.name) || 'Unassigned'}</span>
+                      <span>Fac: {subject.faculty?.length > 0 ? subject.faculty.map(f => f.name).join(', ') : 'Unassigned'}</span>
                     </div>
                   </div>
                 </div>

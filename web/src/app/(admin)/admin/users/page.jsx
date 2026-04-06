@@ -474,20 +474,6 @@ export default function AdminUsers() {
                   </div>
                 ))}
 
-                {/* Subject field for faculty */}
-                {activeTab === 'faculty' && (
-                  <div style={{ gridColumn: 'span 2' }}>
-                    <FormField label="Assign Subject (Optional)">
-                      <StyledSelect value={form.subject || ''} onChange={e => setForm({...form, subject: e.target.value})}>
-                        <option value="">No subject assigned yet…</option>
-                        {subjects.map(s => (
-                          <option key={s._id} value={s._id}>{s.name} {s.targetGrade ? `(${s.targetGrade})` : ''} {s.faculty ? '— Assigned' : ''}</option>
-                        ))}
-                      </StyledSelect>
-                    </FormField>
-                  </div>
-                )}
-
                 {/* Password field */}
                 <div style={{ gridColumn: 'span 2' }}>
                   <FormField label="Temporary Password" required error={errors.password}>
@@ -571,20 +557,6 @@ export default function AdminUsers() {
                       <button onClick={handleAssignInstructor} disabled={!selectedInstructor || assigningInstructor}
                         style={{ padding: '10px 18px', background: config.color, border: 'none', borderRadius: '10px', color: 'white', fontWeight: '700', fontSize: '13px', cursor: 'pointer', whiteSpace: 'nowrap', opacity: !selectedInstructor ? 0.5 : 1 }}>
                         {assigningInstructor ? '...' : 'Assign'}
-                      </button>
-                    </div>
-                  </div>
-
-                  <div style={{ background: 'var(--color-bg)', borderRadius: '12px', padding: '16px' }}>
-                    <p style={{ fontSize: '12px', fontWeight: '600', color: 'var(--color-text-secondary)', marginBottom: '10px' }}>2. Assign Subject</p>
-                    <div style={{ display: 'flex', gap: '10px' }}>
-                      <StyledSelect value={selectedSubject} onChange={e => setSelectedSubject(e.target.value)}>
-                        <option value="">Select subject…</option>
-                        {viewSubjects.map(s => <option key={s._id} value={s._id}>{s.name} {s.targetGrade ? `(${s.targetGrade})` : ''} {s.faculty ? '— Assigned' : ''}</option>)}
-                      </StyledSelect>
-                      <button onClick={handleAssignSubject} disabled={!selectedSubject || assigningSubject}
-                        style={{ padding: '10px 18px', background: config.color, border: 'none', borderRadius: '10px', color: 'white', fontWeight: '700', fontSize: '13px', cursor: 'pointer', whiteSpace: 'nowrap', opacity: !selectedSubject ? 0.5 : 1 }}>
-                        {assigningSubject ? '...' : 'Assign'}
                       </button>
                     </div>
                   </div>

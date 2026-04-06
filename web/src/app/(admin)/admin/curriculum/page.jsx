@@ -79,9 +79,9 @@ export default function AdminCurriculum() {
 
   useEffect(() => {
     fetchData();
-    if (activeTab === 'batches') fetchLookups(['classes']);
+    if (activeTab === 'batches') fetchLookups(['classes', 'instructors']);
     if (activeTab === 'classes') fetchLookups([]);
-    if (activeTab === 'subjects') fetchLookups(['classes']);
+    if (activeTab === 'subjects') fetchLookups(['classes', 'faculties']);
   }, [activeTab]);
 
   const fetchData = async () => {
@@ -130,6 +130,7 @@ export default function AdminCurriculum() {
     else if (form.name.trim().length < 2) newErrors.name = 'Name must be at least 2 characters';
     if (activeTab === 'batches') {
       if (!form.studyClass) newErrors.studyClass = 'Please select a class';
+      if (!form.instructor) newErrors.instructor = 'Please select an instructor';
     }
     setErrors(newErrors);
     if (Object.keys(newErrors).length > 0) { toast.error('Please fix the highlighted errors'); return; }
@@ -139,7 +140,7 @@ export default function AdminCurriculum() {
       const endpoint = activeTab === 'batches' ? '/api/admin/batches' : activeTab === 'classes' ? '/api/admin/classes' : '/api/admin/subjects';
       let payload = { ...form };
       if (activeTab === 'classes') payload = { name: form.name, description: form.description, targetGrade: form.gradeLevel ? String(form.gradeLevel) : undefined };
-      else if (activeTab === 'subjects') payload = { name: form.name, description: form.description, targetGrade: form.targetGrade };
+      else if (activeTab === 'subjects') payload = { name: form.name, description: form.description, targetGrade: form.targetGrade, faculties: form.faculties };
       if (form._id) { await axios.put(`${endpoint}/${form._id}`, payload); toast.success('Record updated'); }
       else { await axios.post(endpoint, payload); toast.success('Record created'); }
       setShowModal(false); fetchData();
@@ -162,7 +163,11 @@ export default function AdminCurriculum() {
   };
 
   const handleEdit = (item) => {
-    setForm({ ...item, studyClass: item.studyClass?._id || item.studyClass, gradeLevel: item.targetGrade || item.gradeLevel });
+    let faculties = [];
+    if (activeTab === 'subjects' && item.faculty) {
+      faculties = Array.isArray(item.faculty) ? item.faculty.map(f => f._id || f) : [item.faculty._id || item.faculty];
+    }
+    setForm({ ...item, studyClass: item.studyClass?._id || item.studyClass, gradeLevel: item.targetGrade || item.gradeLevel, faculties, instructor: item.instructor?._id || item.instructor });
     setErrors({});
     setShowModal(true);
   };
@@ -254,8 +259,8 @@ export default function AdminCurriculum() {
                     </td>
                   )}
                   {activeTab === 'subjects' && (
-                    <td style={{ padding: '14px 20px', fontSize: '13px', color: item.faculty?.name ? 'var(--color-text-primary)' : 'var(--color-text-muted)', fontWeight: item.faculty?.name ? '600' : '400' }}>
-                      {item.faculty?.name || 'Unassigned'}
+                    <td style={{ padding: '14px 20px', fontSize: '13px', color: item.faculty?.length > 0 ? 'var(--color-text-primary)' : 'var(--color-text-muted)', fontWeight: item.faculty?.length > 0 ? '600' : '400' }}>
+                      {item.faculty?.length > 0 ? item.faculty.map(f => f.name).join(', ') : 'Unassigned'}
                     </td>
                   )}
                   <td style={{ padding: '14px 20px', textAlign: 'center' }}>
@@ -302,12 +307,20 @@ export default function AdminCurriculum() {
               </FormField>
 
               {activeTab === 'batches' && (<>
-                <FormField label="Associated Class" required error={errors.studyClass}>
-                  <SSelect value={form.studyClass || ''} onChange={e => { setForm({...form, studyClass: e.target.value}); if (errors.studyClass) validate('studyClass', e.target.value); }} error={errors.studyClass} onBlur={() => validate('studyClass', form.studyClass)}>
-                    <option value="">Select class…</option>
-                    {lookups.classes.map(c => <option key={c._id} value={c._id}>{c.name}</option>)}
-                  </SSelect>
-                </FormField>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                  <FormField label="Associated Class" required error={errors.studyClass}>
+                    <SSelect value={form.studyClass || ''} onChange={e => { setForm({...form, studyClass: e.target.value}); if (errors.studyClass) validate('studyClass', e.target.value); }} error={errors.studyClass} onBlur={() => validate('studyClass', form.studyClass)}>
+                      <option value="">Select class…</option>
+                      {lookups.classes.map(c => <option key={c._id} value={c._id}>{c.name}</option>)}
+                    </SSelect>
+                  </FormField>
+                  <FormField label="Assign Instructor" required error={errors.instructor}>
+                    <SSelect value={form.instructor || ''} onChange={e => { setForm({...form, instructor: e.target.value}); if (errors.instructor) validate('instructor', e.target.value); }} error={errors.instructor} onBlur={() => validate('instructor', form.instructor)}>
+                      <option value="">Select instructor…</option>
+                      {lookups.instructors.map(i => <option key={i._id} value={i._id}>{i.name}</option>)}
+                    </SSelect>
+                  </FormField>
+                </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                   <FormField label="Learning Mode">
                     <SSelect value={form.mode || 'online'} onChange={e => setForm({...form, mode: e.target.value})}>
@@ -332,12 +345,22 @@ export default function AdminCurriculum() {
               )}
 
               {activeTab === 'subjects' && (<>
-                <FormField label="Target Grade" hint="Select a class">
-                  <SSelect value={form.targetGrade || ''} onChange={e => setForm({...form, targetGrade: e.target.value})}>
-                    <option value="">Select target grade…</option>
-                    {lookups.classes.map(c => <option key={c._id} value={c.name}>{c.name}</option>)}
-                  </SSelect>
-                </FormField>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                  <FormField label="Target Grade" hint="Select a class">
+                    <SSelect value={form.targetGrade || ''} onChange={e => setForm({...form, targetGrade: e.target.value})}>
+                      <option value="">Select target grade…</option>
+                      {lookups.classes.map(c => <option key={c._id} value={c.name}>{c.name}</option>)}
+                    </SSelect>
+                  </FormField>
+                  <FormField label="Assign Faculties" hint="Multiple (Hold Ctrl/Cmd)">
+                    <select multiple value={form.faculties || []} onChange={e => {
+                      const selected = Array.from(e.target.selectedOptions).map(o => o.value);
+                      setForm({...form, faculties: selected});
+                    }} style={{ width: '100%', padding: '10px 14px', border: '1.5px solid #e2e8f0', borderRadius: '10px', fontSize: '14px', color: '#1e293b', outline: 'none', height: '90px' }}>
+                      {lookups.faculties.map(f => <option key={f._id} value={f._id}>{f.name}</option>)}
+                    </select>
+                  </FormField>
+                </div>
               </>)}
             </div>
 

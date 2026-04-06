@@ -21,7 +21,7 @@ exports.createSubject = async (req, res) => {
         const subject = await Subject.create({ 
             name, 
             targetGrade: targetGrade || 'Class 10',
-            faculty: faculty || null,
+            faculty: faculty || [],
             instructor: req.user.userId, 
             assignedTo: [] 
         });
@@ -34,7 +34,7 @@ exports.updateSubject = async (req, res) => {
         const { name, targetGrade, faculty } = req.body;
         const subject = await Subject.findByIdAndUpdate(
             req.params.id, 
-            { name, targetGrade, faculty: faculty || null }, 
+            { name, targetGrade, faculty: faculty || [] }, 
             { new: true }
         ).populate('assignedTo', 'name').populate('faculty', 'name');
         res.status(200).json(subject);

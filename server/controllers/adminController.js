@@ -558,8 +558,7 @@ exports.getSubjects = asyncHandler(async (req, res) => {
 
 // POST /api/admin/subjects
 exports.createSubject = asyncHandler(async (req, res) => {
-    const { name, description, targetGrade, instructorId, facultyId, faculty } = req.body;
-    const facultyRef = facultyId || faculty;
+    const { name, description, targetGrade, instructorId, faculties } = req.body;
     if (!name) return res.status(400).json({ message: 'Subject name is required' });
 
     // Find a valid instructor — use provided or fallback to first available
@@ -575,7 +574,7 @@ exports.createSubject = asyncHandler(async (req, res) => {
         description: description || '',
         targetGrade: targetGrade || 'Class 10',
         instructor,
-        faculty: facultyRef || null,
+        faculty: faculties || [],
         assignedTo: []
     });
 
@@ -589,13 +588,13 @@ exports.createSubject = asyncHandler(async (req, res) => {
 
 // PUT /api/admin/subjects/:id
 exports.updateSubject = asyncHandler(async (req, res) => {
-    const { name, description, targetGrade, instructorId, facultyId } = req.body;
+    const { name, description, targetGrade, instructorId, faculties } = req.body;
     const updateData = {};
     if (name) updateData.name = name;
     if (description !== undefined) updateData.description = description;
     if (targetGrade) updateData.targetGrade = targetGrade;
     if (instructorId) updateData.instructor = instructorId;
-    if (facultyId !== undefined) updateData.faculty = facultyId || null;
+    if (faculties !== undefined) updateData.faculty = faculties || [];
 
     const subject = await Subject.findByIdAndUpdate(req.params.id, updateData, { new: true })
         .populate('instructor', 'name email role')
