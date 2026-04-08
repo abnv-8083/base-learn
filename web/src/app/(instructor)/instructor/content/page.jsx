@@ -42,6 +42,15 @@ export default function InstructorContentVerification() {
     } catch (e) {
       console.error('URL parse error', e);
     }
+    
+    // If it's a relative path/filename, ensure it goes through the /uploads proxy
+    if (!url.startsWith('http') && !url.startsWith('/') && !url.startsWith('blob:') && !url.startsWith('data:')) {
+        return `/uploads/${url}`;
+    }
+    
+    // Ensure relative paths starting with 'uploads' have a leading slash
+    if (url.startsWith('uploads/')) return `/${url}`;
+    
     return url;
   };
   

@@ -14,19 +14,35 @@ const logAction = require('../utils/logAction');
 const bbb = require('../utils/bbb');
 
 // Helper to format local file paths to relative URLs
-const formatLocalPath = (req, filePath) => {
-    if (!filePath) return null;
-    // If it's already an HTTP URL (Cloudinary), keep it
-    if (filePath.startsWith('http')) return filePath;
+// Helper to format local file paths to relative URLs
+const formatLocalPath = (req, filePath, fileObj = null) => {
+    if (!filePath && !fileObj) return null;
     
-    // For local paths, normalize and extract relative public path
-    const normalized = filePath.replace(/\\/g, '/');
+    // 1. If we have a file object (from multer-storage-cloudinary), try to get the full URL directly
+    const directUrl = fileObj?.path || fileObj?.url || fileObj?.secure_url;
+    if (directUrl && directUrl.startsWith('http')) return directUrl;
+
+    const pathToCheck = filePath || directUrl || '';
+    
+    // 2. If it's already an HTTP URL, keep it
+    if (pathToCheck.startsWith('http')) return pathToCheck;
+    
+    // 3. For local paths, normalize and extract relative public path
+    const normalized = pathToCheck.replace(/\\/g, '/');
     const uploadsIndex = normalized.indexOf('/uploads/');
     const relativePath = uploadsIndex !== -1 ? normalized.substring(uploadsIndex) : normalized;
     
+    // If it doesn't contain /uploads/ and isn't an HTTP URL, it might be a Cloudinary public ID or raw path
+    // We should be careful here. If it contains cloudinary info, it's a Cloudinary path.
+    if (uploadsIndex === -1 && !pathToCheck.startsWith('http') && (fileObj?.provider === 'cloudinary' || pathToCheck.includes('bl_'))) {
+        // If it's Cloudinary but missing the domain, we have a problem. 
+        // We'll return it as is for now but log it.
+        console.warn('[formatLocalPath] Cloudinary path missing domain:', pathToCheck);
+        return pathToCheck;
+    }
+
     // Prepend server origin - Prefer env override for tunnels
     const origin = process.env.BACKEND_URL || `${req.protocol}://${req.get('host')}`;
-    // Ensure no double slashes during concatenation if origin has a trailing slash
     return `${origin.replace(/\/$/, '')}${relativePath}`;
 };
 
@@ -108,9 +124,9 @@ exports.uploadContent = asyncHandler(async (req, res) => {
         }
     }
 
-    const filePath = formatLocalPath(req, videoFile?.path);
-    const assignmentPath = formatLocalPath(req, assignmentFile?.path);
-    const thumbnailPath = formatLocalPath(req, thumbnailFile?.path);
+    const filePath = formatLocalPath(req, videoFile?.path, videoFile);
+    const assignmentPath = formatLocalPath(req, assignmentFile?.path, assignmentFile);
+    const thumbnailPath = formatLocalPath(req, thumbnailFile?.path, thumbnailFile);
 
     // 1. Handle FAQ Sessions, Recorded Classes & Live Recordings
     const defaultDeadline = new Date();

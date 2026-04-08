@@ -641,17 +641,21 @@ const submitAssessment = asyncHandler(async (req, res) => {
         }
 
         // Helper for local paths
-        const formatLocalPath = (req, filePath) => {
-            if (!filePath) return null;
-            if (filePath.startsWith('http')) return filePath;
-            const normalized = filePath.replace(/\\/g, '/');
+        const formatLocalPath = (req, filePath, fileObj = null) => {
+            const diUrl = fileObj?.path || fileObj?.url || fileObj?.secure_url;
+            if (diUrl && diUrl.startsWith('http')) return diUrl;
+            
+            const pathToCheck = filePath || diUrl || '';
+            if (pathToCheck.startsWith('http')) return pathToCheck;
+
+            const normalized = pathToCheck.replace(/\\/g, '/');
             const uploadsIndex = normalized.indexOf('/uploads/');
             const relativePath = uploadsIndex !== -1 ? normalized.substring(uploadsIndex) : normalized;
-            const origin = `${req.protocol}://${req.get('host')}`;
-            return `${origin}${relativePath}`;
+            const origin = process.env.BACKEND_URL || `${req.protocol}://${req.get('host')}`;
+            return `${origin.replace(/\/$/, '')}${relativePath}`;
         };
 
-        const fileUrl = formatLocalPath(req, req.file.path);
+        const fileUrl = formatLocalPath(req, req.file.path, req.file);
         const isLate = assessment.deadline ? (new Date() > new Date(assessment.deadline)) : false;
 
         assessment.submissions.push({
