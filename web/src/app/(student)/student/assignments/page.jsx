@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Upload, Eye, CheckCircle, XCircle, Clock, FileText, AlertCircle } from 'lucide-react';
+import { Upload, Eye, CheckCircle, XCircle, Clock, FileText, AlertCircle, ExternalLink } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function StudentAssignments() {
@@ -27,6 +27,13 @@ export default function StudentAssignments() {
   useEffect(() => {
     fetchAssignments();
   }, []);
+
+  const formatFileUrl = (url) => {
+    if (!url) return '#';
+    if (url.startsWith('http') || url.startsWith('blob:') || url.startsWith('data:')) return url;
+    // Handle relative filenames by routing through our public uploads proxy
+    return `/uploads/${url.replace(/^\/+/, '')}`;
+  };
 
   const handleFileUpload = async (e, assignmentId) => {
     const file = e.target.files[0];
@@ -93,7 +100,7 @@ export default function StudentAssignments() {
 
   return (
     <div>
-<div className="page-header" style={{ marginBottom: 'var(--space-6)' }}>
+      <div className="page-header" style={{ marginBottom: 'var(--space-6)' }}>
         <div className="page-header-inner" style={{ alignItems: 'flex-end' }}>
           <div>
             <h1 className="page-title">Assignments</h1>
@@ -174,9 +181,13 @@ export default function StudentAssignments() {
                 </div>
                 
                 <div style={{ display: 'flex', gap: '12px' }}>
-                  <a href={task.fileUrl} target="_blank" rel="noreferrer" className="btn" style={{ flex: 1, padding: '12px', borderRadius: '12px', background: '#fff', border: '1.5px solid #e2e8f0', color: '#475569', fontSize: '13px', fontWeight: '700', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-                    <FileText size={16} /> View Ques
-                  </a>
+                  <button 
+                    onClick={() => window.open(formatFileUrl(task.fileUrl), '_blank')} 
+                    className="btn" 
+                    style={{ flex: 1, padding: '12px', borderRadius: '12px', background: '#fff', border: '1.5px solid #e2e8f0', color: '#475569', fontSize: '13px', fontWeight: '700', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', cursor: 'pointer' }}
+                  >
+                    <Eye size={16} /> View Ques
+                  </button>
                   
                   <div style={{ flex: 1, position: 'relative' }}>
                     <button className="btn btn-primary" style={{ width: '100%', height: '45px', borderRadius: '12px', fontSize: '13px', fontWeight: '800', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }} disabled={uploadingId === task._id}>
@@ -247,9 +258,13 @@ export default function StudentAssignments() {
                 )}
                 
                 <div style={{ marginTop: 'auto' }}>
-                  <a href={task.mySubmission?.fileUrl} target="_blank" rel="noreferrer" className="btn btn-ghost" style={{ width: '100%', justifyContent: 'center', border: '1px solid var(--color-border)' }}>
-                    <Eye size={16} style={{ marginRight: '8px' }} /> View Submission File
-                  </a>
+                  <button 
+                    onClick={() => window.open(formatFileUrl(task.mySubmission?.fileUrl), '_blank')} 
+                    className="btn btn-ghost" 
+                    style={{ width: '100%', justifyContent: 'center', border: '1px solid var(--color-border)', cursor: 'pointer' }}
+                  >
+                    <ExternalLink size={16} style={{ marginRight: '8px' }} /> View Submission
+                  </button>
                 </div>
               </div>
             ))}

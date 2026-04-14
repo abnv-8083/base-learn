@@ -12,6 +12,7 @@ const SystemSettings = require('../models/SystemSettings');
 const { sendWhatsAppMessage } = require('../utils/whatsappService');
 const sendEmail = require('../utils/sendEmail');
 const bbb = require('../utils/bbb');
+const { uploadToS3 } = require('../utils/s3');
 
 // @desc    Get dashboard summary for student
 // @route   GET /api/student/dashboard
@@ -640,22 +641,7 @@ const submitAssessment = asyncHandler(async (req, res) => {
             return res.status(400).json({ success: false, message: 'You have already submitted this assessment.' });
         }
 
-        // Helper for local paths
-        const formatLocalPath = (req, filePath, fileObj = null) => {
-            const diUrl = fileObj?.path || fileObj?.url || fileObj?.secure_url;
-            if (diUrl && diUrl.startsWith('http')) return diUrl;
-            
-            const pathToCheck = filePath || diUrl || '';
-            if (pathToCheck.startsWith('http')) return pathToCheck;
-
-            const normalized = pathToCheck.replace(/\\/g, '/');
-            const uploadsIndex = normalized.indexOf('/uploads/');
-            const relativePath = uploadsIndex !== -1 ? normalized.substring(uploadsIndex) : normalized;
-            const origin = process.env.BACKEND_URL || `${req.protocol}://${req.get('host')}`;
-            return `${origin.replace(/\/$/, '')}${relativePath}`;
-        };
-
-        const fileUrl = formatLocalPath(req, req.file.path, req.file);
+        const fileUrl = await uploadToS3(req.file, type === 'test' ? 'student-tests' : 'student-assignments');
         const isLate = assessment.deadline ? (new Date() > new Date(assessment.deadline)) : false;
 
         assessment.submissions.push({

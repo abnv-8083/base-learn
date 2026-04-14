@@ -12,6 +12,7 @@ const ProfileUpdateRequest = require('../models/ProfileUpdateRequest');
 const Notification = require('../models/Notification');
 const logAction = require('../utils/logAction');
 const bbb = require('../utils/bbb');
+const { uploadToS3, deleteFromS3 } = require('../utils/s3');
 
 // Helper to format local file paths to relative URLs
 // Helper to format local file paths to relative URLs
@@ -124,9 +125,10 @@ exports.uploadContent = asyncHandler(async (req, res) => {
         }
     }
 
-    const filePath = formatLocalPath(req, videoFile?.path, videoFile);
-    const assignmentPath = formatLocalPath(req, assignmentFile?.path, assignmentFile);
-    const thumbnailPath = formatLocalPath(req, thumbnailFile?.path, thumbnailFile);
+    // 1. Upload to AWS S3
+    const filePath = videoFile ? await uploadToS3(videoFile, type === 'test' || type === 'assignment' ? 'assessments' : 'videos') : null;
+    const assignmentPath = assignmentFile ? await uploadToS3(assignmentFile, 'assignments') : null;
+    const thumbnailPath = thumbnailFile ? await uploadToS3(thumbnailFile, 'thumbnails') : null;
 
     // 1. Handle FAQ Sessions, Recorded Classes & Live Recordings
     const defaultDeadline = new Date();
@@ -491,10 +493,10 @@ exports.updateUploadedContent = asyncHandler(async (req, res) => {
     const thumbnailFile = req.files?.['thumbnail']?.[0];
 
     const updateData = { title, description, status: 'draft' };
-    if (videoFile) updateData.videoUrl = formatLocalPath(req, videoFile.path);
-    if (videoFile && !['video', 'faq', 'liveRecording'].includes(type)) updateData.url = formatLocalPath(req, videoFile.path); 
-    if (assignmentFile) updateData.assignmentUrl = formatLocalPath(req, assignmentFile.path);
-    if (thumbnailFile) updateData.thumbnail = formatLocalPath(req, thumbnailFile.path);
+    if (videoFile) updateData.videoUrl = await uploadToS3(videoFile, ['video', 'faq', 'liveRecording'].includes(type) ? 'videos' : 'materials');
+    if (videoFile && !['video', 'faq', 'liveRecording'].includes(type)) updateData.url = updateData.videoUrl; 
+    if (assignmentFile) updateData.assignmentUrl = await uploadToS3(assignmentFile, 'assignments');
+    if (thumbnailFile) updateData.thumbnail = await uploadToS3(thumbnailFile, 'thumbnails');
 
     if (['video', 'faq', 'liveRecording'].includes(type)) {
         const item = await RecordedClass.findOneAndUpdate({ _id: id, faculty: facultyId }, updateData, { new: true });
@@ -515,7 +517,7 @@ exports.updateUploadedContent = asyncHandler(async (req, res) => {
             resource.title = title || resource.title;
             resource.description = description || resource.description;
             resource.status = 'draft'; // Reset status to draft for re-review
-            if (videoFile) resource.url = formatLocalPath(req, videoFile.path);
+            if (videoFile) resource.url = await uploadToS3(videoFile, 'materials');
             await chapter.save();
         }
         return res.status(200).json({ success: true, data: resource });

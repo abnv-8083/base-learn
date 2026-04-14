@@ -18,7 +18,7 @@ router.post('/chapters', contentController.createChapter);
 
 // Content Upload — using Cloudinary Storage for videos and resources
 router.get('/content', facultyController.getAllContent);
-router.post('/content/upload', cloudinaryMixedUpload.fields([
+router.post('/content/upload', localMixedUpload.fields([
     { name: 'file', maxCount: 1 },
     { name: 'assignment', maxCount: 1 },
     { name: 'thumbnail', maxCount: 1 }
@@ -42,7 +42,7 @@ router.post('/profile/request-update', facultyController.createProfileRequest);
 // Content Management (CRUD for each type)
 router.get('/content/analysis/:id', facultyController.getContentAnalysis);
 router.get('/content/manage/:type', facultyController.getUploadedContent);
-router.put('/content/manage/:type/:id', cloudinaryMixedUpload.fields([
+router.put('/content/manage/:type/:id', localMixedUpload.fields([
     { name: 'file', maxCount: 1 },
     { name: 'assignment', maxCount: 1 },
     { name: 'thumbnail', maxCount: 1 }

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Search, FileVideo, FileText, CheckCircle, XCircle, Clock, Eye, X, Edit2, Trash2, AlertCircle } from 'lucide-react';
+import { Search, FileVideo, FileText, CheckCircle, XCircle, Clock, Eye, X, Edit2, Trash2, AlertCircle, ExternalLink } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import { useConfirmStore } from '@/store/confirmStore';
 import toast from 'react-hot-toast';
@@ -24,6 +24,7 @@ export default function InstructorContentVerification() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [deadline, setDeadline] = useState('');
   const [maxMarks, setMaxMarks] = useState(100);
+  const [pdfIframeError, setPdfIframeError] = useState(false);
   
   const formatPreviewUrl = (url) => {
     if (!url) return '';
@@ -54,6 +55,16 @@ export default function InstructorContentVerification() {
     return url;
   };
   
+  const getGoogleViewerUrl = (url) => {
+    const fullUrl = formatPreviewUrl(url);
+    if (!fullUrl) return '';
+    // Only use for absolute URLs (mostly Cloudinary or production backend)
+    if (fullUrl.startsWith('http')) {
+       return `https://docs.google.com/viewer?url=${encodeURIComponent(fullUrl)}&embedded=true`;
+    }
+    return fullUrl;
+  };
+
   // New States
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [rejectItem, setRejectItem] = useState(null);
@@ -95,10 +106,11 @@ export default function InstructorContentVerification() {
   const openReviewModal = (item) => {
     setPreviewItem(item);
     setSelectedBatches(item.assignedTo || []);
+    setPdfIframeError(false);
     // Prefill deadline and maxMarks if assessment
     if (item.type === 'test' || item.type === 'assignment') {
-       setDeadline(item.deadline ? new Date(item.deadline).toISOString().split('T')[0] : '');
-       setMaxMarks(item.maxMarks || 100);
+        setDeadline(item.deadline ? new Date(item.deadline).toISOString().split('T')[0] : '');
+        setMaxMarks(item.maxMarks || 100);
     }
     setShowReviewModal(true);
   };
@@ -196,7 +208,7 @@ export default function InstructorContentVerification() {
 
   return (
     <div style={{ paddingBottom: '60px' }}>
-<div className="page-header" style={{ marginBottom: 'var(--space-6)' }}>
+      <div className="page-header" style={{ marginBottom: 'var(--space-6)' }}>
         <div>
           <h1 className="page-title">Content Verification</h1>
           <p className="page-subtitle">Review and approve academic materials submitted by faculty members.</p>
@@ -319,7 +331,7 @@ export default function InstructorContentVerification() {
       {/* Review Modal */}
       {showReviewModal && previewItem && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(15, 45, 107, 0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, backdropFilter: 'blur(4px)' }}>
-          <div className="card fade-in" style={{ width: '90%', maxWidth: '800px', maxHeight: '90vh', display: 'flex', flexDirection: 'column', overflow: 'hidden', padding: 0 }}>
+          <div className="card fade-in" style={{ width: '95%', maxWidth: '1000px', height: '90vh', display: 'flex', flexDirection: 'column', overflow: 'hidden', padding: 0 }}>
             {/* Modal Header */}
             <div style={{ padding: '20px 24px', background: 'var(--color-bg)', borderBottom: `2px solid var(--color-border)`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                <div>
@@ -328,45 +340,74 @@ export default function InstructorContentVerification() {
                      <strong>{previewItem.title}</strong> • {previewItem.subject?.name} • {previewItem.faculty?.name}
                   </p>
                </div>
-               <button onClick={() => setShowReviewModal(false)} style={{ background: 'none', border: 'none', color: 'var(--color-text-secondary)', cursor: 'pointer' }}><X size={24} /></button>
+               <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                  <button 
+                    onClick={() => window.open(formatPreviewUrl(previewItem.url), '_blank')}
+                    style={{ padding: '8px 16px', background: '#3b82f6', color: 'white', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}
+                  >
+                    <ExternalLink size={16} /> Open Full Screen
+                  </button>
+                  <button onClick={() => setShowReviewModal(false)} style={{ background: 'none', border: 'none', color: 'var(--color-text-secondary)', cursor: 'pointer' }}><X size={24} /></button>
+               </div>
             </div>
             
             {/* Modal Content */}
             <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
                {/* Left: Preview Area */}
-               <div style={{ flex: 2, background: '#0f172a', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' }}>
+               <div style={{ flex: 2, background: '#0f172a', display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden' }}>
+                  <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   {previewItem.url ? (
-                     previewItem.type === 'video' ? (
-                       <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column' }}>
-                          <video controls src={formatPreviewUrl(previewItem.url)} style={{ width: '100%', flex: 1, objectFit: 'contain' }} />
-                          {previewItem.assignmentUrl && (
-                             <div style={{ padding: '16px', background: 'rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                   <FileText size={20} color="#f59e0b" />
-                                   <div style={{ color: 'white' }}>
-                                      <div style={{ fontSize: '13px', fontWeight: 'bold' }}>Associated Exercise Found</div>
-                                      <div style={{ fontSize: '11px', opacity: 0.7 }}>Review supplementary PDF material</div>
-                                   </div>
-                                </div>
-                                <button onClick={() => window.open(formatPreviewUrl(previewItem.assignmentUrl), '_blank')} className="btn btn-primary" style={{ padding: '6px 12px', fontSize: '12px', background: '#f59e0b', color: 'white', border: 'none' }}>
-                                   View PDF
-                                </button>
-                             </div>
-                          )}
-                       </div>
-                     ) : (
-                       <iframe src={formatPreviewUrl(previewItem.url)} title="Document Preview" style={{ width: '100%', height: '100%', border: 'none', background: 'white' }} />
-                     )
-                  ) : (
-                     <div style={{ color: '#94a3b8', textAlign: 'center' }}>
-                        <div style={{ fontSize: '48px', marginBottom: '12px', opacity: 0.5 }}>{previewItem.type === 'video' ? '🎬' : '📄'}</div>
-                        <p>No preview media available</p>
-                     </div>
-                  )}
+                      previewItem.type === 'video' ? (
+                        <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column' }}>
+                           <video controls src={formatPreviewUrl(previewItem.url)} style={{ width: '100%', flex: 1, objectFit: 'contain' }} />
+                           {previewItem.assignmentUrl && (
+                              <div style={{ padding: '16px', background: 'rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+                                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                    <FileText size={20} color="#f59e0b" />
+                                    <div style={{ color: 'white' }}>
+                                       <div style={{ fontSize: '13px', fontWeight: 'bold' }}>Associated Exercise Found</div>
+                                       <div style={{ fontSize: '11px', opacity: 0.7 }}>Review supplementary PDF material</div>
+                                    </div>
+                                 </div>
+                                 <button onClick={() => window.open(formatPreviewUrl(previewItem.assignmentUrl), '_blank')} className="btn btn-primary" style={{ padding: '6px 12px', fontSize: '12px', background: '#f59e0b', color: 'white', border: 'none' }}>
+                                    View PDF
+                                 </button>
+                              </div>
+                           )}
+                        </div>
+                      ) : (
+                        <div style={{ width: '100%', height: '100%', position: 'relative' }}>
+                          <iframe 
+                            src={formatPreviewUrl(previewItem.url)} 
+                            title="Document Preview" 
+                            style={{ width: '100%', height: '100%', border: 'none', background: 'white' }}
+                            onError={() => setPdfIframeError(true)}
+                          />
+                          <div style={{ position: 'absolute', top: '10px', right: '10px', display: 'flex', gap: '8px' }}>
+                             <button 
+                                onClick={() => {
+                                  // Toggle to Google Viewer as fallback
+                                  const frame = document.querySelector('iframe');
+                                  if (frame) frame.src = getGoogleViewerUrl(previewItem.url);
+                                }}
+                                style={{ padding: '4px 8px', background: 'rgba(255,255,255,0.9)', border: '1px solid #ddd', borderRadius: '4px', fontSize: '11px', cursor: 'pointer' }}
+                             >
+                               Try Alternative Viewer
+                             </button>
+                          </div>
+                        </div>
+                      )
+                   ) : (
+                      <div style={{ color: '#94a3b8', textAlign: 'center' }}>
+                         <div style={{ fontSize: '48px', marginBottom: '12px', opacity: 0.5 }}>{previewItem.type === 'video' ? '🎬' : '📄'}</div>
+                         <p>No preview media available</p>
+                      </div>
+                   )}
+                  </div>
                </div>
 
                {/* Right: Batch Assignment Area */}
-               <div style={{ flex: 1, background: 'var(--color-bg)', borderLeft: '1px solid var(--color-border)', display: 'flex', flexDirection: 'column' }}>
+               <div style={{ flex: 1, width: '320px', background: 'var(--color-bg)', borderLeft: '1px solid var(--color-border)', display: 'flex', flexDirection: 'column' }}>
                   <div style={{ padding: '20px', borderBottom: '1px solid var(--color-border)', background: '#f8fafc' }}>
                      <h3 style={{ margin: 0, fontSize: '14px', fontWeight: 'bold', color: 'var(--color-text-primary)', marginBottom: '4px' }}>Assignment Controls</h3>
                      <p style={{ margin: 0, fontSize: '12px', color: 'var(--color-text-secondary)' }}>Review academic configuration before publishing.</p>
@@ -400,7 +441,7 @@ export default function InstructorContentVerification() {
                               <div>
                                  <div style={{ fontSize: '14px', fontWeight: '600', color: selectedBatches.includes(batch._id) ? 'var(--color-primary)' : 'var(--color-text-primary)' }}>{batch.name}</div>
                                  <div style={{ fontSize: '11px', color: 'var(--color-text-secondary)' }}>{batch.studyClass?.name} ({batch.students?.length || 0} students)</div>
-                              </div>
+                               </div>
                            </div>
                         ))
                      )}

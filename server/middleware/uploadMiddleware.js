@@ -49,7 +49,7 @@ const cloudinaryMixedStorage = new CloudinaryStorage({
     // For Images/Videos, use 'auto' or explicit resource types.
     let resourceType = 'auto';
     if (isVideo) resourceType = 'video';
-    else if (isPdf) resourceType = 'raw';
+    else if (isPdf) resourceType = 'auto'; // 'auto' works better for PDF previews than 'raw'
     else if (isImage) resourceType = 'image';
     
     const extension = isPdf ? '.pdf' : '';
