@@ -38,10 +38,9 @@ const uploadToS3 = async (file, folder = 'general') => {
         console.warn('Failed to delete local temp file:', err.message);
     }
 
-    // Return the URL. For E2E EOS, we use Virtual Hosted Style: http://bucket-name.objectstore.e2enetworks.net/key
-    const endpointHost = process.env.R2_ENDPOINT ? new URL(process.env.R2_ENDPOINT).host : 'objectstore.e2enetworks.net';
-    const customDomain = process.env.R2_CUSTOM_DOMAIN || `https://${process.env.R2_BUCKET_NAME}.${endpointHost}`;
-    return `${customDomain}/${fileName}`;
+    // Return the URL. For E2E EOS, we use Path Style: https://endpoint/bucket-name/key
+    const endpoint = process.env.R2_ENDPOINT ? process.env.R2_ENDPOINT.replace(/\/$/, '') : 'https://ap-south-1.e2enetworks.net';
+    return `${endpoint}/${process.env.R2_BUCKET_NAME}/${fileName}`;
 };
 
 /**

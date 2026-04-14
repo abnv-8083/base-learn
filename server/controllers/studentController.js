@@ -12,7 +12,28 @@ const SystemSettings = require('../models/SystemSettings');
 const { sendWhatsAppMessage } = require('../utils/whatsappService');
 const sendEmail = require('../utils/sendEmail');
 const bbb = require('../utils/bbb');
-const { uploadToS3 } = require('../utils/s3');
+const { uploadToS3, deleteFromS3 } = require('../utils/s3');
+
+// Helper to normalize S3 URLs to Path-Style for E2E EOS compatibility
+const normalizeS3Url = (url) => {
+    if (!url || !url.includes('e2enetworks.net')) return url;
+    
+    // If it's already Path-Style (https://endpoint/bucket/key), leave it
+    // If it's Virtual-Hosted (https://bucket.endpoint/key), convert it
+    try {
+        const urlObj = new URL(url);
+        const hostParts = urlObj.hostname.split('.');
+        
+        // Check if the first part is the bucket name (baselearnmedia2026)
+        if (hostParts[0] === process.env.R2_BUCKET_NAME) {
+            const newHostname = hostParts.slice(1).join('.');
+            return `https://${newHostname}/${process.env.R2_BUCKET_NAME}${urlObj.pathname}`;
+        }
+    } catch (e) {
+        return url;
+    }
+    return url;
+};
 
 // @desc    Get dashboard summary for student
 // @route   GET /api/student/dashboard
@@ -157,7 +178,7 @@ const getRecordedClasses = asyncHandler(async (req, res) => {
              _id: item._id,
              title: item.title,
              description: item.description,
-             fileUrl: item.url,
+             fileUrl: normalizeS3Url(item.url),
              createdAt: item.publishedAt || item.uploadedAt,
              type: field.replace('s', ''), // note, liveNote, dpp, pyq
              isResource: true
@@ -325,8 +346,13 @@ const getAssignments = asyncHandler(async (req, res) => {
   const studentBatch = await Batch.findOne({ students: studentId });
   if (!studentBatch) return res.status(200).json({ success: true, count: 0, data: [] });
 
-  // First, find subjects assigned to this batch
-  const subjects = await Subject.find({ assignedTo: studentBatch._id }).distinct('_id');
+  // Find subjects assigned to either this student's Batch OR their Class
+  const subjects = await Subject.find({ 
+    $or: [
+      { assignedTo: studentBatch._id },
+      { assignedTo: studentBatch.studyClass }
+    ]
+  }).distinct('_id');
 
   // Then, find all published assignments for those subjects
   const allAssignments = await Assignment.find({ 
@@ -345,6 +371,7 @@ const getAssignments = asyncHandler(async (req, res) => {
     } else {
       doc.studentStatus = (doc.deadline && new Date(doc.deadline) < new Date()) ? 'Overdue' : 'Pending';
     }
+    if (doc.fileUrl) doc.fileUrl = normalizeS3Url(doc.fileUrl);
     return doc;
   });
 
@@ -357,7 +384,12 @@ const getTests = asyncHandler(async (req, res) => {
     const studentBatch = await Batch.findOne({ students: studentId });
     if (!studentBatch) return res.status(200).json({ success: true, count: 0, data: [] });
 
-    const subjects = await Subject.find({ assignedTo: studentBatch._id }).distinct('_id');
+    const subjects = await Subject.find({ 
+        $or: [
+          { assignedTo: studentBatch._id },
+          { assignedTo: studentBatch.studyClass }
+        ]
+    }).distinct('_id');
 
     const allTests = await Test.find({ 
         status: 'published',
@@ -375,6 +407,7 @@ const getTests = asyncHandler(async (req, res) => {
         } else {
             doc.studentStatus = (doc.deadline && new Date(doc.deadline) < new Date()) ? 'Overdue' : 'Pending';
         }
+        if (doc.fileUrl) doc.fileUrl = normalizeS3Url(doc.fileUrl);
         return doc;
     });
 
@@ -387,7 +420,12 @@ const getMainAssessments = asyncHandler(async (req, res) => {
     const studentBatch = await Batch.findOne({ students: studentId });
     if (!studentBatch) return res.status(200).json({ success: true, data: { tests: [], assignments: [] } });
 
-    const subjects = await Subject.find({ assignedTo: studentBatch._id }).distinct('_id');
+    const subjects = await Subject.find({ 
+        $or: [
+          { assignedTo: studentBatch._id },
+          { assignedTo: studentBatch.studyClass }
+        ]
+    }).distinct('_id');
 
     const tests = await Test.find({ 
         status: 'published', 
@@ -401,7 +439,11 @@ const getMainAssessments = asyncHandler(async (req, res) => {
         subject: { $in: subjects }
     }).lean();
 
-    res.status(200).json({ success: true, data: { tests, assignments } });
+    // Normalize URLs
+    const normalizedTests = tests.map(t => ({ ...t, fileUrl: normalizeS3Url(t.fileUrl) }));
+    const normalizedAssignments = assignments.map(a => ({ ...a, fileUrl: normalizeS3Url(a.fileUrl) }));
+
+    res.status(200).json({ success: true, data: { tests: normalizedTests, assignments: normalizedAssignments } });
 });
 
 const updateProfile = async (req, res) => {
@@ -577,7 +619,12 @@ const getAllAssessments = asyncHandler(async (req, res) => {
     const batchId = studentBatch._id;
     const classId = studentBatch.studyClass;
 
-    const subjects = await Subject.find({ assignedTo: batchId }).distinct('_id');
+    const subjects = await Subject.find({ 
+        $or: [
+          { assignedTo: batchId },
+          { assignedTo: classId }
+        ]
+    }).distinct('_id');
 
     // Fetch both published Assignments and Tests for this batch or subject
     const assignments = await Assignment.find({ 
@@ -605,6 +652,7 @@ const getAllAssessments = asyncHandler(async (req, res) => {
         const submission = a.submissions?.find(s => s.studentId?.toString() === studentId.toString());
         return {
             ...a,
+            fileUrl: normalizeS3Url(a.fileUrl),
             assessmentType: 'assignment',
             assignedByFaculty: a.facultyId,
             studentStatus: submission ? ((submission.status === 'graded' || submission.marks != null) ? 'Graded' : 'Submitted') : ((a.deadline && new Date(a.deadline) < new Date()) ? 'Overdue' : 'Pending'),
@@ -616,6 +664,7 @@ const getAllAssessments = asyncHandler(async (req, res) => {
         const submission = t.submissions?.find(s => s.studentId?.toString() === studentId.toString());
         return {
             ...t,
+            fileUrl: normalizeS3Url(t.fileUrl),
             assessmentType: 'test',
             assignedByFaculty: t.faculty,
             studentStatus: submission ? ((submission.status === 'graded' || submission.marks != null) ? 'Graded' : 'Submitted') : ((t.deadline && new Date(t.deadline) < new Date()) ? 'Overdue' : 'Pending'),
@@ -798,6 +847,25 @@ const getProgression = asyncHandler(async (req, res) => {
             }
         };
     }));
+
+    const normalizedAssignments = assignments.map(a => ({ 
+        ...a, 
+        fileUrl: normalizeS3Url(a.fileUrl) 
+    }));
+
+    const normalizedTests = tests.map(t => ({ 
+        ...t, 
+        fileUrl: normalizeS3Url(t.fileUrl) 
+    }));
+
+    res.status(200).json({
+        success: true,
+        count: assignments.length + tests.length,
+        data: {
+            assignments: normalizedAssignments,
+            tests: normalizedTests
+        }
+    });
 
     res.status(200).json({ success: true, data: progressionData });
 });
