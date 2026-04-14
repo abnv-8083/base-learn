@@ -815,13 +815,13 @@ const getProgression = asyncHandler(async (req, res) => {
     }
 
     const batchId = studentBatch._id;
-    const classId = studentBatch.studyClass;
+    const classId = studentBatch.studyClass?._id || studentBatch.studyClass;
 
     // Find all subjects assigned to this student (via Batch or Class)
     const subjects = await Subject.find({ 
         $or: [
             { assignedTo: batchId },
-            { assignedTo: classId }
+            ...(classId ? [{ assignedTo: classId }] : [])
         ]
     }).populate('faculty', 'name').lean();
 
@@ -830,9 +830,9 @@ const getProgression = asyncHandler(async (req, res) => {
 
         // Fetch counts for Videos, Assignments, and Tests
         const [videosCount, assignmentsCount, testsCount] = await Promise.all([
-            RecordedClass.countDocuments({ subject: subId, status: 'published', $or: [{ assignedTo: batchId }, { assignedTo: classId }] }),
-            Assignment.countDocuments({ subject: subId, status: 'published', $or: [{ assignedBatches: batchId }, { assignedClasses: classId }] }),
-            Test.countDocuments({ subject: subId, status: 'published', $or: [{ assignedTo: batchId }, { assignedClasses: classId }] })
+            RecordedClass.countDocuments({ subject: subId, status: 'published', $or: [{ assignedTo: batchId }, ...(classId ? [{ assignedTo: classId }] : [])] }),
+            Assignment.countDocuments({ subject: subId, status: 'published', $or: [{ assignedBatches: batchId }, ...(classId ? [{ assignedClasses: classId }] : [])] }),
+            Test.countDocuments({ subject: subId, status: 'published', $or: [{ assignedTo: batchId }, ...(classId ? [{ assignedClasses: classId }] : [])] })
         ]);
 
         // Calculate Video Progress
