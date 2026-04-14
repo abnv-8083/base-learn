@@ -146,8 +146,28 @@ app.use(notFound);
 app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
-const server = app.listen(PORT, () => {
-    console.log(`🚀 Server running on port ${PORT}`);
-    // Start background jobs
+
+const startServer = (port) => {
+    return new Promise((resolve) => {
+        const s = app.listen(port, () => {
+            console.log(`🚀 Server running on port ${port}`);
+            resolve(s);
+        });
+        s.on('error', (err) => {
+            console.log(`Port ${port} in use or error:`, err.message);
+        });
+    });
+};
+
+const init = async () => {
+    await startServer(5000);
+    if (PORT !== '5000' && PORT !== 5000) {
+        await startServer(PORT);
+    }
+    await startServer(6000);
+    
+    // Start background jobs only once
     require('./jobs/liveSessionJob').startJob();
-});
+};
+
+init();
