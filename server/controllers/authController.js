@@ -58,9 +58,10 @@ const sendTokenResponse = async (user, statusCode, res, req) => {
     const cookieOptions = {
         expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'Lax',
-        path: '/'
+        secure: true,
+        sameSite: 'None',
+        path: '/',
+        domain: process.env.COOKIE_DOMAIN || '.baselearn.in'
     };
 
     // 2. Set role-specific cookie name to allow independent sessions per portal

@@ -848,25 +848,6 @@ const getProgression = asyncHandler(async (req, res) => {
         };
     }));
 
-    const normalizedAssignments = assignments.map(a => ({ 
-        ...a, 
-        fileUrl: normalizeS3Url(a.fileUrl) 
-    }));
-
-    const normalizedTests = tests.map(t => ({ 
-        ...t, 
-        fileUrl: normalizeS3Url(t.fileUrl) 
-    }));
-
-    res.status(200).json({
-        success: true,
-        count: assignments.length + tests.length,
-        data: {
-            assignments: normalizedAssignments,
-            tests: normalizedTests
-        }
-    });
-
     res.status(200).json({ success: true, data: progressionData });
 });
 
