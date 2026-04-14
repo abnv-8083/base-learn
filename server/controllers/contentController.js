@@ -104,7 +104,14 @@ exports.assignChapter = async (req, res) => {
 // ============================
 exports.getVideosByChapter = async (req, res) => {
     try {
-        const videos = await RecordedClass.find({ chapter: req.params.chapterId }).populate('assignedTo', 'name');
+        const query = { chapter: req.params.chapterId };
+        
+        // Faculty only sees their own videos
+        if (req.user.role === 'faculty') {
+            query.faculty = req.user.userId;
+        }
+        
+        const videos = await RecordedClass.find(query).populate('assignedTo', 'name');
         res.status(200).json(videos);
     } catch (error) { res.status(500).json({ message: error.message }); }
 };
@@ -154,7 +161,21 @@ exports.assignVideo = async (req, res) => {
 // Unassigned Videos logic (Faculty uploads)
 exports.getUnassignedVideos = async (req, res) => {
     try {
-        const videos = await RecordedClass.find({ status: 'draft', chapter: { $exists: false } }).populate('faculty', 'name');
+        let query = { status: 'draft', chapter: { $exists: false } };
+
+        if (req.user.role === 'faculty') {
+            // Faculty only sees their own unassigned videos
+            query.faculty = req.user.userId;
+        } else if (req.user.role === 'instructor') {
+            // Instructor only sees unassigned videos of faculties assigned to their subjects
+            const instructorSubjects = await Subject.find({ instructor: req.user.userId });
+            const assignedFacultyIds = instructorSubjects.reduce((acc, sub) => {
+                return [...acc, ...sub.faculty];
+            }, []);
+            query.faculty = { $in: assignedFacultyIds };
+        }
+
+        const videos = await RecordedClass.find(query).populate('faculty', 'name');
         res.status(200).json(videos);
     } catch (error) { res.status(500).json({ message: error.message }); }
 };

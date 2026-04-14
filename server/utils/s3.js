@@ -38,9 +38,9 @@ const uploadToS3 = async (file, folder = 'general') => {
         console.warn('Failed to delete local temp file:', err.message);
     }
 
-    // Return the URL. In Cloudflare, you usually connect a custom domain to your bucket.
-    // Replace 'your-media-domain.com' with your actual Cloudflare custom domain.
-    const customDomain = process.env.R2_CUSTOM_DOMAIN || `https://${process.env.R2_BUCKET_NAME}.r2.cloudflarestorage.com`;
+    // Return the URL. For E2E EOS, we use Virtual Hosted Style: http://bucket-name.objectstore.e2enetworks.net/key
+    const endpointHost = process.env.R2_ENDPOINT ? new URL(process.env.R2_ENDPOINT).host : 'objectstore.e2enetworks.net';
+    const customDomain = process.env.R2_CUSTOM_DOMAIN || `https://${process.env.R2_BUCKET_NAME}.${endpointHost}`;
     return `${customDomain}/${fileName}`;
 };
 
