@@ -815,46 +815,53 @@ const getProgression = asyncHandler(async (req, res) => {
     }
 
     const batchId = studentBatch._id;
-    const subjects = await Subject.find({ assignedTo: batchId }).populate('faculty', 'name').lean();
+    const classId = studentBatch.studyClass;
+
+    // Find all subjects assigned to this student (via Batch or Class)
+    const subjects = await Subject.find({ 
+        $or: [
+            { assignedTo: batchId },
+            { assignedTo: classId }
+        ]
+    }).populate('faculty', 'name').lean();
 
     const progressionData = await Promise.all(subjects.map(async (subject) => {
-        const videosCount = await RecordedClass.countDocuments({ subject: subject._id, assignedTo: batchId, status: 'published' });
-        const assignmentsCount = await Assignment.countDocuments({ subject: subject._id, assignedBatches: batchId, status: 'published' });
-        const testsCount = await Test.countDocuments({ subject: subject._id, assignedTo: batchId, status: 'published' });
+        const subId = subject._id;
 
+        // Fetch counts for Videos, Assignments, and Tests
+        const [videosCount, assignmentsCount, testsCount] = await Promise.all([
+            RecordedClass.countDocuments({ subject: subId, status: 'published', $or: [{ assignedTo: batchId }, { assignedTo: classId }] }),
+            Assignment.countDocuments({ subject: subId, status: 'published', $or: [{ assignedBatches: batchId }, { assignedClasses: classId }] }),
+            Test.countDocuments({ subject: subId, status: 'published', $or: [{ assignedTo: batchId }, { assignedClasses: classId }] })
+        ]);
+
+        // Calculate Video Progress
         const watchProgressRaw = await RecordedClass.find({ 
-            subject: subject._id, 
-            assignedTo: batchId, 
+            subject: subId, 
             status: 'published',
             'watchProgress.student': studentId 
         }).select('watchProgress').lean();
         
         let completedVideos = 0;
         watchProgressRaw.forEach(v => {
-            const p = v.watchProgress.find(progress => progress.student?.toString() === studentId.toString());
-            if (p && p.watchPercentage >= 90) completedVideos++;
+            if (v.watchProgress && Array.isArray(v.watchProgress)) {
+                const p = v.watchProgress.find(progress => progress.student?.toString() === studentId.toString());
+                if (p && p.watchPercentage >= 90) completedVideos++;
+            }
         });
 
-        const completedAssignments = await Assignment.countDocuments({ 
-            subject: subject._id, 
-            assignedBatches: batchId, 
-            status: 'published',
-            'submissions.studentId': studentId.toString()
-        });
-        
-        const completedTests = await Test.countDocuments({ 
-            subject: subject._id, 
-            assignedTo: batchId, 
-            status: 'published',
-            'submissions.studentId': studentId.toString()
-        });
+        // Calculate Assignment/Test Submissions
+        const [completedAssignments, completedTests] = await Promise.all([
+            Assignment.countDocuments({ subject: subId, status: 'published', 'submissions.studentId': studentId }),
+            Test.countDocuments({ subject: subId, status: 'published', 'submissions.studentId': studentId })
+        ]);
 
         const totalItems = videosCount + assignmentsCount + testsCount;
         const completedItems = completedVideos + completedAssignments + completedTests;
         const progress = totalItems > 0 ? Math.round((completedItems / totalItems) * 100) : 0;
         
         return {
-            _id: subject._id,
+            _id: subId,
             name: subject.name,
             faculty: subject.faculty,
             progress: progress,
