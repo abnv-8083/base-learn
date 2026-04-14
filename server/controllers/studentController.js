@@ -40,86 +40,99 @@ const normalizeS3Url = (url) => {
 // @access  Private (Student)
 const getDashboard = asyncHandler(async (req, res) => {
     const studentId = req.user._id;
+    const studentBatch = await Batch.findOne({ students: studentId }).populate('studyClass instructor').lean();
+    
+    if (!studentBatch) {
+        return res.status(200).json({ success: true, data: { recordedClassesAvailable: 0, liveClassesCount: 0, pendingAssignments: 0, completionRate: 0, upcomingLiveClasses: [], latestAssessments: { assignments: [], tests: [] }, recentVideos: [] } });
+    }
 
-  const studentBatch = await Batch.findOne({ students: studentId }).populate('studyClass instructor').lean();
-  let assignedSubjects = [];
-  let recordedCount = 0;
-  let liveCount = 0;
-  let pendingAssignments = 0;
-  let completionRate = 0;
-  
-  if (studentBatch) {
     const studentBatchId = studentBatch._id;
     const studentClassId = studentBatch.studyClass?._id;
 
-    assignedSubjects = await Subject.find({ 
+    const assignedSubjects = await Subject.find({ 
         $or: [
             { assignedTo: studentBatchId },
             ...(studentClassId ? [{ assignedTo: studentClassId }] : [])
         ]
     }).lean();
 
-    recordedCount = await RecordedClass.countDocuments({ 
+    const subjectIds = assignedSubjects.map(s => s._id);
+
+    // 1. Stats
+    const recordedCount = await RecordedClass.countDocuments({ 
         status: 'published',
-        $or: [
-            { assignedTo: studentBatchId },
-            ...(studentClassId ? [{ assignedTo: studentClassId }] : [])
-        ]
+        $or: [{ assignedTo: studentBatchId }, { subject: { $in: subjectIds } }]
     });
 
-    liveCount = await LiveClass.countDocuments({ 
+    const liveCount = await LiveClass.countDocuments({ 
         status: { $in: ['upcoming', 'ongoing'] },
         batches: studentBatchId 
     });
 
-    // 2. Accurate assignments count
     const totalAssignments = await Assignment.countDocuments({
         status: 'published',
-        $or: [
-            { assignedBatches: studentBatchId },
-            { assignedClasses: studentClassId }
-        ]
+        $or: [{ subject: { $in: subjectIds } }, { assignedBatches: studentBatchId }, { assignedClasses: studentClassId }]
     });
 
     const completedAssignments = await Assignment.countDocuments({
         status: 'published',
-        $or: [
-            { assignedBatches: studentBatchId },
-            { assignedClasses: studentClassId }
-        ],
+        $or: [{ subject: { $in: subjectIds } }, { assignedBatches: studentBatchId }, { assignedClasses: studentClassId }],
         'submissions.studentId': studentId
     });
 
-    pendingAssignments = totalAssignments - completedAssignments;
-    completionRate = totalAssignments > 0 ? Math.round((completedAssignments / totalAssignments) * 100) : 0;
-  }
+    const pendingAssignments = totalAssignments - completedAssignments;
+    const completionRate = totalAssignments > 0 ? Math.round((completedAssignments / totalAssignments) * 100) : 0;
 
-  res.status(200).json({
-    success: true,
-    data: {
-      recordedClassesAvailable: recordedCount,
-      upcomingLiveClasses: liveCount,
-      pendingAssignments: Math.max(0, pendingAssignments),
-      completionRate,
-      
-      hasPaid: req.user.hasPaid || false,
-      batch: studentBatch ? {
-        id: studentBatch._id,
-        name: studentBatch.name,
-        className: studentBatch.studyClass?.name
-      } : null,
-      faculty: studentBatch?.instructor ? {
-        id: studentBatch.instructor._id,
-        name: studentBatch.instructor.name,
-        email: studentBatch.instructor.email
-      } : null,
-      subjects: assignedSubjects.map(s => ({
-        id: s._id,
-        name: s.name,
-        progress: 0 // Default to zero if progress tracking not implemented
-      }))
-    }
-  });
+    // 2. Data Lists
+    const upcomingLiveClasses = await LiveClass.find({
+        status: { $in: ['upcoming', 'ongoing'] },
+        batches: studentBatchId
+    }).populate('faculty', 'name').sort({ startTime: 1 }).limit(3).lean();
+
+    const [latestAssignments, latestTests] = await Promise.all([
+        Assignment.find({
+            status: 'published',
+            $or: [{ subject: { $in: subjectIds } }, { assignedBatches: studentBatchId }, { assignedClasses: studentClassId }]
+        }).populate('facultyId', 'name').populate('subject', 'name').sort({ createdAt: -1 }).limit(3).lean(),
+        Test.find({
+            status: 'published',
+            $or: [{ subject: { $in: subjectIds } }, { assignedTo: studentBatchId }, { assignedClasses: studentClassId }]
+        }).populate('faculty', 'name').populate('subject', 'name').sort({ createdAt: -1 }).limit(3).lean()
+    ]);
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const recentVideos = await RecordedClass.find({
+        status: 'published',
+        $or: [{ subject: { $in: subjectIds } }, { assignedTo: studentBatchId }],
+        createdAt: { $gte: today }
+    }).populate('faculty', 'name').populate('subject', 'name').sort({ createdAt: -1 }).limit(5).lean();
+
+    res.status(200).json({
+        success: true,
+        data: {
+          recordedClassesAvailable: recordedCount,
+          liveClassesCount: liveCount,
+          pendingAssignments,
+          completionRate,
+          upcomingLiveClasses,
+          latestAssessments: {
+              assignments: latestAssignments.map(a => ({ ...a, fileUrl: normalizeS3Url(a.fileUrl) })),
+              tests: latestTests.map(t => ({ ...t, fileUrl: normalizeS3Url(t.fileUrl) }))
+          },
+          recentVideos: recentVideos.map(v => ({ ...v, videoUrl: normalizeS3Url(v.videoUrl), thumbnail: normalizeS3Url(v.thumbnail) })),
+          batch: {
+            id: studentBatchId,
+            name: studentBatch.name,
+            className: studentBatch.studyClass?.name
+          },
+          faculty: studentBatch.instructor ? {
+            id: studentBatch.instructor._id,
+            name: studentBatch.instructor.name,
+            email: studentBatch.instructor.email
+          } : null
+        }
+    });
 });
 
 // @desc    Get all published recorded classes
