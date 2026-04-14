@@ -145,9 +145,10 @@ const getDashboard = asyncHandler(async (req, res) => {
 // @access  Private (Student)
 const getRecordedClasses = asyncHandler(async (req, res) => {
   try {
-    const studentId = req.user._id;
+    const studentId = req.user?._id;
+    if (!studentId) return res.status(200).json({ success: false, message: "User session missing" });
+
     const studentBatch = await Batch.findOne({ students: studentId });
-    
     if (!studentBatch) {
       return res.status(200).json({ success: true, count: 0, data: [] });
     }
@@ -155,123 +156,130 @@ const getRecordedClasses = asyncHandler(async (req, res) => {
     const studentBatchId = studentBatch._id;
     const studentClassId = studentBatch.studyClass?.toString() || null;
 
-    // 1. Find all subjects assigned to Batch or Class
     const subjects = await Subject.find({ 
       $or: [
           { assignedTo: studentBatchId },
           ...(studentClassId ? [{ assignedTo: studentClassId }] : [])
       ]
-    }).lean();
+    }).lean().catch(() => []);
     
-    const subjectIds = subjects.map(s => s._id);
+    const subjectIds = (subjects || []).map(s => s._id);
 
-    // 2. Find all chapters for those subjects
-    const allChapters = await Chapter.find({ subject: { $in: subjectIds } }).lean();
+    const allChapters = await Chapter.find({ subject: { $in: subjectIds } }).lean().catch(() => []);
 
-    // Combine into hierarchy: Subject > Chapter > Content (Videos + Resources)
-    const hierarchy = await Promise.all(subjects.map(async (sub) => {
-      const subjectChapters = allChapters.filter(c => c.subject?.toString() === sub._id.toString());
-      
-      const mappedChapters = await Promise.all(subjectChapters.map(async (chap) => {
-         // Find published videos for this chapter
-         const chapVideos = await RecordedClass.find({
-            chapter: chap._id,
-            status: 'published'
-         }).populate('faculty', 'name').lean();
+    const hierarchy = await Promise.all((subjects || []).map(async (sub) => {
+      try {
+        const subjectChapters = (allChapters || []).filter(c => c.subject?.toString() === sub._id.toString());
+        
+        const mappedChapters = await Promise.all(subjectChapters.map(async (chap) => {
+           try {
+             // Find published videos for this chapter
+             const chapVideos = await RecordedClass.find({
+                chapter: chap._id,
+                status: 'published'
+             }).populate('faculty', 'name').lean().catch(() => []);
 
-          // Find published assignments for this chapter
-          const chapAssignments = await Assignment.find({
-             chapter: chap._id,
-             status: 'published'
-          }).populate('facultyId', 'name').lean();
+              const chapAssignments = await Assignment.find({
+                 chapter: chap._id,
+                 status: 'published'
+              }).populate('facultyId', 'name').lean().catch(() => []);
 
-          const chapTests = await Test.find({
-             chapter: chap._id,
-             status: 'published'
-          }).populate('faculty', 'name').lean();
+              const chapTests = await Test.find({
+                 chapter: chap._id,
+                 status: 'published'
+              }).populate('faculty', 'name').lean().catch(() => []);
 
-         // Find published resources
-         const resources = [];
-         ['notes', 'liveNotes', 'dpps', 'pyqs'].forEach(field => {
-            const items = (chap[field] || []).filter(r => r.status === 'published');
-            items.forEach(item => resources.push({
-               _id: item._id,
-               title: item.title,
-               description: item.description,
-               fileUrl: normalizeS3Url(item.url),
-               createdAt: item.publishedAt || item.uploadedAt,
-               type: field.replace('s', ''), // note, liveNote, dpp, pyq
-               isResource: true
-            }));
-         });
+             const resources = [];
+             ['notes', 'liveNotes', 'dpps', 'pyqs'].forEach(field => {
+                const items = (chap[field] || []).filter(r => r && r.status === 'published');
+                items.forEach(item => {
+                  if (item && item.url) {
+                    resources.push({
+                       _id: item._id,
+                       title: item.title || "Document",
+                       description: item.description || "",
+                       fileUrl: normalizeS3Url(item.url),
+                       createdAt: item.publishedAt || item.uploadedAt,
+                       type: field.replace('s', ''),
+                       isResource: true
+                    });
+                  }
+                });
+             });
 
-         const allContent = [
-            ...chapVideos.map(v => ({
-              _id: v._id,
-              title: v.title,
-              thumbnail: normalizeS3Url(v.thumbnail) || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&auto=format&fit=crop',
-              description: v.description,
-              fileUrl: normalizeS3Url(v.videoUrl),
-              assignmentUrl: normalizeS3Url(v.assignmentUrl),
-              faculty: v.faculty,
-              createdAt: v.createdAt,
-              type: v.contentType || 'lecture',
-              isResource: false
-            })),
-             ...chapAssignments.map(a => ({
-               _id: a._id,
-               title: a.title,
-               description: a.description,
-               fileUrl: normalizeS3Url(a.fileUrl),
-               faculty: a.facultyId,
-               createdAt: a.createdAt,
-               deadline: a.deadline,
-               type: 'assignment',
-               isResource: true,
-               isAssessment: true
-             })),
-             ...chapTests.map(t => ({
-               _id: t._id,
-               title: t.title,
-               description: t.description,
-               fileUrl: normalizeS3Url(t.fileUrl),
-               faculty: t.faculty,
-               createdAt: t.createdAt,
-               deadline: t.deadline,
-               type: 'test',
-               isResource: true,
-               isAssessment: true
-             })),
-            ...resources
-         ];
+             const allContent = [
+                ...(chapVideos || []).map(v => ({
+                  _id: v._id,
+                  title: v.title || "Untitled Video",
+                  thumbnail: normalizeS3Url(v.thumbnail) || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&auto=format&fit=crop',
+                  description: v.description || "",
+                  fileUrl: normalizeS3Url(v.videoUrl),
+                  assignmentUrl: normalizeS3Url(v.assignmentUrl),
+                  faculty: v.faculty,
+                  createdAt: v.createdAt,
+                  type: v.contentType || 'lecture',
+                  isResource: false
+                })),
+                 ...(chapAssignments || []).map(a => ({
+                   _id: a._id,
+                   title: a.title || "Assignment",
+                   description: a.description || "",
+                   fileUrl: normalizeS3Url(a.fileUrl),
+                   faculty: a.facultyId,
+                   createdAt: a.createdAt,
+                   deadline: a.deadline,
+                   type: 'assignment',
+                   isResource: true,
+                   isAssessment: true
+                 })),
+                 ...(chapTests || []).map(t => ({
+                   _id: t._id,
+                   title: t.title || "Mock Test",
+                   description: t.description || "",
+                   fileUrl: normalizeS3Url(t.fileUrl),
+                   faculty: t.faculty,
+                   createdAt: t.createdAt,
+                   deadline: t.deadline,
+                   type: 'test',
+                   isResource: true,
+                   isAssessment: true
+                 })),
+                ...resources
+             ];
 
-         // if (allContent.length === 0) return null; // Removed to allow empty chapters to be visible to students
+             return {
+               id: chap._id,
+               title: chap.name || "Untitled Chapter",
+               description: chap.description || "",
+               videos: allContent
+             };
+           } catch (chapErr) {
+             console.error("Chapter Error:", chapErr);
+             return null;
+           }
+        }));
 
-         return {
-           id: chap._id,
-           title: chap.name,
-           description: chap.description,
-           videos: allContent // Keep key name "videos" for frontend compatibility but it contains all content
-         };
-      }));
+        const chapters = (mappedChapters || []).filter(Boolean);
+        if (chapters.length === 0) return null;
 
-      const chapters = mappedChapters.filter(Boolean);
-      if (chapters.length === 0) return null;
-
-      return {
-        id: sub._id,
-        title: sub.name,
-        description: sub.description,
-        icon: '📚',
-        chapters
-      };
+        return {
+          id: sub._id,
+          title: sub.name || "Unnamed Subject",
+          description: sub.description || "",
+          icon: '📚',
+          chapters
+        };
+      } catch (subErr) {
+        console.error("Subject Error:", subErr);
+        return null;
+      }
     }));
 
-    const finalData = hierarchy.filter(Boolean);
+    const finalData = (hierarchy || []).filter(Boolean);
     res.status(200).json({ success: true, count: finalData.length, data: finalData });
   } catch (error) {
     console.error('RECORDED CLASSES ERROR:', error);
-    res.status(500).json({ success: false, message: error.message });
+    res.status(200).json({ success: false, crash_message: error.message, stack: error.stack });
   }
 });
 
@@ -814,72 +822,83 @@ const sendEnquiry = asyncHandler(async (req, res) => {
 // @access  Private (Student)
 const getProgression = asyncHandler(async (req, res) => {
     try {
-        const studentId = req.user._id;
+        const studentId = req.user?._id;
+        if (!studentId) return res.status(200).json({ success: false, message: "User session missing" });
+
         const studentBatch = await Batch.findOne({ students: studentId }).lean();
-        
         if (!studentBatch) {
             return res.status(200).json({ success: true, data: [] });
         }
 
-        const batchId = studentBatch._id;
-        const classId = studentBatch.studyClass?._id || studentBatch.studyClass;
+        const studentBatchId = studentBatch._id;
+        const studentClassId = studentBatch.studyClass?._id || studentBatch.studyClass || null;
 
+        // Find all subjects assigned to this student (via Batch or Class)
         const subjects = await Subject.find({ 
             $or: [
-                { assignedTo: batchId },
-                ...(classId ? [{ assignedTo: classId }] : [])
+                { assignedTo: studentBatchId },
+                ...(studentClassId ? [{ assignedTo: studentClassId }] : [])
             ]
         }).populate('faculty', 'name').lean();
 
+        if (!subjects || subjects.length === 0) {
+            return res.status(200).json({ success: true, data: [] });
+        }
+
         const progressionData = await Promise.all(subjects.map(async (subject) => {
-            const subId = subject._id;
+            try {
+                const subId = subject._id;
 
-            const [videosCount, assignmentsCount, testsCount] = await Promise.all([
-                RecordedClass.countDocuments({ subject: subId, status: 'published', $or: [{ assignedTo: batchId }, ...(classId ? [{ assignedTo: classId }] : [])] }),
-                Assignment.countDocuments({ subject: subId, status: 'published', $or: [{ assignedBatches: batchId }, ...(classId ? [{ assignedClasses: classId }] : [])] }),
-                Test.countDocuments({ subject: subId, status: 'published', $or: [{ assignedTo: batchId }, ...(classId ? [{ assignedClasses: classId }] : [])] })
-            ]);
+                const [videosCount, assignmentsCount, testsCount] = await Promise.all([
+                    RecordedClass.countDocuments({ subject: subId, status: 'published', $or: [{ assignedTo: studentBatchId }, ...(studentClassId ? [{ assignedTo: studentClassId }] : [])] }).catch(() => 0),
+                    Assignment.countDocuments({ subject: subId, status: 'published', $or: [{ assignedBatches: studentBatchId }, ...(studentClassId ? [{ assignedClasses: studentClassId }] : [])] }).catch(() => 0),
+                    Test.countDocuments({ subject: subId, status: 'published', $or: [{ assignedTo: studentBatchId }, ...(studentClassId ? [{ assignedClasses: studentClassId }] : [])] }).catch(() => 0)
+                ]);
 
-            const watchProgressRaw = await RecordedClass.find({ 
-                subject: subId, 
-                status: 'published',
-                'watchProgress.student': studentId 
-            }).select('watchProgress').lean();
-            
-            let completedVideos = 0;
-            watchProgressRaw.forEach(v => {
-                if (v.watchProgress && Array.isArray(v.watchProgress)) {
-                    const p = v.watchProgress.find(progress => progress.student?.toString() === studentId.toString());
-                    if (p && p.watchPercentage >= 90) completedVideos++;
-                }
-            });
+                const watchProgressRaw = await RecordedClass.find({ 
+                    subject: subId, 
+                    status: 'published',
+                    'watchProgress.student': studentId 
+                }).select('watchProgress').lean().catch(() => []);
+                
+                let completedVideos = 0;
+                (watchProgressRaw || []).forEach(v => {
+                    if (v && v.watchProgress && Array.isArray(v.watchProgress)) {
+                        const p = v.watchProgress.find(progress => progress?.student?.toString() === studentId.toString());
+                        if (p && p.watchPercentage >= 90) completedVideos++;
+                    }
+                });
 
-            const [completedAssignments, completedTests] = await Promise.all([
-                Assignment.countDocuments({ subject: subId, status: 'published', 'submissions.studentId': studentId }),
-                Test.countDocuments({ subject: subId, status: 'published', 'submissions.studentId': studentId })
-            ]);
+                const [completedAssignments, completedTests] = await Promise.all([
+                    Assignment.countDocuments({ subject: subId, status: 'published', 'submissions.studentId': studentId }).catch(() => 0),
+                    Test.countDocuments({ subject: subId, status: 'published', 'submissions.studentId': studentId }).catch(() => 0)
+                ]);
 
-            const totalItems = videosCount + assignmentsCount + testsCount;
-            const completedItems = completedVideos + completedAssignments + completedTests;
-            const progress = totalItems > 0 ? Math.round((completedItems / totalItems) * 100) : 0;
-            
-            return {
-                _id: subId,
-                name: subject.name,
-                faculty: subject.faculty,
-                progress: progress,
-                stats: {
-                    videos: videosCount,
-                    assignments: assignmentsCount,
-                    tests: testsCount
-                }
-            };
+                const totalItems = (videosCount || 0) + (assignmentsCount || 0) + (testsCount || 0);
+                const completedItems = completedVideos + (completedAssignments || 0) + (completedTests || 0);
+                const progress = totalItems > 0 ? Math.round((completedItems / totalItems) * 100) : 0;
+                
+                return {
+                    _id: subId,
+                    name: subject.name || "Unnamed",
+                    faculty: subject.faculty || [],
+                    progress: progress,
+                    stats: {
+                        videos: videosCount || 0,
+                        assignments: assignmentsCount || 0,
+                        tests: testsCount || 0
+                    }
+                };
+            } catch (innerErr) {
+                console.error("Individual Subject Error:", innerErr);
+                return null;
+            }
         }));
 
-        res.status(200).json({ success: true, data: progressionData });
+        res.status(200).json({ success: true, data: progressionData.filter(Boolean) });
     } catch (error) {
         console.error('PROGRESSION ERROR:', error);
-        res.status(500).json({ success: false, message: error.message });
+        res.status(200).json({ success: false, crash_message: error.message, stack: error.stack });
     }
 });
 
