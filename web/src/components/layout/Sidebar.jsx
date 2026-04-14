@@ -63,14 +63,14 @@ export default function Sidebar({ menuItems, role }) {
         zIndex: 1
       }} />
 
-      {/* Logo */}
-      <Link href={home} className="sidebar-logo" style={{ paddingTop: '28px' }}>
-        <div className="sidebar-logo-icon" style={{
-          background: `linear-gradient(135deg, ${roleStyle.accent}, #0F2D6B)`,
-          boxShadow: `0 4px 14px ${roleStyle.light}`
-        }}>🎓</div>
+      <Link href={home} className="sidebar-logo" style={{ paddingTop: '28px', gap: '8px' }}>
+        <img src="/logo.png" alt="Logo" style={{
+          width: '38px', height: '38px', borderRadius: '10px',
+          boxShadow: `0 4px 14px ${roleStyle.light}`,
+          objectFit: 'contain'
+        }} />
         <div>
-          <div className="sidebar-logo-text">Base<span>Learn</span></div>
+          <img src="/logo-wide.png" alt="Base Learn" style={{ height: '22px', display: 'block' }} />
           <div style={{ fontSize: '10px', color: 'rgba(168,186,220,0.5)', marginTop: '1px', letterSpacing: '0.05em' }}>
             {ROLE_LABELS[role] || ''}
           </div>

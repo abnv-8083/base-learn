@@ -57,8 +57,7 @@ export default function StudentLogin() {
 
         {/* Logo */}
         <Link href="/" style={{ display:'flex', alignItems:'center', gap:'10px', textDecoration:'none', position:'relative', zIndex:2 }}>
-          <div style={{ width:'40px', height:'40px', borderRadius:'10px', background:'linear-gradient(135deg, #00C2FF, #3B82F6)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'20px', boxShadow:'0 4px 14px rgba(0,194,255,0.4)' }}>🎓</div>
-          <span style={{ fontSize:'22px', fontWeight:'800', fontFamily:'var(--font-heading)', color:'white', letterSpacing:'-0.03em' }}>Base<span style={{ color:'#00C2FF' }}>Learn</span></span>
+          <img src="/logo-wide.png" alt="Base Learn" style={{ height: '32px' }} />
         </Link>
 
         {/* Hero text */}
@@ -103,8 +102,7 @@ export default function StudentLogin() {
 
           {/* Mobile logo */}
           <div style={{ display:'flex', alignItems:'center', gap:'8px', marginBottom:'28px' }} className="mobile-only-logo">
-            <div style={{ width:'34px', height:'34px', borderRadius:'9px', background:'linear-gradient(135deg, #00C2FF, #0F2D6B)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'17px' }}>🎓</div>
-            <span style={{ fontSize:'18px', fontWeight:'800', fontFamily:'var(--font-heading)', color:'#0D1B3E', letterSpacing:'-0.03em' }}>Base<span style={{ color:'#00C2FF' }}>Learn</span></span>
+            <img src="/logo-wide.png" alt="Base Learn" style={{ height: '28px' }} />
           </div>
 
           <div style={{ marginBottom:'32px' }}>
