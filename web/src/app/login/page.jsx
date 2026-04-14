@@ -57,7 +57,7 @@ export default function StudentLogin() {
 
         {/* Logo */}
         <Link href="/" style={{ display:'flex', alignItems:'center', gap:'10px', textDecoration:'none', position:'relative', zIndex:2 }}>
-          <img src="/logo-wide.png" alt="Base Learn" style={{ height: '32px' }} />
+          <img src="/logo-wide.png" alt="Base Learn" style={{ height: '55px' }} />
         </Link>
 
         {/* Hero text */}

@@ -61,7 +61,7 @@ export default function Landing() {
       <header style={{
         position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100,
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '0 clamp(20px, 5vw, 60px)', height: '68px',
+        padding: '0 clamp(20px, 5vw, 60px)', height: '80px',
         background: scrolled ? 'rgba(255,255,255,0.92)' : 'transparent',
         backdropFilter: scrolled ? 'blur(12px)' : 'none',
         borderBottom: scrolled ? '1px solid rgba(226,232,248,0.8)' : '1px solid transparent',
@@ -69,10 +69,7 @@ export default function Landing() {
         boxShadow: scrolled ? '0 2px 20px rgba(15,45,107,0.07)' : 'none',
       }}>
         <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '10px', textDecoration: 'none' }}>
-          <div style={{ width: '38px', height: '38px', borderRadius: '10px', background: 'linear-gradient(135deg, #00C2FF, #0F2D6B)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', boxShadow: '0 4px 12px rgba(0,194,255,0.3)' }}>🎓</div>
-          <span style={{ fontSize: '20px', fontWeight: '800', fontFamily: 'var(--font-heading)', letterSpacing: '-0.03em', color: scrolled ? '#0D1B3E' : 'white' }}>
-            Base<span style={{ color: '#00C2FF' }}>Learn</span>
-          </span>
+          <img src="/logo-wide.png" alt="Base Learn Logo" style={{ height: '52px', display: 'block' }} />
         </Link>
 
         <nav style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
@@ -323,8 +320,7 @@ export default function Landing() {
           <div style={{ display:'grid', gridTemplateColumns:'2fr 1fr 1fr', gap:'48px', marginBottom:'48px' }}>
             <div>
               <div style={{ display:'flex', alignItems:'center', gap:'10px', marginBottom:'16px' }}>
-                <div style={{ fontSize:'24px' }}>🎓</div>
-                <span style={{ fontSize:'20px', fontWeight:'800', fontFamily:'var(--font-heading)', letterSpacing:'-0.03em' }}>Base<span style={{ color:'#00C2FF' }}>Learn</span></span>
+                <img src="/logo-wide.png" alt="Base Learn" style={{ height: '30px' }} />
               </div>
               <p style={{ color:'rgba(168,186,220,0.7)', fontSize:'14px', lineHeight:1.7, maxWidth:'280px', margin:'0 0 20px' }}>
                 Transforming the Grade 8-10 learning experience with structured, expert-led education.

@@ -94,7 +94,7 @@ function StaffLoginForm() {
         <div style={{ position:'absolute', inset:0, backgroundImage:'radial-gradient(rgba(255,255,255,0.04) 1px, transparent 1px)', backgroundSize:'28px 28px', pointerEvents:'none' }} />
 
         <Link href="/" style={{ display:'flex', alignItems:'center', gap:'10px', textDecoration:'none', position:'relative', zIndex:2 }}>
-          <img src="/logo-wide.png" alt="Base Learn" style={{ height: '32px' }} />
+          <img src="/logo-wide.png" alt="Base Learn" style={{ height: '55px' }} />
         </Link>
 
         <div style={{ position:'relative', zIndex:2 }}>
