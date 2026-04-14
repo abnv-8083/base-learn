@@ -215,13 +215,13 @@ export default function StudentDashboard() {
                       <h3 className="card-title" style={{ fontSize: '15px' }}>Latest Assignments</h3>
                   </div>
                   <div className="card-body" style={{ padding: '8px 20px' }}>
-                      {dashboardData.assessments.assignments.length > 0 ? (
+                      {dashboardData.assessments?.assignments?.length > 0 ? (
                           dashboardData.assessments.assignments.map(a => (
                               <div key={a._id} style={{ padding: '16px 0', borderBottom: '1px solid var(--color-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                   <div>
                                       <div style={{ fontWeight: '600', fontSize: '14px' }}>{a.title}</div>
                                       <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)', marginTop: '4px' }}>
-                                          {a.subject?.name} • Due: {new Date(a.deadline).toLocaleDateString()}
+                                          {a.subject?.name} • Due: {a.deadline ? new Date(a.deadline).toLocaleDateString() : 'N/A'}
                                       </div>
                                   </div>
                                   <Link href="/student/assignments" style={{ color: 'var(--color-primary)', fontSize: '13px', fontWeight: '500' }}>Open</Link>
@@ -238,13 +238,13 @@ export default function StudentDashboard() {
                       <h3 className="card-title" style={{ fontSize: '15px' }}>Upcoming Tests</h3>
                   </div>
                   <div className="card-body" style={{ padding: '8px 20px' }}>
-                    {dashboardData.assessments.tests.length > 0 ? (
+                    {dashboardData.assessments?.tests?.length > 0 ? (
                         dashboardData.assessments.tests.map(t => (
                             <div key={t._id} style={{ padding: '16px 0', borderBottom: '1px solid var(--color-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                 <div>
                                     <div style={{ fontWeight: '600', fontSize: '14px' }}>{t.title}</div>
                                     <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)', marginTop: '4px' }}>
-                                        {t.subject?.name} • Scheduled: {new Date(t.deadline).toLocaleDateString()}
+                                        {t.subject?.name} • Scheduled: {t.deadline ? new Date(t.deadline).toLocaleDateString() : 'N/A'}
                                     </div>
                                 </div>
                                 <Link href="/student/tests" style={{ color: 'var(--color-primary)', fontSize: '13px', fontWeight: '500' }}>Start</Link>

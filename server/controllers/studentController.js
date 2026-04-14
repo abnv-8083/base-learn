@@ -130,7 +130,12 @@ const getDashboard = asyncHandler(async (req, res) => {
             id: studentBatch.instructor._id,
             name: studentBatch.instructor.name,
             email: studentBatch.instructor.email
-          } : null
+          } : null,
+          subjects: assignedSubjects.map(s => ({
+            id: s._id,
+            name: s.name,
+            progress: 0 
+          }))
         }
     });
 });
