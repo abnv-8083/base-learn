@@ -151,13 +151,14 @@ const getRecordedClasses = asyncHandler(async (req, res) => {
     return res.status(200).json({ success: true, count: 0, data: [] });
   }
 
-  const batchId = new mongoose.Types.ObjectId(studentBatch._id);
-  const classId = studentBatch.studyClass ? new mongoose.Types.ObjectId(studentBatch.studyClass._id || studentBatch.studyClass) : null;
+  const studentBatchId = studentBatch._id;
+  const studentClassId = studentBatch.studyClass?.toString() || null;
 
   // 1. Find all subjects assigned to Batch or Class
   const subjects = await Subject.find({ 
     $or: [
-      { assignedTo: { $in: [batchId, classId] } }
+        { assignedTo: studentBatchId },
+        ...(studentClassId ? [{ assignedTo: studentClassId }] : [])
     ]
   }).lean();
   
@@ -207,10 +208,10 @@ const getRecordedClasses = asyncHandler(async (req, res) => {
           ...chapVideos.map(v => ({
             _id: v._id,
             title: v.title,
-            thumbnail: v.thumbnail || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&auto=format&fit=crop',
+            thumbnail: normalizeS3Url(v.thumbnail) || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&auto=format&fit=crop',
             description: v.description,
-            fileUrl: v.videoUrl,
-            assignmentUrl: v.assignmentUrl,
+            fileUrl: normalizeS3Url(v.videoUrl),
+            assignmentUrl: normalizeS3Url(v.assignmentUrl),
             faculty: v.faculty,
             createdAt: v.createdAt,
             type: v.contentType || 'lecture',
@@ -220,7 +221,7 @@ const getRecordedClasses = asyncHandler(async (req, res) => {
              _id: a._id,
              title: a.title,
              description: a.description,
-             fileUrl: a.fileUrl,
+             fileUrl: normalizeS3Url(a.fileUrl),
              faculty: a.facultyId,
              createdAt: a.createdAt,
              deadline: a.deadline,
@@ -232,7 +233,7 @@ const getRecordedClasses = asyncHandler(async (req, res) => {
              _id: t._id,
              title: t.title,
              description: t.description,
-             fileUrl: t.fileUrl,
+             fileUrl: normalizeS3Url(t.fileUrl),
              faculty: t.faculty,
              createdAt: t.createdAt,
              deadline: t.deadline,
