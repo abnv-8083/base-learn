@@ -3,8 +3,8 @@ const { Upload } = require("@aws-sdk/lib-storage");
 const fs = require('fs');
 
 const s3Client = new S3Client({
-    region: "auto", // Cloudflare R2 uses 'auto'
-    endpoint: process.env.R2_ENDPOINT, // This will look like: https://<id>.r2.cloudflarestorage.com
+    region: process.env.AWS_REGION || "ap-south-1", // E2E EOS usually uses ap-south-1
+    endpoint: process.env.R2_ENDPOINT,
     credentials: {
         accessKeyId: process.env.R2_ACCESS_KEY_ID,
         secretAccessKey: process.env.R2_SECRET_ACCESS_KEY,
