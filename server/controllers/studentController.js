@@ -16,7 +16,7 @@ const { uploadToS3, deleteFromS3 } = require('../utils/s3');
 
 // Helper to normalize S3 URLs to Path-Style for E2E EOS compatibility
 const normalizeS3Url = (url) => {
-    if (!url || !url.includes('e2enetworks.net')) return url;
+    if (!url || typeof url !== 'string' || !url.includes('e2enetworks.net')) return url;
     
     // If it's already Path-Style (https://endpoint/bucket/key), leave it
     // If it's Virtual-Hosted (https://bucket.endpoint/key), convert it
