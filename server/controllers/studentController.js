@@ -132,30 +132,27 @@ const getRecordedClasses = asyncHandler(async (req, res) => {
     const subjectChapters = allChapters.filter(c => c.subject?.toString() === sub._id.toString());
     
     const mappedChapters = await Promise.all(subjectChapters.map(async (chap) => {
-       // Find published videos assigned to this batch
+       // Find published videos for this chapter
        const chapVideos = await RecordedClass.find({
           chapter: chap._id,
-          status: 'published',
-          assignedTo: batchId
+          status: 'published'
        }).populate('faculty', 'name').lean();
 
-        // Find published assessments linked to this chapter
+        // Find published assignments for this chapter
         const chapAssignments = await Assignment.find({
            chapter: chap._id,
-           status: 'published',
-           assignedBatches: batchId
+           status: 'published'
         }).populate('facultyId', 'name').lean();
 
         const chapTests = await Test.find({
            chapter: chap._id,
-           status: 'published',
-           assignedTo: batchId
+           status: 'published'
         }).populate('faculty', 'name').lean();
 
-       // Find published resources assigned to this batch
+       // Find published resources
        const resources = [];
        ['notes', 'liveNotes', 'dpps', 'pyqs'].forEach(field => {
-          const items = (chap[field] || []).filter(r => r.status === 'published' && r.assignedTo?.some(bid => bid.toString() === batchId.toString()));
+          const items = (chap[field] || []).filter(r => r.status === 'published');
           items.forEach(item => resources.push({
              _id: item._id,
              title: item.title,
@@ -328,10 +325,13 @@ const getAssignments = asyncHandler(async (req, res) => {
   const studentBatch = await Batch.findOne({ students: studentId });
   if (!studentBatch) return res.status(200).json({ success: true, count: 0, data: [] });
 
-  // Strictly filter by published items assigned to this batch
+  // First, find subjects assigned to this batch
+  const subjects = await Subject.find({ assignedTo: studentBatch._id }).distinct('_id');
+
+  // Then, find all published assignments for those subjects
   const allAssignments = await Assignment.find({ 
     status: 'published',
-    assignedBatches: studentBatch._id 
+    subject: { $in: subjects }
   }).sort('deadline');
 
   const data = allAssignments.map(a => {
@@ -357,9 +357,11 @@ const getTests = asyncHandler(async (req, res) => {
     const studentBatch = await Batch.findOne({ students: studentId });
     if (!studentBatch) return res.status(200).json({ success: true, count: 0, data: [] });
 
+    const subjects = await Subject.find({ assignedTo: studentBatch._id }).distinct('_id');
+
     const allTests = await Test.find({ 
         status: 'published',
-        assignedTo: studentBatch._id 
+        subject: { $in: subjects }
     }).sort('deadline');
     
     const data = allTests.map(t => {
@@ -385,16 +387,18 @@ const getMainAssessments = asyncHandler(async (req, res) => {
     const studentBatch = await Batch.findOne({ students: studentId });
     if (!studentBatch) return res.status(200).json({ success: true, data: { tests: [], assignments: [] } });
 
+    const subjects = await Subject.find({ assignedTo: studentBatch._id }).distinct('_id');
+
     const tests = await Test.find({ 
         status: 'published', 
         isMain: true,
-        assignedTo: studentBatch._id 
+        subject: { $in: subjects }
     }).lean();
 
     const assignments = await Assignment.find({ 
         status: 'published', 
         isMain: true,
-        assignedBatches: studentBatch._id 
+        subject: { $in: subjects }
     }).lean();
 
     res.status(200).json({ success: true, data: { tests, assignments } });
@@ -573,10 +577,13 @@ const getAllAssessments = asyncHandler(async (req, res) => {
     const batchId = studentBatch._id;
     const classId = studentBatch.studyClass;
 
-    // Fetch both published Assignments and Tests for this batch
+    const subjects = await Subject.find({ assignedTo: batchId }).distinct('_id');
+
+    // Fetch both published Assignments and Tests for this batch or subject
     const assignments = await Assignment.find({ 
         status: 'published',
         $or: [
+            { subject: { $in: subjects } },
             { assignedBatches: batchId },
             { assignedClasses: classId },
             { assignedStudents: studentId }
@@ -586,6 +593,7 @@ const getAllAssessments = asyncHandler(async (req, res) => {
     const tests = await Test.find({ 
         status: 'published',
         $or: [
+            { subject: { $in: subjects } },
             { assignedTo: batchId },
             { assignedClasses: classId },
             { assignedStudents: studentId }

@@ -44,17 +44,17 @@ const cloudinaryMixedStorage = new CloudinaryStorage({
     const isVideo = file.mimetype.startsWith('video');
     const isPdf = file.mimetype === 'application/pdf' || file.originalname.toLowerCase().endsWith('.pdf');
     const isImage = file.mimetype.startsWith('image');
-    
+
     // For PDFs, we use 'raw' with a forced extension to guarantee browser compatibility.
     // For Images/Videos, use 'auto' or explicit resource types.
     let resourceType = 'auto';
     if (isVideo) resourceType = 'video';
     else if (isPdf) resourceType = 'auto'; // 'auto' works better for PDF previews than 'raw'
     else if (isImage) resourceType = 'image';
-    
+
     const extension = isPdf ? '.pdf' : '';
     const folder = isVideo ? 'bl_videos' : (isImage ? 'bl_thumbnails' : 'bl_materials');
-    
+
     return {
       folder: folder,
       resource_type: resourceType,
@@ -163,16 +163,16 @@ const localMixedStorage = multer.diskStorage({
 
 const localMixedUpload = multer({
   storage: localMixedStorage,
-  limits: { fileSize: 2 * 1024 * 1024 * 1024 } // 2GB
+  limits: { fileSize: 5 * 1024 * 1024 * 1024 } // 5GB
 });
 
 const upload = localMixedUpload; // Alias for general use
 
-module.exports = { 
-  uploadVideo, 
-  upload, 
-  uploadImage, 
-  cloudinaryVideoUpload, 
+module.exports = {
+  uploadVideo,
+  upload,
+  uploadImage,
+  cloudinaryVideoUpload,
   cloudinaryDocUpload,
   cloudinaryMixedUpload,
   localAssignmentUpload,
