@@ -225,6 +225,7 @@ export default function StudentDashboard() {
             </div>
           </div>
         </div>
+      </div>
 
       {/* Latest Assignments & Tests */}
       <div style={{ marginTop: '32px' }}>
