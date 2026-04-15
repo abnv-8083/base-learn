@@ -13,6 +13,29 @@ const Notification = require('../models/Notification');
 const logAction = require('../utils/logAction');
 const bbb = require('../utils/bbb');
 const { uploadToS3, deleteFromS3 } = require('../utils/s3');
+const cloudinary = require('cloudinary').v2;
+
+/**
+ * Upload an image file directly to Cloudinary (for thumbnails & profiles)
+ * Returns the secure_url. Falls back gracefully on error.
+ */
+const uploadImageToCloudinary = async (file, folder = 'bl_thumbnails') => {
+    if (!file || !file.path) return null;
+    try {
+        const result = await cloudinary.uploader.upload(file.path, {
+            folder,
+            resource_type: 'image',
+            access_mode: 'public',
+        });
+        // Clean up local temp file
+        try { require('fs').unlinkSync(file.path); } catch {}
+        return result.secure_url;
+    } catch (err) {
+        console.error('[Cloudinary] Image upload failed:', err.message);
+        return null;
+    }
+};
+
 
 // Helper to format local file paths to relative URLs
 // Helper to format local file paths to relative URLs
@@ -125,10 +148,10 @@ exports.uploadContent = asyncHandler(async (req, res) => {
         }
     }
 
-    // 1. Upload to AWS S3
+    // 1. Upload files: thumbnails → Cloudinary (public CDN), videos/PDFs → E2E EOS
     const filePath = videoFile ? await uploadToS3(videoFile, type === 'test' || type === 'assignment' ? 'assessments' : 'videos') : null;
     const assignmentPath = assignmentFile ? await uploadToS3(assignmentFile, 'assignments') : null;
-    const thumbnailPath = thumbnailFile ? await uploadToS3(thumbnailFile, 'thumbnails') : null;
+    const thumbnailPath = thumbnailFile ? await uploadImageToCloudinary(thumbnailFile, 'bl_thumbnails') : null;
 
     // 1. Handle FAQ Sessions, Recorded Classes & Live Recordings
     const defaultDeadline = new Date();
