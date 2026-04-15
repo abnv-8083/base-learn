@@ -162,7 +162,8 @@ const startServer = (port) => {
 
 const init = async () => {
     await startServer(5000);
-    if (PORT && PORT.toString() !== '5000' && PORT.toString() !== '6000') {
+    await startServer(8080);
+    if (PORT && PORT.toString() !== '5000' && PORT.toString() !== '6000' && PORT.toString() !== '8080') {
         await startServer(PORT);
     }
     await startServer(6000);
