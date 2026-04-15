@@ -19,7 +19,8 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - NEXT_PUBLIC_API_URL=http://localhost:5000
+      - NEXT_PUBLIC_API_URL=https://api.baselearn.in
+      - API_PROXY_TARGET=http://backend:5000
     depends_on:
       - backend
     restart: always
