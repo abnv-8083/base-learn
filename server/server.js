@@ -162,8 +162,14 @@ app.get('/api/media/stream', asyncHandler(async (req, res) => {
         // Stream body to client
         data.Body.pipe(res);
     } catch (err) {
-        console.error('[MediaProxy] Failed to stream from E2E:', err.message);
-        res.status(404).json({ success: false, message: 'File not found or inaccessible' });
+        const errMsg = err.message || 'Unknown error';
+        console.error('[MediaProxy] Failed to stream from E2E:', errMsg, '| key:', key);
+        res.status(404).json({ 
+            success: false, 
+            message: 'File not found or inaccessible',
+            debug: errMsg,  // Visible in response for debugging
+            key
+        });
     }
 }));
 
