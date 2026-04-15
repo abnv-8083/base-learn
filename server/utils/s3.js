@@ -21,8 +21,11 @@ const uploadToS3 = async (file, folder = 'general') => {
     const getLocalPath = () => {
         const pathSuffix = file.path.replace(/\\/g, '/');
         const uploadIndex = pathSuffix.indexOf('/uploads/');
-        if (uploadIndex !== -1) return pathSuffix.substring(uploadIndex);
-        return `/uploads/${folder}/${file.filename}`;
+        let relativePath = uploadIndex !== -1 ? pathSuffix.substring(uploadIndex) : `/uploads/${folder}/${file.filename}`;
+        
+        // Force absolute API route to guarantee image loads regardless of Next.js Rewrite Rules
+        const origin = process.env.NODE_ENV === 'development' ? 'http://localhost:5000' : 'https://api.baselearn.in';
+        return `${origin}${relativePath}`;
     };
 
     // 2. Check if Storage is actually configured
