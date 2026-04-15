@@ -101,8 +101,50 @@ const deleteFromS3 = async (fileUrl) => {
     }
 };
 
+/**
+ * Extract S3 key from a stored URL (pre-signed or plain path-style)
+ */
+const extractS3Key = (storedUrl) => {
+    if (!storedUrl) return null;
+    try {
+        // Strip query string (pre-signed params)
+        const cleanUrl = storedUrl.split('?')[0];
+        const urlObj = new URL(cleanUrl);
+        // Pathname is like /baselearnmedia2026/folder/file OR /folder/file
+        let key = urlObj.pathname.substring(1); // remove leading /
+        if (key.startsWith(process.env.R2_BUCKET_NAME + '/')) {
+            key = key.substring(process.env.R2_BUCKET_NAME.length + 1);
+        }
+        return key || null;
+    } catch {
+        return null;
+    }
+};
+
+/**
+ * Refresh a pre-signed URL from an existing stored URL
+ * Returns the new pre-signed URL, or the original if not an E2E URL
+ */
+const refreshPresignedUrl = async (storedUrl) => {
+    if (!storedUrl) return null;
+    // Only refresh E2E object storage URLs
+    if (!storedUrl.includes('e2enetworks.net') && !storedUrl.includes('objectstore')) {
+        return storedUrl; // Leave Cloudinary / local URLs untouched
+    }
+    const key = extractS3Key(storedUrl);
+    if (!key) return storedUrl;
+    try {
+        return await getPresignedUrl(key);
+    } catch (e) {
+        console.error('[Storage] Failed to refresh pre-signed URL for key:', key, e.message);
+        return storedUrl; // Return old URL rather than break things
+    }
+};
+
 module.exports = {
     uploadToS3,
     deleteFromS3,
-    getPresignedUrl
+    getPresignedUrl,
+    refreshPresignedUrl,
+    extractS3Key
 };

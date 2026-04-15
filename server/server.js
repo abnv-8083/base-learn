@@ -136,6 +136,16 @@ app.use('/api/admin', require('./routes/adminRoutes'));
 app.use('/api/faculty', require('./routes/facultyRoutes'));
 app.use('/api/instructor', require('./routes/instructorRoutes'));
 
+// ── Admin: Manual URL Refresh Trigger ────────────────────────────
+// POST /api/admin/refresh-urls  (admin auth handled by adminRoutes middleware)
+// Allows the admin to force-refresh all pre-signed E2E URLs without waiting for cron
+app.post('/api/admin/refresh-urls', asyncHandler(async (req, res) => {
+    const { runUrlRefreshJob } = require('./utils/urlRefreshJob');
+    // Run in background — don't block the HTTP response
+    runUrlRefreshJob().catch(e => console.error('[RefreshURLs Manual]', e.message));
+    res.json({ success: true, message: 'URL refresh job started in the background. Check server logs for progress.' });
+}));
+
 // Health check
 app.get('/', (req, res) => res.json({ message: '🎓 Base Learn API is running' }));
 
@@ -170,6 +180,7 @@ const init = async () => {
     
     // Start background jobs only once
     require('./jobs/liveSessionJob').startJob();
+    require('./utils/urlRefreshJob').startUrlRefreshJob();
 };
 
 init();
