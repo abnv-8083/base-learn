@@ -137,11 +137,14 @@ app.use('/api/faculty', require('./routes/facultyRoutes'));
 app.use('/api/instructor', require('./routes/instructorRoutes'));
 
 // ── Admin: Manual URL Refresh Trigger ────────────────────────────
-// POST /api/admin/refresh-urls  (admin auth handled by adminRoutes middleware)
-// Allows the admin to force-refresh all pre-signed E2E URLs without waiting for cron
+// POST /api/admin/refresh-urls  — protected by ADMIN_SECRET_KEY header
 app.post('/api/admin/refresh-urls', asyncHandler(async (req, res) => {
+    const secret = req.headers['x-admin-key'];
+    const expected = process.env.ADMIN_SECRET_KEY || 'baselearn-admin-2026';
+    if (secret !== expected) {
+        return res.status(401).json({ success: false, message: 'Unauthorized — invalid admin key.' });
+    }
     const { runUrlRefreshJob } = require('./utils/urlRefreshJob');
-    // Run in background — don't block the HTTP response
     runUrlRefreshJob().catch(e => console.error('[RefreshURLs Manual]', e.message));
     res.json({ success: true, message: 'URL refresh job started in the background. Check server logs for progress.' });
 }));
