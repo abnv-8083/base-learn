@@ -5,6 +5,7 @@ const fs = require('fs');
 const s3Client = new S3Client({
     region: process.env.AWS_REGION || "ap-south-1", // E2E EOS usually uses ap-south-1
     endpoint: process.env.R2_ENDPOINT,
+    forcePathStyle: true, // Crucial for E2E EOS to prevent DNS resolving errors (Virtual-Hosted style blocked)
     credentials: {
         accessKeyId: process.env.R2_ACCESS_KEY_ID,
         secretAccessKey: process.env.R2_SECRET_ACCESS_KEY,
@@ -44,6 +45,7 @@ const uploadToS3 = async (file, folder = 'general') => {
                 Key: fileName,
                 Body: fs.createReadStream(file.path),
                 ContentType: file.mimetype,
+                ACL: 'public-read'
             },
         });
 
