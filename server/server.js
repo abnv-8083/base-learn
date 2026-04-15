@@ -155,13 +155,14 @@ const startServer = (port) => {
         });
         s.on('error', (err) => {
             console.log(`Port ${port} in use or error:`, err.message);
+            resolve(null); // Resolve to prevent the init promise from hanging
         });
     });
 };
 
 const init = async () => {
     await startServer(5000);
-    if (PORT !== '5000' && PORT !== 5000) {
+    if (PORT && PORT.toString() !== '5000' && PORT.toString() !== '6000') {
         await startServer(PORT);
     }
     await startServer(6000);
