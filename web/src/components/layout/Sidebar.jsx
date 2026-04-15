@@ -65,12 +65,12 @@ export default function Sidebar({ menuItems, role }) {
 
       <Link href={home} className="sidebar-logo" style={{ paddingTop: '28px', gap: '10px', alignItems: 'center' }}>
         <img src="/logo.png" alt="Logo" style={{
-          width: '52px', height: '52px', borderRadius: '12px',
+          width: '80px', height: '80px', borderRadius: '12px',
           boxShadow: `0 4px 16px ${roleStyle.light}`,
           objectFit: 'contain'
         }} />
         <div>
-          <img src="/logo-wide.png" alt="Base Learn" style={{ height: '28px', display: 'block' }} />
+          <img src="/logo-wide.png" alt="Base Learn" style={{ height: '42px', display: 'block' }} />
           <div style={{ fontSize: '10px', color: 'rgba(168,186,220,0.5)', marginTop: '1px', letterSpacing: '0.05em' }}>
             {ROLE_LABELS[role] || ''}
           </div>
