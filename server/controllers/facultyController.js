@@ -160,16 +160,18 @@ exports.uploadContent = asyncHandler(async (req, res) => {
     }
 
     // 1. Upload files:
-    //   - Thumbnails → Cloudinary (public image CDN)
-    //   - PDFs/Assignments → Cloudinary (resource_type: raw — public PDF CDN)
+    //   - Thumbnails → Cloudinary (public image CDN, working)
+    //   - PDFs/Assignments → Local server storage via Docker volume
+    //     (E2E rate-limits, Cloudinary enforces signed URLs for non-images)
+    //     Served by Express at: https://api.baselearn.in/uploads/assignments/file.pdf
     //   - Videos → E2E EOS (large video files only)
     const filePath = videoFile
         ? (videoFile.mimetype?.startsWith('video/')
             ? await uploadToS3(videoFile, 'videos')
             : await uploadToCloudinary(videoFile, 'bl_materials'))
         : null;
-    const assignmentPath = assignmentFile ? await uploadToCloudinary(assignmentFile, 'bl_assignments') : null;
-    const thumbnailPath  = thumbnailFile  ? await uploadToCloudinary(thumbnailFile,  'bl_thumbnails')  : null;
+    const assignmentPath = assignmentFile ? await uploadToS3(assignmentFile, 'assignments') : null;
+    const thumbnailPath  = thumbnailFile  ? await uploadToCloudinary(thumbnailFile, 'bl_thumbnails') : null;
 
     // 1. Handle FAQ Sessions, Recorded Classes & Live Recordings
     const defaultDeadline = new Date();
