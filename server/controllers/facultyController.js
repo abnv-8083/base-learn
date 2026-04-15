@@ -27,17 +27,25 @@ const uploadToCloudinary = async (file, folder = 'bl_uploads') => {
     try {
         const result = await cloudinary.uploader.upload(file.path, {
             folder,
-            resource_type: isPdf ? 'raw' : (isImage ? 'image' : 'auto'),
+            resource_type: 'auto',        // 'auto' works for images, PDFs and documents
             access_mode: 'public',
+            type: 'upload',
         });
         // Clean up local temp file
         try { require('fs').unlinkSync(file.path); } catch {}
-        return result.secure_url;
+
+        // For PDFs: append fl_attachment:false to force inline display in browser
+        let url = result.secure_url;
+        if (isPdf && url.includes('/upload/')) {
+            url = url.replace('/upload/', '/upload/fl_attachment:false/');
+        }
+        return url;
     } catch (err) {
         console.error('[Cloudinary] Upload failed:', err.message);
         return null;
     }
 };
+
 
 
 // Helper to format local file paths to relative URLs
