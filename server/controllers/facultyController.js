@@ -16,22 +16,25 @@ const { uploadToS3, deleteFromS3 } = require('../utils/s3');
 const cloudinary = require('cloudinary').v2;
 
 /**
- * Upload an image file directly to Cloudinary (for thumbnails & profiles)
+ * Upload any file to Cloudinary (images, PDFs, documents)
+ * Images → resource_type: 'image', PDFs → resource_type: 'raw'
  * Returns the secure_url. Falls back gracefully on error.
  */
-const uploadImageToCloudinary = async (file, folder = 'bl_thumbnails') => {
+const uploadToCloudinary = async (file, folder = 'bl_uploads') => {
     if (!file || !file.path) return null;
+    const isPdf = file.mimetype === 'application/pdf' || file.originalname?.toLowerCase().endsWith('.pdf');
+    const isImage = file.mimetype?.startsWith('image/');
     try {
         const result = await cloudinary.uploader.upload(file.path, {
             folder,
-            resource_type: 'image',
+            resource_type: isPdf ? 'raw' : (isImage ? 'image' : 'auto'),
             access_mode: 'public',
         });
         // Clean up local temp file
         try { require('fs').unlinkSync(file.path); } catch {}
         return result.secure_url;
     } catch (err) {
-        console.error('[Cloudinary] Image upload failed:', err.message);
+        console.error('[Cloudinary] Upload failed:', err.message);
         return null;
     }
 };
@@ -148,10 +151,17 @@ exports.uploadContent = asyncHandler(async (req, res) => {
         }
     }
 
-    // 1. Upload files: thumbnails → Cloudinary (public CDN), videos/PDFs → E2E EOS
-    const filePath = videoFile ? await uploadToS3(videoFile, type === 'test' || type === 'assignment' ? 'assessments' : 'videos') : null;
-    const assignmentPath = assignmentFile ? await uploadToS3(assignmentFile, 'assignments') : null;
-    const thumbnailPath = thumbnailFile ? await uploadImageToCloudinary(thumbnailFile, 'bl_thumbnails') : null;
+    // 1. Upload files:
+    //   - Thumbnails → Cloudinary (public image CDN)
+    //   - Assignments/PDFs → Cloudinary (public document CDN, resource_type: raw)
+    //   - Videos → E2E EOS (large files via backend proxy)
+    const filePath = videoFile
+        ? (videoFile.mimetype?.startsWith('video/')
+            ? await uploadToS3(videoFile, 'videos')
+            : await uploadToCloudinary(videoFile, 'bl_materials'))
+        : null;
+    const assignmentPath = assignmentFile ? await uploadToCloudinary(assignmentFile, 'bl_assignments') : null;
+    const thumbnailPath  = thumbnailFile  ? await uploadToCloudinary(thumbnailFile,  'bl_thumbnails')  : null;
 
     // 1. Handle FAQ Sessions, Recorded Classes & Live Recordings
     const defaultDeadline = new Date();
