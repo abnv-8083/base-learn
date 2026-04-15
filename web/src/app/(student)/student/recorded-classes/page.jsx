@@ -309,7 +309,10 @@ export default function StudentRecordedClasses() {
                   <button 
                     onClick={(e) => { 
                       e.stopPropagation(); 
-                      const finalUrl = item.assignmentUrl?.includes('/uploads/') ? item.assignmentUrl.substring(item.assignmentUrl.indexOf('/uploads/')) : item.assignmentUrl;
+                      const rawUrl = item.assignmentUrl;
+                      const finalUrl = rawUrl?.includes('res.cloudinary.com')
+                        ? `https://docs.google.com/viewer?url=${encodeURIComponent(rawUrl)}&embedded=false`
+                        : rawUrl?.includes('/uploads/') ? rawUrl.substring(rawUrl.indexOf('/uploads/')) : rawUrl;
                       window.open(finalUrl, '_blank'); 
                     }}
                     style={{ marginBottom: '20px', padding: '10px 16px', borderRadius: '12px', background: '#fffbeb', border: '1px dashed #f59e0b', color: '#b45309', fontSize: '12px', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '10px', width: 'fit-content' }}
@@ -409,7 +412,10 @@ export default function StudentRecordedClasses() {
                          </div>
                          <p style={{ margin: '0 0 16px 0', fontSize: '12px', color: 'var(--color-text-secondary)', lineHeight: '1.5' }}>Download the supplementary worksheet to practice what you learned in this video.</p>
                          <button onClick={() => {
-                            const finalUrl = activeVideo.assignmentUrl?.includes('/uploads/') ? activeVideo.assignmentUrl.substring(activeVideo.assignmentUrl.indexOf('/uploads/')) : activeVideo.assignmentUrl;
+                            const rawUrl = activeVideo.assignmentUrl;
+                            const finalUrl = rawUrl?.includes('res.cloudinary.com')
+                              ? `https://docs.google.com/viewer?url=${encodeURIComponent(rawUrl)}&embedded=false`
+                              : rawUrl?.includes('/uploads/') ? rawUrl.substring(rawUrl.indexOf('/uploads/')) : rawUrl;
                             window.open(finalUrl, '_blank');
                          }}
                             style={{ width: '100%', padding: '10px', borderRadius: '12px', background: '#f59e0b', color: '#000', fontSize: '13px', fontWeight: '850', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', cursor: 'pointer', transition: 'all 0.3s' }}>

@@ -152,27 +152,16 @@ exports.uploadContent = asyncHandler(async (req, res) => {
     }
 
     // 1. Upload files:
-    //   - Thumbnails → Cloudinary (public image CDN) — direct browser access
-    //   - Videos → E2E EOS, direct URL (backend streams via proxy if needed)
-    //   - PDFs/Assignments → E2E EOS, but served via /api/media/stream proxy
-    //     (E2E blocks direct browser access, but backend can access it fine)
+    //   - Thumbnails → Cloudinary (public image CDN)
+    //   - PDFs/Assignments → Cloudinary (resource_type: raw — public PDF CDN)
+    //   - Videos → E2E EOS (large video files only)
     const filePath = videoFile
         ? (videoFile.mimetype?.startsWith('video/')
             ? await uploadToS3(videoFile, 'videos')
             : await uploadToCloudinary(videoFile, 'bl_materials'))
         : null;
-
-    // For PDFs: upload to E2E, then wrap URL with backend proxy
-    const toProxyUrl = (e2eUrl) => {
-        if (!e2eUrl || !e2eUrl.includes('e2enetworks')) return e2eUrl;
-        const { extractS3Key } = require('../utils/s3');
-        const key = extractS3Key(e2eUrl);
-        return key ? `https://api.baselearn.in/api/media/stream?key=${encodeURIComponent(key)}` : e2eUrl;
-    };
-
-    const rawAssignmentUrl = assignmentFile ? await uploadToS3(assignmentFile, 'assignments') : null;
-    const assignmentPath = toProxyUrl(rawAssignmentUrl);
-    const thumbnailPath  = thumbnailFile ? await uploadToCloudinary(thumbnailFile, 'bl_thumbnails') : null;
+    const assignmentPath = assignmentFile ? await uploadToCloudinary(assignmentFile, 'bl_assignments') : null;
+    const thumbnailPath  = thumbnailFile  ? await uploadToCloudinary(thumbnailFile,  'bl_thumbnails')  : null;
 
     // 1. Handle FAQ Sessions, Recorded Classes & Live Recordings
     const defaultDeadline = new Date();
