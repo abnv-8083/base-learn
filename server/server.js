@@ -130,15 +130,9 @@ app.get('/api/debug-smtp', asyncHandler(async (req, res) => {
     }
 }));
 
-// ── Protected routes (auth required via router-level middleware) ──
-app.use('/api/student', require('./routes/studentRoutes'));
-app.use('/api/admin', require('./routes/adminRoutes'));
-app.use('/api/faculty', require('./routes/facultyRoutes'));
-app.use('/api/instructor', require('./routes/instructorRoutes'));
-
-// ── Admin: Manual URL Refresh Trigger ────────────────────────────
-// POST /api/admin/refresh-urls  — protected by ADMIN_SECRET_KEY header
-app.post('/api/admin/refresh-urls', asyncHandler(async (req, res) => {
+// ── System: Manual URL Refresh Trigger (secret-key protected) ──
+// POST /api/system/refresh-urls — uses x-admin-key header instead of JWT
+app.post('/api/system/refresh-urls', asyncHandler(async (req, res) => {
     const secret = req.headers['x-admin-key'];
     const expected = process.env.ADMIN_SECRET_KEY || 'baselearn-admin-2026';
     if (secret !== expected) {
@@ -146,8 +140,15 @@ app.post('/api/admin/refresh-urls', asyncHandler(async (req, res) => {
     }
     const { runUrlRefreshJob } = require('./utils/urlRefreshJob');
     runUrlRefreshJob().catch(e => console.error('[RefreshURLs Manual]', e.message));
-    res.json({ success: true, message: 'URL refresh job started in the background. Check server logs for progress.' });
+    res.json({ success: true, message: 'URL refresh job started in background. Check server logs.' });
 }));
+
+// ── Protected routes (auth required via router-level middleware) ──
+app.use('/api/student', require('./routes/studentRoutes'));
+app.use('/api/admin', require('./routes/adminRoutes'));
+app.use('/api/faculty', require('./routes/facultyRoutes'));
+app.use('/api/instructor', require('./routes/instructorRoutes'));
+
 
 // Health check
 app.get('/', (req, res) => res.json({ message: '🎓 Base Learn API is running' }));
