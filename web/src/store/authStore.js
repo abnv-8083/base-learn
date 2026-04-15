@@ -3,9 +3,10 @@ import axios from 'axios';
 
 // Configure Axios defaults
 axios.defaults.withCredentials = true;
-if (process.env.NEXT_PUBLIC_API_URL) {
-  axios.defaults.baseURL = process.env.NEXT_PUBLIC_API_URL.replace(/\/$/, "");
-}
+// Hardcode the remote gateway to bypass Docker build-time env limitations
+axios.defaults.baseURL = process.env.NODE_ENV === 'development' 
+    ? (process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") || 'http://localhost:5000')
+    : 'https://api.baselearn.in';
 
 const getTokenKey = (role) => `bl_token_${role || 'student'}`;
 
