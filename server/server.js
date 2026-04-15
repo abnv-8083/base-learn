@@ -130,6 +130,43 @@ app.get('/api/debug-smtp', asyncHandler(async (req, res) => {
     }
 }));
 
+// ── Media Proxy: Stream E2E EOS files through backend ──────────────────────
+// GET /api/media/stream?key=assignments/file.pdf
+// Browsers cannot access E2E directly (503 SlowDown). The backend runs on
+// E2E's network and can fetch files, then stream them to the client.
+app.get('/api/media/stream', asyncHandler(async (req, res) => {
+    const { key } = req.query;
+    if (!key) return res.status(400).json({ success: false, message: 'Missing key parameter' });
+
+    const { S3Client, GetObjectCommand } = require('@aws-sdk/client-s3');
+    const s3 = new S3Client({
+        region: process.env.AWS_REGION || 'ap-south-1',
+        endpoint: process.env.R2_ENDPOINT,
+        forcePathStyle: true,
+        credentials: {
+            accessKeyId: process.env.R2_ACCESS_KEY_ID,
+            secretAccessKey: process.env.R2_SECRET_ACCESS_KEY,
+        },
+    });
+
+    try {
+        const cmd = new GetObjectCommand({ Bucket: process.env.R2_BUCKET_NAME, Key: key });
+        const data = await s3.send(cmd);
+
+        // Set content headers
+        res.setHeader('Content-Type', data.ContentType || 'application/octet-stream');
+        if (data.ContentLength) res.setHeader('Content-Length', data.ContentLength);
+        res.setHeader('Cache-Control', 'public, max-age=86400'); // Cache 1 day
+        res.setHeader('Content-Disposition', `inline; filename="${path.basename(key)}"`);
+
+        // Stream body to client
+        data.Body.pipe(res);
+    } catch (err) {
+        console.error('[MediaProxy] Failed to stream from E2E:', err.message);
+        res.status(404).json({ success: false, message: 'File not found or inaccessible' });
+    }
+}));
+
 // ── System: Manual URL Refresh Trigger (secret-key protected) ──
 // POST /api/system/refresh-urls — uses x-admin-key header instead of JWT
 app.post('/api/system/refresh-urls', asyncHandler(async (req, res) => {
