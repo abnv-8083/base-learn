@@ -1750,14 +1750,37 @@ exports.getLiveClassAnalytics = async (req, res) => {
 // GET /api/instructor/badge-counts
 exports.getInstructorBadgeCounts = async (req, res) => {
     try {
-        const LiveClass = require('../models/LiveClass');
-        const [pendingContent, pendingAssessments, liveNow] = await Promise.all([
-            RecordedClass.countDocuments({ status: 'draft' }),
-            Assignment.countDocuments({ status: 'draft' }),
-            LiveClass.countDocuments({ status: 'ongoing' })
+        const userId = req.user.userId || req.user._id;
+        
+        // 1. Get subjects managed by this instructor
+        const subjectQuery = req.user.role === 'admin' ? {} : { instructor: userId };
+        const instructorSubjects = await Subject.find(subjectQuery).select('_id');
+        const subjectIds = instructorSubjects.map(s => s._id);
+
+        // 2. Count pending items in these subjects
+        const [pendingVideos, pendingTests, pendingAssignments, pendingLive] = await Promise.all([
+            RecordedClass.countDocuments({ status: 'draft', subject: { $in: subjectIds } }),
+            Test.countDocuments({ status: 'draft', subject: { $in: subjectIds } }),
+            Assignment.countDocuments({ status: 'draft', subject: { $in: subjectIds } }),
+            require('../models/LiveClass').countDocuments({ status: 'ongoing', subject: { $in: subjectIds.map(id => id.toString()) } }) // LiveClass subject is often a string or linked differently
         ]);
+
+        // 3. Count pending chapter resources
+        const chapters = await Chapter.find({ subject: { $in: subjectIds } }).lean();
+        let pendingResources = 0;
+        chapters.forEach(chap => {
+            ['notes', 'liveNotes', 'dpps', 'pyqs'].forEach(field => {
+                pendingResources += (chap[field] || []).filter(r => r.status === 'draft').length;
+            });
+        });
+
+        const pendingContent = pendingVideos + pendingResources;
+        const pendingAssessments = pendingTests + pendingAssignments;
+        const liveNow = pendingLive;
+
         res.json({ success: true, data: { pendingContent, pendingAssessments, liveNow } });
     } catch (e) {
+        console.error('[InstructorBadges] Error:', e.message);
         res.json({ success: true, data: { pendingContent: 0, pendingAssessments: 0, liveNow: 0 } });
     }
 };

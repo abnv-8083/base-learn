@@ -49,27 +49,6 @@ router.post('/pay', mockPayment);
 router.patch('/recorded-classes/:id/track', trackRecordedClassAction);
 router.post('/enquiry', sendEnquiry);
 
-router.get('/badge-counts', async (req, res) => {
-  try {
-    const Assignment = require('../models/Assignment');
-    const Test       = require('../models/Test');
-    const LiveClass  = require('../models/LiveClass');
-    const Batch      = require('../models/Batch');
-    const studentId  = req.user.userId || req.user._id;
-
-    // Find the student's batch to scope live class count
-    const studentBatch = await Batch.findOne({ students: studentId }).lean();
-    const batchFilter = studentBatch ? { batches: studentBatch._id } : {};
-
-    const [pendingAssignments, pendingTests, upcomingLive] = await Promise.all([
-      Assignment.countDocuments({ status: 'published', 'submissions.studentId': { $ne: studentId } }),
-      Test.countDocuments({ status: 'published', 'submissions.studentId': { $ne: studentId } }),
-      LiveClass.countDocuments({ status: { $in: ['upcoming', 'ongoing'] }, ...batchFilter })
-    ]);
-    res.json({ success: true, data: { pendingAssignments, pendingTests, upcomingLive } });
-  } catch {
-    res.json({ success: true, data: { pendingAssignments: 0, pendingTests: 0, upcomingLive: 0 } });
-  }
-});
+router.get('/badge-counts', getStudentBadgeCounts);
 
 module.exports = router;

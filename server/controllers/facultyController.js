@@ -783,4 +783,50 @@ exports.gradeSubmission = asyncHandler(async (req, res) => {
     res.status(200).json({ success: true, message: 'Submission graded successfully' });
 });
 
-// Functions are exported via the exports.funcName pattern directly above.
+// GET /api/faculty/badge-counts
+exports.getFacultyBadgeCounts = asyncHandler(async (req, res) => {
+    const facultyId = req.user.userId;
+
+    const [pendingAssignments, pendingTests, ongoingSession, rejectedClasses, rejectedChapters, unreadNotifs] = await Promise.all([
+        // 1. Pending grading: submitted but not yet graded for this faculty
+        Assignment.countDocuments({ facultyId, 'submissions.status': 'submitted' }),
+        Test.countDocuments({ faculty: facultyId, 'submissions.status': 'submitted' }),
+        
+        // 2. Ongoing session check
+        LiveClass.countDocuments({ faculty: facultyId, status: 'ongoing' }),
+        
+        // 3. Rejected content (videos, tests, chapter resources)
+        RecordedClass.countDocuments({ faculty: facultyId, status: 'rejected' }),
+        Chapter.find({
+            $or: [
+                { 'notes.uploadedBy': facultyId, 'notes.status': 'rejected' },
+                { 'liveNotes.uploadedBy': facultyId, 'liveNotes.status': 'rejected' },
+                { 'dpps.uploadedBy': facultyId, 'dpps.status': 'rejected' },
+                { 'pyqs.uploadedBy': facultyId, 'pyqs.status': 'rejected' }
+            ]
+        }).lean(),
+        
+        // 4. Notifications
+        Notification.countDocuments({ recipient: facultyId, read: false })
+    ]);
+
+    // Calculate rejected resources from chapters
+    let rejectedResCount = 0;
+    rejectedChapters.forEach(chap => {
+        ['notes', 'liveNotes', 'dpps', 'pyqs'].forEach(field => {
+            rejectedResCount += (chap[field] || []).filter(r => 
+                r.uploadedBy?.toString() === facultyId.toString() && r.status === 'rejected'
+            ).length;
+        });
+    });
+
+    res.json({
+        success: true,
+        data: {
+            pendingGrading: pendingAssignments + pendingTests,
+            ongoingSession: ongoingSession > 0,
+            rejectedContent: rejectedClasses + rejectedResCount,
+            unreadNotifs: unreadNotifs
+        }
+    });
+});

@@ -977,6 +977,48 @@ const trackDeviceEvent = asyncHandler(async (req, res) => {
     res.status(200).json({ success: true, message: `Event "${type}" recorded` });
 });
 
+// GET /api/student/badge-counts
+const getStudentBadgeCounts = asyncHandler(async (req, res) => {
+    const studentId = req.user.userId || req.user._id;
+
+    // 1. Find the student's batch to scope the counts
+    const studentBatch = await Batch.findOne({ students: studentId }).lean();
+    if (!studentBatch) {
+        return res.json({ success: true, data: { upcomingLive: 0, pendingAssignments: 0, pendingTests: 0 } });
+    }
+
+    const [upcomingLive, pendingAssignments, pendingTests] = await Promise.all([
+        // 2. Scheduled Live Classes for this batch (Upcoming/Ongoing)
+        LiveClass.countDocuments({ 
+            batches: studentBatch._id, 
+            status: { $in: ['upcoming', 'ongoing'] } 
+        }),
+
+        // 3. Pending Assignments (assigned to batch, published, not yet submitted by THIS student)
+        Assignment.countDocuments({
+            assignedBatches: studentBatch._id,
+            status: 'published',
+            'submissions.studentId': { $ne: studentId }
+        }),
+
+        // 4. Pending Tests (assigned to batch, published, not yet submitted by THIS student)
+        Test.countDocuments({
+            assignedTo: studentBatch._id,
+            status: 'published',
+            'submissions.studentId': { $ne: studentId }
+        })
+    ]);
+
+    res.json({
+        success: true,
+        data: {
+            upcomingLive,
+            pendingAssignments,
+            pendingTests
+        }
+    });
+});
+
 module.exports = {
   getDashboard,
   getRecordedClasses,
@@ -995,5 +1037,6 @@ module.exports = {
   getProgression,
   joinLiveClass,
   leaveLiveClass,
-  trackDeviceEvent
+  trackDeviceEvent,
+  getStudentBadgeCounts
 };
