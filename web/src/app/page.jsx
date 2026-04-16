@@ -69,7 +69,13 @@ export default function Landing() {
         boxShadow: scrolled ? '0 2px 20px rgba(15,45,107,0.07)' : 'none',
       }}>
         <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '10px', textDecoration: 'none' }}>
-          <img src="/logo-wide.png" alt="Base Learn Logo" style={{ height: '75px', display: 'block' }} />
+          <img src="/logo-wide.png" alt="Base Learn Logo" style={{ 
+            height: '75px', 
+            display: 'block',
+            mixBlendMode: scrolled ? 'multiply' : 'screen',
+            filter: scrolled ? 'invert(1) grayscale(1)' : 'none',
+            transition: 'all 0.2s ease'
+          }} />
         </Link>
 
         <nav style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
@@ -320,7 +326,7 @@ export default function Landing() {
           <div style={{ display:'grid', gridTemplateColumns:'2fr 1fr 1fr', gap:'48px', marginBottom:'48px' }}>
             <div>
               <div style={{ display:'flex', alignItems:'center', gap:'10px', marginBottom:'16px' }}>
-                <img src="/logo-wide.png" alt="Base Learn" style={{ height: '48px' }} />
+                <img src="/logo-wide.png" alt="Base Learn" style={{ height: '48px', mixBlendMode: 'screen' }} />
               </div>
               <p style={{ color:'rgba(168,186,220,0.7)', fontSize:'14px', lineHeight:1.7, maxWidth:'280px', margin:'0 0 20px' }}>
                 Transforming the Grade 8-10 learning experience with structured, expert-led education.

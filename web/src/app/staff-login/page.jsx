@@ -94,7 +94,7 @@ function StaffLoginForm() {
         <div style={{ position:'absolute', inset:0, backgroundImage:'radial-gradient(rgba(255,255,255,0.04) 1px, transparent 1px)', backgroundSize:'28px 28px', pointerEvents:'none' }} />
 
         <Link href="/" style={{ display:'flex', alignItems:'center', gap:'10px', textDecoration:'none', position:'relative', zIndex:2 }}>
-          <img src="/logo-wide.png" alt="Base Learn" style={{ height: '80px' }} />
+          <img src="/logo-wide.png" alt="Base Learn" style={{ height: '80px', mixBlendMode: 'screen' }} />
         </Link>
 
         <div style={{ position:'relative', zIndex:2 }}>
@@ -136,7 +136,7 @@ function StaffLoginForm() {
 
           {/* Mobile logo */}
           <div style={{ display:'flex', alignItems:'center', gap:'8px', marginBottom:'20px' }} className="mobile-only-logo">
-            <img src="/logo-wide.png" alt="Base Learn" style={{ height: '46px' }} />
+            <img src="/logo-wide.png" alt="Base Learn" style={{ height: '46px', filter: 'invert(1) grayscale(1)', mixBlendMode: 'multiply' }} />
           </div>
 
           {/* Role tabs (mobile) */}

@@ -70,7 +70,7 @@ export default function Sidebar({ menuItems, role }) {
           objectFit: 'contain'
         }} />
         <div>
-          <img src="/logo-wide.png" alt="Base Learn" style={{ height: '42px', display: 'block' }} />
+          <img src="/logo-wide.png" alt="Base Learn" style={{ height: '42px', display: 'block', mixBlendMode: 'screen' }} />
           <div style={{ fontSize: '10px', color: 'rgba(168,186,220,0.5)', marginTop: '1px', letterSpacing: '0.05em' }}>
             {ROLE_LABELS[role] || ''}
           </div>

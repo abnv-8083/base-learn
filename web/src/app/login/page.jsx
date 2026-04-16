@@ -57,7 +57,7 @@ export default function StudentLogin() {
 
         {/* Logo */}
         <Link href="/" style={{ display:'flex', alignItems:'center', gap:'10px', textDecoration:'none', position:'relative', zIndex:2 }}>
-          <img src="/logo-wide.png" alt="Base Learn" style={{ height: '80px' }} />
+          <img src="/logo-wide.png" alt="Base Learn" style={{ height: '80px', mixBlendMode: 'screen' }} />
         </Link>
 
         {/* Hero text */}
@@ -102,7 +102,7 @@ export default function StudentLogin() {
 
           {/* Mobile logo */}
           <div style={{ display:'flex', alignItems:'center', gap:'8px', marginBottom:'28px' }} className="mobile-only-logo">
-            <img src="/logo-wide.png" alt="Base Learn" style={{ height: '46px' }} />
+            <img src="/logo-wide.png" alt="Base Learn" style={{ height: '46px', filter: 'invert(1) grayscale(1)', mixBlendMode: 'multiply' }} />
           </div>
 
           <div style={{ marginBottom:'32px' }}>
