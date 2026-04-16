@@ -825,7 +825,10 @@ exports.getFacultyBadgeCounts = asyncHandler(async (req, res) => {
         }).lean(),
         
         // 4. Notifications
-        Notification.countDocuments({ recipient: facultyId, read: false })
+        Notification.countDocuments({
+            recipient: { $in: [facultyId, 'all'] },
+            dismissedBy: { $ne: facultyId }
+        })
     ]);
 
     // Calculate rejected resources from chapters

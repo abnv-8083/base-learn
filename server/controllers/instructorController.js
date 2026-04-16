@@ -1775,7 +1775,10 @@ exports.getInstructorBadgeCounts = async (req, res) => {
         });
 
         // 4. Notifications
-        const unreadNotifs = await require('../models/Notification').countDocuments({ recipient: userId, read: false });
+        const unreadNotifs = await require('../models/Notification').countDocuments({
+            recipient: { $in: [userId, 'all'] },
+            dismissedBy: { $ne: userId }
+        });
 
         const pendingContent = pendingVideos + pendingResources;
         const pendingAssessments = pendingTests + pendingAssignments;
