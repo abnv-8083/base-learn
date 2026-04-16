@@ -159,12 +159,25 @@ exports.uploadContent = asyncHandler(async (req, res) => {
         }
     }
 
+    // Helper to notify the assigned instructor when new content is uploaded
+    const notifyInstructorAsync = async (contentTitle) => {
+        try {
+            const subject = await require('../models/Subject').findById(subjectId);
+            if (subject && subject.instructor) {
+                await require('../models/Notification').create({
+                    message: `Faculty uploaded new content pending verification: "${contentTitle}"`,
+                    type: 'info',
+                    recipient: subject.instructor,
+                    sender: req.user.userId
+                });
+            }
+        } catch (err) {
+            console.error('[Notify Instructor Error]', err);
+        }
+    };
+
     // 1. Upload files:
-    //   - Thumbnails → Cloudinary (public image CDN, working)
-    //   - PDFs/Assignments → Local server storage via Docker volume
-    //     (E2E rate-limits, Cloudinary enforces signed URLs for non-images)
-    //     Served by Express at: https://api.baselearn.in/uploads/assignments/file.pdf
-    //   - Videos → E2E EOS (large video files only)
+    // ...
     const filePath = videoFile
         ? (videoFile.mimetype?.startsWith('video/')
             ? await uploadToS3(videoFile, 'videos')
@@ -197,6 +210,7 @@ exports.uploadContent = asyncHandler(async (req, res) => {
 
         const logMsg = type === 'faq' ? 'Uploaded FAQ Session' : (type === 'liveRecording' ? 'Uploaded Live Recording' : 'Uploaded Recorded Class');
         await logAction(req, logMsg, title, { targetId: content._id, targetModel: 'RecordedClass' });
+        notifyInstructorAsync(title);
         return res.status(201).json({ success: true, message: `${type.replace(/([A-Z])/g, ' $1').trim()} submitted for review`, data: content });
     }
 
@@ -211,6 +225,7 @@ exports.uploadContent = asyncHandler(async (req, res) => {
                 maxMarks: Number(req.body.maxMarks) || 100
             });
             await logAction(req, 'Uploaded Main Test', title, { targetId: test._id, targetModel: 'Test' });
+            notifyInstructorAsync(title);
             return res.status(201).json({ success: true, message: 'Main Test submitted for review', data: test });
         }
         if (type === 'assignment') {
@@ -222,6 +237,7 @@ exports.uploadContent = asyncHandler(async (req, res) => {
                 maxMarks: Number(req.body.maxMarks) || 100
             });
             await logAction(req, 'Uploaded Main Assignment', title, { targetId: assignment._id, targetModel: 'Assignment' });
+            notifyInstructorAsync(title);
             return res.status(201).json({ success: true, message: 'Main Assignment submitted for review', data: assignment });
         }
     }
@@ -255,10 +271,12 @@ exports.uploadContent = asyncHandler(async (req, res) => {
                  isMain: false, status: 'draft',
                  deadline: defaultDeadline
              });
+             notifyInstructorAsync(title);
              return res.status(201).json({ success: true, message: `Chapter ${type} submitted for review`, data: entry });
         }
 
         await chapter.save();
+        notifyInstructorAsync(title);
         return res.status(201).json({ success: true, message: 'Content uploaded successfully', data: chapter });
     }
 

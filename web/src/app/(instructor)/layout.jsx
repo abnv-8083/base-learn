@@ -42,7 +42,7 @@ export default function InstructorLayout({ children }) {
     { icon: FileCheck,       label: 'Content Verification',path: '/instructor/content',      badge: badges.pendingContent    || null },
     { icon: Video,           label: 'Live Classes',        path: '/instructor/live-classes',  badge: badges.liveNow > 0 ? 'LIVE' : null },
     { icon: ClipboardCheck,  label: 'Marking Center',      path: '/instructor/marking-center',badge: badges.pendingAssessments|| null },
-    { icon: Bell,            label: 'Notifications',       path: '/instructor/notifications' }
+    { icon: Bell,            label: 'Notifications',       path: '/instructor/notifications', badge: badges.unreadNotifs || null }
   ];
 
   return (

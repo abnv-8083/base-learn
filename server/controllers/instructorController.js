@@ -1774,14 +1774,17 @@ exports.getInstructorBadgeCounts = async (req, res) => {
             });
         });
 
+        // 4. Notifications
+        const unreadNotifs = await require('../models/Notification').countDocuments({ recipient: userId, read: false });
+
         const pendingContent = pendingVideos + pendingResources;
         const pendingAssessments = pendingTests + pendingAssignments;
         const liveNow = pendingLive;
 
-        res.json({ success: true, data: { pendingContent, pendingAssessments, liveNow } });
+        res.json({ success: true, data: { pendingContent, pendingAssessments, liveNow, unreadNotifs } });
     } catch (e) {
         console.error('[InstructorBadges] Error:', e.message);
-        res.json({ success: true, data: { pendingContent: 0, pendingAssessments: 0, liveNow: 0 } });
+        res.json({ success: true, data: { pendingContent: 0, pendingAssessments: 0, liveNow: 0, unreadNotifs: 0 } });
     }
 };
 
