@@ -20,7 +20,8 @@ const {
   getProgression,
   joinLiveClass,
   leaveLiveClass,
-  trackDeviceEvent
+  trackDeviceEvent,
+  getStudentBadgeCounts
 } = require('../controllers/studentController');
 
 // All routes require authentication
