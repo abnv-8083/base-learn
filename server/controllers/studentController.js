@@ -177,19 +177,24 @@ const getRecordedClasses = asyncHandler(async (req, res) => {
         const mappedChapters = await Promise.all(subjectChapters.map(async (chap) => {
            try {
              // Find published videos for this chapter
-             const chapVideos = await RecordedClass.find({
+             const contentFilter = {
                 chapter: chap._id,
-                status: 'published'
-             }).populate('faculty', 'name').lean().catch(() => []);
+                status: 'published',
+                assignedTo: studentBatchId 
+             };
+
+             const chapVideos = await RecordedClass.find(contentFilter).populate('faculty', 'name').lean().catch(() => []);
 
               const chapAssignments = await Assignment.find({
                  chapter: chap._id,
-                 status: 'published'
+                 status: 'published',
+                 assignedBatches: studentBatchId
               }).populate('facultyId', 'name').lean().catch(() => []);
 
               const chapTests = await Test.find({
                  chapter: chap._id,
-                 status: 'published'
+                 status: 'published',
+                 assignedTo: studentBatchId
               }).populate('faculty', 'name').lean().catch(() => []);
 
              const resources = [];

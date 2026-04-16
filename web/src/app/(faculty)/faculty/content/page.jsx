@@ -12,6 +12,12 @@ export default function FacultyContent() {
   const [contentList, setContentList] = useState([]);
   const [loading, setLoading] = useState(true);
   const confirm = useConfirmStore(s => s.confirm);
+
+  const formatSeconds = (sec) => {
+    const m = Math.floor(sec / 60);
+    const s = sec % 60;
+    return `${m}:${s < 10 ? '0' : ''}${s}`;
+  };
   
   const [showModal, setShowModal] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -25,6 +31,9 @@ export default function FacultyContent() {
   const [showAddChapter, setShowAddChapter] = useState(false);
   const [newChapterName, setNewChapterName] = useState('');
   const [isChapterSaving, setIsChapterSaving] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadStartTime, setUploadStartTime] = useState(null);
+  const [elapsedTime, setElapsedTime] = useState(0);
 
   useEffect(() => {
     if (user?.role === 'faculty') {
@@ -92,6 +101,15 @@ export default function FacultyContent() {
     }
 
     setSaving(true);
+    setUploadProgress(0);
+    setElapsedTime(0);
+    const startTime = Date.now();
+    setUploadStartTime(startTime);
+
+    const timer = setInterval(() => {
+      setElapsedTime(Math.floor((Date.now() - startTime) / 1000));
+    }, 1000);
+
     const formData = new FormData();
     formData.append('title', form.title);
     formData.append('description', form.description);
@@ -103,15 +121,19 @@ export default function FacultyContent() {
     if (form.thumbnail) formData.append('thumbnail', form.thumbnail);
 
     try {
+      const config = {
+        headers: { 'Content-Type': 'multipart/form-data' },
+        onUploadProgress: (progressEvent) => {
+          const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+          setUploadProgress(percentCompleted);
+        }
+      };
+
       if (editItem) {
-        await axios.put(`/api/faculty/content/manage/${editItem.type}/${editItem._id}`, formData, {
-           headers: { 'Content-Type': 'multipart/form-data' }
-        });
+        await axios.put(`/api/faculty/content/manage/${editItem.type}/${editItem._id}`, formData, config);
         toast.success('Resource updated and re-queued for verification!');
       } else {
-        await axios.post('/api/faculty/content/upload', formData, {
-           headers: { 'Content-Type': 'multipart/form-data' }
-        });
+        await axios.post('/api/faculty/content/upload', formData, config);
         toast.success('Resource submitted for instructor verification!');
       }
       setShowModal(false);
@@ -121,6 +143,7 @@ export default function FacultyContent() {
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to upload multimedia');
     } finally {
+      clearInterval(timer);
       setSaving(false);
     }
   };
@@ -505,11 +528,32 @@ export default function FacultyContent() {
               )}
             </div>
             
-            <div style={{ display: 'flex', gap: '16px', padding: '24px', borderTop: '1px solid var(--color-border)', background: 'var(--color-bg)' }}>
-              <button onClick={() => setShowModal(false)} className="btn btn-secondary" style={{ flex: 1 }}>Cancel</button>
-              <button onClick={handleUpload} className="btn btn-primary" style={{ flex: 2 }} disabled={saving}>
-                {saving ? 'Transmitting to Server...' : (editItem ? 'Submit for Re-verification' : 'Upload Resource')}
-              </button>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', padding: '24px', borderTop: '1px solid var(--color-border)', background: 'var(--color-bg)' }}>
+              {saving && (
+                <div style={{ width: '100%', marginBottom: '8px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', fontWeight: 'bold', color: 'var(--color-primary)', marginBottom: '6px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <Clock size={14} className="spin" />
+                      <span>Uploading... {formatSeconds(elapsedTime)}</span>
+                    </div>
+                    <span>{uploadProgress}%</span>
+                  </div>
+                  <div style={{ height: '8px', width: '100%', background: '#e2e8f0', borderRadius: '4px', overflow: 'hidden' }}>
+                    <div style={{ height: '100%', width: `${uploadProgress}%`, background: 'var(--color-primary)', transition: 'width 0.3s ease-out' }} />
+                  </div>
+                </div>
+              )}
+              <div style={{ display: 'flex', gap: '16px' }}>
+                <button onClick={() => setShowModal(false)} className="btn btn-secondary" style={{ flex: 1 }} disabled={saving}>Cancel</button>
+                <button onClick={handleUpload} className="btn btn-primary" style={{ flex: 2 }} disabled={saving || (!form.file && !editItem)}>
+                  {saving ? (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <div className="spinner-xs" style={{ borderTopColor: 'white' }}></div>
+                      <span>{uploadProgress}% Uploaded</span>
+                    </div>
+                  ) : (editItem ? 'Submit for Re-verification' : 'Upload Resource')}
+                </button>
+              </div>
             </div>
           </div>
         </div>

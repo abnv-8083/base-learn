@@ -891,6 +891,28 @@ exports.updateContentStatus = async (req, res) => {
         }
 
         res.status(200).json({ success: true, message: `Content ${approvalStatus}` });
+
+        // --- POST-RESPONSE LOGIC: Sync parent Subject assignment ---
+        if (dbStatus === 'published' && batchIds && batchIds.length > 0 && contentObj) {
+            try {
+                let subjectId;
+                if (itemModel === 'ChapterResource') {
+                    const chapter = await Chapter.findById(chapterId);
+                    subjectId = chapter?.subject;
+                } else {
+                    subjectId = contentObj.subject;
+                }
+
+                if (subjectId) {
+                    await Subject.findByIdAndUpdate(subjectId, {
+                        $addToSet: { assignedTo: { $each: batchIds } }
+                    });
+                    console.log(`[SYNC-SUCCESS] Subject ${subjectId} linked to batches: ${batchIds}`);
+                }
+            } catch (syncErr) {
+                console.error('[SYNC-ERROR] Failed to link subject to batches:', syncErr.message);
+            }
+        }
     } catch (error) {
         res.status(500).json({ success: false, message: 'Error updating content status', error: error.message });
     }
