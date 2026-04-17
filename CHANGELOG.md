@@ -7,29 +7,79 @@ This document provides a detailed overview of the core architectural improvement
 ## 🚀 1. Badge System Standardization
 Highly accurate, role-based sidebar notifications were implemented to ensure users only see counts relevant to their scope.
 
-- **Instructor**: Scoped content verification and marking center counts strictly to subjects assigned to the specific instructor.
-- **Faculty**: Created a new logic to track pending gradings, ongoing live sessions, and rejected content waiting for resubmission.
-- **Student**: Scoped live class and assignment alerts to the student's specific batch and enrollment status.
+### Key Implementation:
+```javascript
+// Example: Scoping content for Instructors
+const subjectQuery = req.user.role === 'admin' ? {} : { instructor: userId };
+const instructorSubjects = await Subject.find(subjectQuery).select('_id');
+const subjectIds = instructorSubjects.map(s => s._id);
+
+const [pendingVideos, pendingTests] = await Promise.all([
+    RecordedClass.countDocuments({ status: 'draft', subject: { $in: subjectIds } }),
+    Test.countDocuments({ status: 'draft', subject: { $in: subjectIds } })
+]);
+```
+
+---
 
 ## 🔔 2. Automated Notification Core
 Improved communication between user roles through automated system triggers.
 
-- **Faculty-to-Instructor Alerts**: Integrated `notifyInstructorAsync` into the upload pipeline. Instructors now receive a real-time notification (and sidebar badge) whenever a faculty member uploads new content (Videos, Tests, Assignments, or Chapters) for verification.
-- **Smart Badge Logic**: Fixed a critical bug where counts remained at zero. Updated the backend to query the `dismissedBy` array (handling global/batch notifications correctly) instead of looking for a non-existent `read` bit.
+### notifyInstructor Logic:
+```javascript
+const notifyInstructorAsync = async (contentTitle) => {
+    const subject = await Subject.findById(subjectId);
+    if (subject && subject.instructor) {
+        await Notification.create({
+            message: `Faculty uploaded new content pending verification: "${contentTitle}"`,
+            type: 'info',
+            recipient: subject.instructor,
+            sender: req.user.userId
+        });
+    }
+};
+```
+
+### Fixed Badge Query:
+```javascript
+// Correct way to count unread notifications using dismissedBy array
+const unreadNotifs = await Notification.countDocuments({
+    recipient: { $in: [userId, 'all'] },
+    dismissedBy: { $ne: userId }
+});
+```
+
+---
 
 ## 🖼️ 3. Brand Identity & UI/UX Polish
-Modernized the platform's visual identity with specialized image processing and high-end CSS techniques.
+Modernized the platform's visual identity with specialized image processing and high-end CSS.
 
-- **Logo Integration**: Processed a new 1080x1080 master design. Used backend image processing (`Jimp`) to auto-crop the central "wide" band for header compatibility.
-- **Adaptive Sidebar**: Cleaned up the navigation by removing redundant square logos, leaving a single, professional wide-format brand mark.
-- **Scroll-Adaptive UI**: Implemented `mix-blend-mode` (Screen/Multiply) and CSS filters. The logo now automatically flips from **White-on-Transparent** (in the hero section) to **Dark-on-White** (on scroll), ensuring 100% visibility against all background colors.
+### Scroll-Adaptive Logo (CSS):
+```jsx
+<img 
+  src="/logo-wide.png" 
+  style={{ 
+    mixBlendMode: scrolled ? 'multiply' : 'screen',
+    filter: scrolled ? 'invert(1) grayscale(1)' : 'none',
+    transition: 'all 0.2s ease'
+  }} 
+/>
+```
+
+---
 
 ## 🛠️ 4. Infrastructure & Deployment Stabilisation
-Optimized the production environment on the E2E server for high-performance and security.
+Optimized the production environment on the E2E server.
 
-- **Large File Support**: Re-configured Nginx and proxy headers to support 5GB+ video uploads. Increased `client_max_body_size` to `10G` and extended proxy timeouts to `7200s`.
-- **SSL Security**: Successfully deployed Certbot SSL for `baselearn.in` and `api.baselearn.in`.
-- **CORS & Proxy Resolution**: Fixed persistent "502 Gateway" and CORS errors by standardizing Nginx reverse-proxy headers (passing `Origin`, `Host`, and `X-Forwarded-For`).
+### Nginx Optimization for 5GB+ Uploads:
+```nginx
+client_max_body_size 10G;
+proxy_read_timeout 7200;
+proxy_connect_timeout 7200;
+proxy_send_timeout 7200;
+```
+
+---
 
 ## 🐞 5. Critical Bug Fixes
 - **ReferenceError Resolution**: Fixed application crashes caused by missing controller imports in `studentRoutes.js`.
