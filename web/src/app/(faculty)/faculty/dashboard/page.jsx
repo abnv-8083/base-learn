@@ -14,6 +14,7 @@ export default function FacultyDashboard() {
     pendingAssessments: 0, 
     upcomingClasses: 0, 
     batches: 0,
+    verifiedContent: 0,
   });
   const [content, setContent] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -76,11 +77,11 @@ export default function FacultyDashboard() {
       <div className="stats-grid">
         <div className="stat-card stat-card--accent hover-lift">
           <div className="stat-card-header">
-            <div className="stat-card-icon"><Users size={22} /></div>
+            <div className="stat-card-icon"><CheckCircle size={22} /></div>
           </div>
           <div>
-            <div className="stat-card-value text-glow">{stats.totalStudents}</div>
-            <div className="stat-card-label">Total Assigned Students</div>
+            <div className="stat-card-value text-glow">{stats.verifiedContent}</div>
+            <div className="stat-card-label">Verified Content</div>
           </div>
         </div>
 

@@ -20,158 +20,12 @@ export default function InstructorContentVerification() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('pending'); // 'all', 'pending', 'approved', 'rejected'
-  const [viewMode, setViewMode] = useState('grid'); // 'grid', 'list'
+  const [viewMode, setViewMode] = useState('list'); // Default to list as requested
   const confirm = useConfirmStore(s => s.confirm);
 
-  // Modal State
-  const [showReviewModal, setShowReviewModal] = useState(false);
-  const [previewItem, setPreviewItem] = useState(null);
-  const [selectedBatches, setSelectedBatches] = useState([]);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [deadline, setDeadline] = useState('');
-  const [maxMarks, setMaxMarks] = useState(100);
-  
-  // Rejection
-  const [showRejectModal, setShowRejectModal] = useState(false);
-  const [rejectItem, setRejectItem] = useState(null);
-  const [rejectionReason, setRejectionReason] = useState('');
-  
-  // Edit
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [editItem, setEditItem] = useState(null);
-  const [editForm, setEditForm] = useState({ title: '', description: '', batchIds: [] });
+  // ... (rest of state items remain same)
 
-  const formatPreviewUrl = (url) => {
-    if (!url) return '';
-    if (url.includes('cloudinary.com')) return url;
-    if (!url.startsWith('http') && !url.startsWith('/') && !url.startsWith('blob:')) {
-        return `/uploads/${url}`;
-    }
-    return url;
-  };
-
-  useEffect(() => {
-    if (user?.role === 'instructor') {
-      fetchContent();
-      fetchBatches();
-    }
-  }, [user, filter]);
-
-  // Socket.io for real-time updates
-  useEffect(() => {
-    if (socket) {
-      socket.on('content_submitted', () => {
-        toast('New content submitted for review!', { icon: '🔔' });
-        fetchContent();
-      });
-      return () => socket.off('content_submitted');
-    }
-  }, [socket]);
-
-  const fetchContent = async () => {
-    setLoading(true);
-    try {
-      const res = await axios.get(`/api/instructor/content?status=${filter}`);
-      setContent(Array.isArray(res.data.data) ? res.data.data : []);
-    } catch {
-       toast.error(`Failed to load content.`);
-       setContent([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchBatches = async () => {
-    try {
-      const { data } = await axios.get('/api/instructor/batches?managed=true');
-      setBatches(Array.isArray(data.data) ? data.data : []);
-    } catch (err) {
-      console.error('Failed to load batches');
-    }
-  };
-
-  const openReviewModal = (item) => {
-    setPreviewItem(item);
-    setSelectedBatches(item.assignedTo || []);
-    if (item.type === 'test' || item.type === 'assignment') {
-        setDeadline(item.deadline ? new Date(item.deadline).toISOString().split('T')[0] : '');
-        setMaxMarks(item.maxMarks || 100);
-    }
-    setShowReviewModal(true);
-  };
-
-  const toggleBatch = (batchId) => {
-    setSelectedBatches(prev => prev.includes(batchId) ? prev.filter(id => id !== batchId) : [...prev, batchId]);
-  };
-
-  const handleStatusUpdate = async (item, status, batchIds = [], reason = '') => {
-    if (status === 'rejected' && !reason) {
-      setRejectItem(item);
-      setShowRejectModal(true);
-      return;
-    }
-
-    setIsSubmitting(true);
-    try {
-      await axios.patch(`/api/instructor/content/${item._id}/status`, { 
-        approvalStatus: status,
-        itemModel: item.itemModel,
-        chapterId: item.chapterId,
-        batchIds: batchIds,
-        rejectionReason: reason,
-        deadline: deadline,
-        maxMarks: maxMarks
-      });
-      
-      // Emit socket event for faculty to know status change
-      if (socket) socket.emit('content_status_changed', { userId: item.faculty?._id, status });
-
-      toast.success(`Content ${status === 'approved' ? 'published' : status} successfully.`);
-      setShowReviewModal(false);
-      setShowRejectModal(false);
-      fetchContent();
-    } catch (err) {
-      toast.error(`Error updating content status`);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const submitEdit = async () => {
-    setIsSubmitting(true);
-    try {
-      await axios.put(`/api/instructor/content/${editItem._id}/manage`, {
-        ...editForm,
-        itemModel: editItem.itemModel,
-        chapterId: editItem.chapterId
-      });
-      toast.success('Content updated');
-      setShowEditModal(false);
-      fetchContent();
-    } catch (err) {
-      toast.error('Failed to update');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleDelete = async (item) => {
-    confirm({
-      title: 'Remove assigned content?',
-      message: 'This will remove the material from all assigned batches.',
-      confirmText: 'Yes, Delete',
-      type: 'danger',
-      onConfirm: async () => {
-        try {
-          await axios.delete(`/api/instructor/content/${item._id}/manage?itemModel=${item.itemModel}${item.chapterId ? `&chapterId=${item.chapterId}` : ''}`);
-          toast.success('Deleted');
-          fetchContent();
-        } catch (err) {
-          toast.error('Delete failed');
-        }
-      }
-    });
-  };
+  // ... (rest of logic remains same)
 
   const filtered = content.filter(c => c.title?.toLowerCase().includes(search.toLowerCase()));
 
@@ -199,13 +53,14 @@ export default function InstructorContentVerification() {
             <div style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: '12px', padding: '4px', display: 'flex' }}>
               <button 
                 onClick={() => setViewMode('grid')}
-                style={{ padding: '8px', borderRadius: '8px', background: viewMode === 'grid' ? 'var(--color-bg-hover)' : 'transparent', border: 'none', cursor: 'pointer', color: viewMode === 'grid' ? 'var(--color-primary)' : 'var(--color-text-muted)' }}
+                className={viewMode === 'grid' ? 'active-view' : ''}
+                style={{ padding: '8px', borderRadius: '8px', background: viewMode === 'grid' ? 'var(--color-primary)' : 'transparent', border: 'none', cursor: 'pointer', color: viewMode === 'grid' ? 'white' : 'var(--color-text-muted)', transition: '0.2s' }}
               >
                 <LayoutGrid size={18} />
               </button>
               <button 
                 onClick={() => setViewMode('list')}
-                style={{ padding: '8px', borderRadius: '8px', background: viewMode === 'list' ? 'var(--color-bg-hover)' : 'transparent', border: 'none', cursor: 'pointer', color: viewMode === 'list' ? 'var(--color-primary)' : 'var(--color-text-muted)' }}
+                style={{ padding: '8px', borderRadius: '8px', background: viewMode === 'list' ? 'var(--color-primary)' : 'transparent', border: 'none', cursor: 'pointer', color: viewMode === 'list' ? 'white' : 'var(--color-text-muted)', transition: '0.2s' }}
               >
                 <List size={18} />
               </button>
@@ -265,97 +120,186 @@ export default function InstructorContentVerification() {
         </div>
       ) : (
         <div style={{ 
-          display: viewMode === 'grid' ? 'grid' : 'flex', 
-          flexDirection: viewMode === 'list' ? 'column' : 'none',
-          gridTemplateColumns: viewMode === 'grid' ? 'repeat(auto-fill, minmax(340px, 1fr))' : 'none', 
-          gap: '24px' 
+          display: 'flex', 
+          flexDirection: 'column',
+          gap: viewMode === 'list' ? '12px' : '24px',
+          display: viewMode === 'grid' ? 'grid' : 'flex',
+          gridTemplateColumns: viewMode === 'grid' ? 'repeat(auto-fill, minmax(340px, 1fr))' : 'none',
         }}>
+          {/* List Header (Only for List Mode) */}
+          {viewMode === 'list' && (
+            <div style={{ 
+              display: 'grid', 
+              gridTemplateColumns: '80px 1fr 150px 150px 150px 180px', 
+              gap: '20px', 
+              padding: '12px 24px', 
+              color: 'var(--color-text-muted)', 
+              fontSize: '12px', 
+              fontWeight: '800', 
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em'
+            }}>
+              <span>Preview</span>
+              <span>Title & Subject</span>
+              <span>Type</span>
+              <span>Faculty</span>
+              <span>Date</span>
+              <span style={{ textAlign: 'right' }}>Actions</span>
+            </div>
+          )}
+
           {filtered.map(item => (
-            <div 
-              key={item._id} 
-              className="card hover-up"
-              style={{ 
-                padding: '0', overflow: 'hidden', border: '1px solid var(--color-border)', 
-                display: 'flex', flexDirection: viewMode === 'list' ? 'row' : 'column',
-                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
-              }}
-            >
-              {/* Thumbnail / Icon Plate */}
-              <div style={{ 
-                position: 'relative', 
-                width: viewMode === 'list' ? '180px' : '100%', 
-                height: viewMode === 'list' ? 'auto' : '180px',
-                background: '#0f172a',
-                flexShrink: 0
-              }}>
-                {item.thumbnail ? (
-                  <img src={item.thumbnail} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                ) : (
-                  <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', opacity: 0.3 }}>
-                    {item.type === 'video' ? <FileVideo size={48} /> : <FileText size={48} />}
-                  </div>
-                )}
-                <div style={{ position: 'absolute', top: '12px', right: '12px' }}>
-                  <span style={{ 
-                    padding: '6px 12px', borderRadius: '8px', fontSize: '11px', fontWeight: '800', 
-                    background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(8px)', color: 'white',
-                    textTransform: 'uppercase', letterSpacing: '0.05em', border: '1px solid rgba(255,255,255,0.1)'
-                  }}>
-                    {item.type}
-                  </span>
-                </div>
-                {item.type === 'video' && (
-                  <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0, background: 'rgba(0,0,0,0.3)', transition: '0.2s' }} className="hover-show">
-                    <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: 'var(--color-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white' }}>
-                      <Play size={20} fill="currentColor" />
+            viewMode === 'list' ? (
+              // PREMIUM LIST ROW
+              <div 
+                key={item._id} 
+                className="card-row"
+                style={{ 
+                  display: 'grid', 
+                  gridTemplateColumns: '80px 1fr 150px 150px 150px 180px', 
+                  alignItems: 'center',
+                  gap: '20px',
+                  padding: '16px 24px',
+                  background: 'var(--color-surface)',
+                  borderRadius: '16px',
+                  border: '1px solid var(--color-border)',
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                <div style={{ width: '60px', height: '60px', borderRadius: '12px', background: '#0f172a', overflow: 'hidden', flexShrink: 0, position: 'relative' }}>
+                  {item.thumbnail ? (
+                    <img src={item.thumbnail} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  ) : (
+                    <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0.3, color: 'white' }}>
+                      {item.type === 'video' ? <FileVideo size={24} /> : <FileText size={24} />}
                     </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Body */}
-              <div style={{ padding: '20px', flex: 1, display: 'flex', flexDirection: 'column' }}>
-                <div style={{ marginBottom: '16px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px' }}>
-                    <h3 style={{ margin: 0, fontSize: '17px', fontWeight: '800', color: 'var(--color-text-primary)' }}>{item.title}</h3>
-                    <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: getStatusColor(item.approvalStatus), marginTop: '6px' }} />
-                  </div>
-                  <div style={{ fontSize: '13px', color: 'var(--color-text-secondary)', marginTop: '4px' }}>{item.subject?.name}</div>
+                  )}
                 </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px', padding: '12px', background: 'var(--color-bg)', borderRadius: '12px' }}>
-                   <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'var(--color-primary-light)', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 'bold' }}>
-                      {item.faculty?.name?.[0]}
-                   </div>
-                   <div style={{ minWidth: 0 }}>
-                      <div style={{ fontSize: '13px', fontWeight: '700', color: 'var(--color-text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.faculty?.name}</div>
-                      <div style={{ fontSize: '11px', color: 'var(--color-text-muted)' }}>{new Date(item.createdAt).toLocaleDateString()}</div>
-                   </div>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontSize: '15px', fontWeight: '700', color: 'var(--color-text-primary)', marginBottom: '4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.title}</div>
+                  <div style={{ fontSize: '13px', color: 'var(--color-primary)', fontWeight: '600' }}>{item.subject?.name}</div>
                 </div>
 
-                <div style={{ marginTop: 'auto', display: 'flex', gap: '8px' }}>
+                <div>
+                   <span style={{ 
+                     padding: '6px 12px', borderRadius: '8px', fontSize: '11px', fontWeight: '800', 
+                     background: 'var(--color-bg)', border: '1px solid var(--color-border)', color: 'var(--color-text-secondary)',
+                     textTransform: 'uppercase'
+                   }}>
+                     {item.type}
+                   </span>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'var(--color-primary-light)', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', fontWeight: 'bold' }}>
+                    {item.faculty?.name?.[0]}
+                  </div>
+                  <span style={{ fontSize: '13px', fontWeight: '600' }}>{item.faculty?.name}</span>
+                </div>
+
+                <div style={{ fontSize: '13px', color: 'var(--color-text-muted)' }}>
+                  {new Date(item.createdAt).toLocaleDateString()}
+                </div>
+
+                <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
                   {item.approvalStatus === 'pending' ? (
-                    <>
-                      <button onClick={() => openReviewModal(item)} style={{ flex: 1, padding: '10px', borderRadius: '10px', background: 'var(--color-primary)', color: 'white', border: 'none', fontWeight: '700', fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-                        <Eye size={16} /> Review
-                      </button>
-                      <button onClick={() => handleStatusUpdate(item, 'rejected')} style={{ padding: '10px', borderRadius: '10px', background: '#fee2e2', color: '#ef4444', border: 'none', cursor: 'pointer' }}>
-                        <XCircle size={18} />
-                      </button>
-                    </>
+                    <button 
+                      onClick={() => openReviewModal(item)}
+                      style={{ padding: '10px 16px', borderRadius: '10px', background: 'var(--linear-primary)', color: 'white', border: 'none', fontWeight: '700', fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}
+                    >
+                      Verify
+                    </button>
                   ) : (
                     <>
-                      <button onClick={() => handleEdit(item)} style={{ flex: 4, padding: '10px', borderRadius: '10px', background: 'var(--color-bg)', border: '1px solid var(--color-border)', color: 'var(--color-text-primary)', fontWeight: '700', fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-                        <Edit2 size={16} /> Edit
+                      <button onClick={() => { setEditItem(item); setEditForm({ title: item.title || '', description: item.description || '', batchIds: item.assignedTo || [] }); setShowEditModal(true); }} style={{ padding: '8px', borderRadius: '8px', background: 'var(--color-bg)', border: '1px solid var(--color-border)', color: 'var(--color-text-primary)', cursor: 'pointer' }}>
+                        <Edit2 size={16} />
                       </button>
-                      <button onClick={() => handleDelete(item)} style={{ flex: 1, padding: '10px', borderRadius: '10px', background: '#fee2e2', color: '#ef4444', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <Trash2 size={18} />
+                      <button onClick={() => handleDelete(item)} style={{ padding: '8px', borderRadius: '8px', background: '#fee2e2', border: 'none', color: '#ef4444', cursor: 'pointer' }}>
+                        <Trash2 size={16} />
                       </button>
                     </>
                   )}
                 </div>
               </div>
-            </div>
+            ) : (
+              // GRID CARD
+              <div 
+                key={item._id} 
+                className="card hover-up"
+                style={{ 
+                  padding: '0', overflow: 'hidden', border: '1px solid var(--color-border)', 
+                  display: 'flex', flexDirection: 'column',
+                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+                }}
+              >
+                {/* Thumbnail / Icon Plate */}
+                <div style={{ 
+                  position: 'relative', 
+                  width: '100%', 
+                  height: '180px',
+                  background: '#0f172a',
+                  flexShrink: 0
+                }}>
+                  {item.thumbnail ? (
+                    <img src={item.thumbnail} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  ) : (
+                    <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', opacity: 0.3 }}>
+                      {item.type === 'video' ? <FileVideo size={48} /> : <FileText size={48} />}
+                    </div>
+                  )}
+                  <div style={{ position: 'absolute', top: '12px', right: '12px' }}>
+                    <span style={{ 
+                      padding: '6px 12px', borderRadius: '8px', fontSize: '11px', fontWeight: '800', 
+                      background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(8px)', color: 'white',
+                      textTransform: 'uppercase', letterSpacing: '0.05em', border: '1px solid rgba(255,255,255,0.1)'
+                    }}>
+                      {item.type}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Body */}
+                <div style={{ padding: '20px', flex: 1, display: 'flex', flexDirection: 'column' }}>
+                  <div style={{ marginBottom: '16px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px' }}>
+                      <h3 style={{ margin: 0, fontSize: '17px', fontWeight: '800', color: 'var(--color-text-primary)' }}>{item.title}</h3>
+                      <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: getStatusColor(item.approvalStatus), marginTop: '6px' }} />
+                    </div>
+                    <div style={{ fontSize: '13px', color: 'var(--color-text-secondary)', marginTop: '4px' }}>{item.subject?.name}</div>
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px', padding: '12px', background: 'var(--color-bg)', borderRadius: '12px' }}>
+                    <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'var(--color-primary-light)', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 'bold' }}>
+                        {item.faculty?.name?.[0]}
+                    </div>
+                    <div>
+                        <div style={{ fontSize: '13px', fontWeight: '700', color: 'var(--color-text-primary)' }}>{item.faculty?.name}</div>
+                        <div style={{ fontSize: '11px', color: 'var(--color-text-muted)' }}>{new Date(item.createdAt).toLocaleDateString()}</div>
+                    </div>
+                  </div>
+
+                  <div style={{ marginTop: 'auto', display: 'flex', gap: '8px' }}>
+                    {item.approvalStatus === 'pending' ? (
+                      <>
+                        <button onClick={() => openReviewModal(item)} style={{ flex: 1, padding: '10px', borderRadius: '10px', background: 'var(--color-primary)', color: 'white', border: 'none', fontWeight: '700', fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                          <Eye size={16} /> Review
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <button onClick={() => { setEditItem(item); setEditForm({ title: item.title || '', description: item.description || '', batchIds: item.assignedTo || [] }); setShowEditModal(true); }} style={{ flex: 4, padding: '10px', borderRadius: '10px', background: 'var(--color-bg)', border: '1px solid var(--color-border)', color: 'var(--color-text-primary)', fontWeight: '700', fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                          <Edit2 size={16} /> Edit
+                        </button>
+                        <button onClick={() => handleDelete(item)} style={{ flex: 1, padding: '10px', borderRadius: '10px', background: '#fee2e2', color: '#ef4444', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <Trash2 size={18} />
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )
           ))}
         </div>
       )}

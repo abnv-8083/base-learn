@@ -86,28 +86,69 @@ const formatLocalPath = (req, filePath, fileObj = null) => {
 exports.getDashboardStats = asyncHandler(async (req, res) => {
     const facultyId = req.user.userId;
 
-    // Batches where this faculty teaches (via subjects assigned)
-    const mySubjectIds = await Subject.find({ faculty: facultyId }).distinct('_id');
-    const myBatches = await Batch.find({ $or: [ { instructor: facultyId } ] }).distinct('_id');
+    // Batches where this faculty teaches (via subjects assigned to batches)
+    const mySubjects = await Subject.find({ faculty: facultyId }).select('_id assignedTo');
+    const mySubjectIds = mySubjects.map(s => s._id);
+    
+    // Extract all batch IDs assigned to these subjects
+    const myBatches = [...new Set(mySubjects.flatMap(s => s.assignedTo.map(bid => bid.toString())))];
 
     // Students in those batches
     const batchDocs = await Batch.find({ _id: { $in: myBatches } }).select('students').lean();
     const totalStudents = [...new Set(batchDocs.flatMap(b => b.students.map(s => s.toString())))].length;
 
-    // Pending grading: submitted but not yet graded
+    // 1. Pending grading: submitted but not yet graded for this specific faculty's subjects/assigned content
     const [pendingAssignments, pendingTests] = await Promise.all([
-        Assignment.countDocuments({ facultyId, 'submissions.status': 'submitted' }),
-        Test.countDocuments({ faculty: facultyId, 'submissions.status': 'submitted' })
+        Assignment.countDocuments({ 
+            facultyId, 
+            'submissions.status': 'submitted' 
+        }),
+        Test.countDocuments({ 
+            faculty: facultyId, 
+            'submissions.status': 'submitted' 
+        })
     ]);
 
+    // 2. Verified Content: Count of approved/published materials by this faculty
+    const chapterModel = require('../models/Chapter');
+    const recordedClassModel = require('../models/RecordedClass');
+    
+    const [verifiedVideos, verifiedTests, verifiedAssignments] = await Promise.all([
+        recordedClassModel.countDocuments({ faculty: facultyId, status: 'published' }),
+        Test.countDocuments({ faculty: facultyId, status: 'published' }),
+        Assignment.countDocuments({ facultyId: facultyId, status: 'published' })
+    ]);
+
+    // Count Verified Resources in Chapters
+    const chaptersWithResources = await chapterModel.find({
+        $or: [
+            { 'notes.uploadedBy': facultyId },
+            { 'liveNotes.uploadedBy': facultyId },
+            { 'dpps.uploadedBy': facultyId },
+            { 'pyqs.uploadedBy': facultyId }
+        ]
+    }).lean();
+
+    let verifiedResourceCount = 0;
+    chaptersWithResources.forEach(chap => {
+        ['notes', 'liveNotes', 'dpps', 'pyqs'].forEach(field => {
+            if (chap[field]) {
+                verifiedResourceCount += chap[field].filter(r => r.status === 'published' && r.uploadedBy?.toString() === facultyId.toString()).length;
+            }
+        });
+    });
+
+    const totalVerifiedContent = verifiedVideos + verifiedTests + verifiedAssignments + verifiedResourceCount;
+
     const upcomingClasses = await LiveClass.countDocuments({ faculty: facultyId, status: 'upcoming' });
-    const batches = myBatches.length;
+    const batchesCount = myBatches.length;
 
     res.status(200).json({ success: true, data: {
         totalStudents,
         pendingAssessments: pendingAssignments + pendingTests,
         upcomingClasses,
-        batches
+        batches: batchesCount,
+        verifiedContent: totalVerifiedContent
     } });
 });
 

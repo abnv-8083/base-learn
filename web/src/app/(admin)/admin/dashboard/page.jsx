@@ -36,7 +36,7 @@ export default function AdminDashboard() {
     { label: 'Instructors', value: stats?.instructors || 0, icon: Shield, color: '#f59e0b', bg: '#fffbeb' },
     { label: 'Active Batches', value: stats?.batches || 0, icon: Layers, color: '#3b82f6', bg: '#eff6ff' },
     { label: 'Subjects', value: stats?.subjects || 0, icon: BookOpen, color: '#8b5cf6', bg: '#f5f3ff' },
-    { label: 'Total Revenue', value: stats?.revenue || '₹0', icon: CreditCard, color: '#ef4444', bg: '#fef2f2' },
+    { label: 'Total Revenue', value: stats?.revenue || '0', icon: CreditCard, color: '#ef4444', bg: '#fef2f2' },
   ];
 
   // Stat-based charts (derived from real data)
@@ -68,7 +68,7 @@ export default function AdminDashboard() {
               </div>
               <div>
                 <div style={{ fontSize: '26px', fontWeight: '800', lineHeight: 1, color: 'var(--color-text-primary)' }}>
-                  {s.label === 'Total Revenue' ? `₹${s.value}` : s.value}
+                  {s.label === 'Total Revenue' ? `₹${s.value}`.replace('₹₹', '₹') : s.value}
                 </div>
                 <div style={{ fontSize: '13px', color: 'var(--color-text-secondary)', marginTop: '4px', fontWeight: '500' }}>{s.label}</div>
               </div>

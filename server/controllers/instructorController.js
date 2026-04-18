@@ -27,13 +27,120 @@ const getChapterResource = (chapter, resourceId) => {
 // Get Instructor Dashboard Stats
 exports.getDashboardStats = async (req, res) => {
     try {
-        const totalClasses = await StudyClass.countDocuments({ instructor: req.user.userId });
-        const totalBatches = await Batch.countDocuments({ instructor: req.user.userId });
-        const scheduledVideos = await RecordedClass.countDocuments({ status: 'draft', scheduledFor: { $gt: new Date() } }); 
-        const totalStudents = await Student.countDocuments(); 
-        res.status(200).json({ success: true, data: { totalClasses, totalBatches, scheduledVideos, totalStudents } });
+        const userId = req.user.userId || req.user._id;
+        
+        // 1. Total Classes & Batches Managed
+        const totalClasses = await StudyClass.countDocuments({ instructor: userId });
+        
+        // Find instructor's subjects
+        const SubjectModel = require('../models/Subject');
+        const instructorSubjectDocs = await SubjectModel.find({ instructor: userId }).select('_id');
+        const instructorSubjectIds = instructorSubjectDocs.map(s => s._id);
+
+        // Find batches where instructor is the primary OR teaches a subject
+        const instructorBatches = await Batch.find({ 
+            $or: [
+                { instructor: userId },
+                { assignedSubjects: { $in: instructorSubjectIds } }
+            ]
+        }).select('students');
+        
+        const totalBatches = instructorBatches.length;
+
+        // 2. Total Unique Students in these batches
+        const managedStudentsCount = [...new Set(instructorBatches.flatMap(b => b.students.map(s => s.toString())))].length;
+
+        // 3. Pending Verification Count (Aligned with getContentForVerification)
+        const ChapterModel = require('../models/Chapter');
+        const TestModel = require('../models/Test');
+        const AssignmentModel = require('../models/Assignment');
+        const RecordedClassModel = require('../models/RecordedClass');
+        const FacultyModel = require('../models/Faculty');
+
+        const assignedFaculties = await FacultyModel.find({ assignedInstructor: userId }).distinct('_id');
+        const facultyIds = assignedFaculties;
+
+        // Count Videos (pending/draft)
+        const pendingVideos = await RecordedClassModel.countDocuments({
+            status: 'draft',
+            $or: [
+                { subject: { $in: instructorSubjectIds } },
+                { faculty: { $in: facultyIds } }
+            ]
+        });
+
+        // Count Resources in Chapters (draft status)
+        const chapterQuery = {
+            $or: [
+                { subject: { $in: instructorSubjectIds } },
+                { 'notes.status': 'draft', 'notes.uploadedBy': { $in: facultyIds } },
+                { 'liveNotes.status': 'draft', 'liveNotes.uploadedBy': { $in: facultyIds } },
+                { 'dpps.status': 'draft', 'dpps.uploadedBy': { $in: facultyIds } },
+                { 'pyqs.status': 'draft', 'pyqs.uploadedBy': { $in: facultyIds } }
+            ]
+        };
+
+        const chapters = await ChapterModel.find(chapterQuery).lean();
+        let pendingResourceCount = 0;
+        
+        chapters.forEach(chap => {
+            const isAssignedSubject = instructorSubjectIds.some(sid => sid.equals(chap.subject));
+            ['notes', 'liveNotes', 'dpps', 'pyqs'].forEach(field => {
+                const resources = chap[field] || [];
+                resources.forEach(r => {
+                    if (r.status === 'draft') {
+                        // Logic same as getContentForVerification
+                        if (isAssignedSubject || facultyIds.some(fid => fid.equals(r.uploadedBy))) {
+                            pendingResourceCount++;
+                        }
+                    }
+                });
+            });
+        });
+
+        // Count Assessments (pending/draft)
+        const [pendingTests, pendingAssignments] = await Promise.all([
+            TestModel.countDocuments({ 
+                status: 'draft', 
+                $or: [
+                    { subject: { $in: instructorSubjectIds } }, 
+                    { faculty: { $in: facultyIds } }
+                ] 
+            }),
+            AssignmentModel.countDocuments({ 
+                status: 'draft', 
+                $or: [
+                    { subject: { $in: instructorSubjectIds } }, 
+                    { facultyId: { $in: facultyIds } }
+                ] 
+            })
+        ]);
+
+        const totalPendingVerification = pendingVideos + pendingResourceCount + pendingTests + pendingAssignments;
+
+        // Recently Published (Today)
+        const publishedToday = await RecordedClassModel.countDocuments({ 
+            status: 'published', 
+            $or: [
+                { subject: { $in: instructorSubjectIds } },
+                { faculty: { $in: facultyIds } }
+            ],
+            publishedAt: { $gte: new Date(new Date().setHours(0,0,0,0)) } 
+        }); 
+
+        res.status(200).json({ 
+            success: true, 
+            data: { 
+                totalClasses, 
+                totalBatches, 
+                totalStudents: managedStudentsCount,
+                pendingVerification: totalPendingVerification,
+                publishedToday 
+            } 
+        });
     } catch (error) {
-        res.status(500).json({ success: false, message: 'Error fetching instructor dashboard stats', error: error.message });
+        console.error('[Instructor Dash Stats Error]', error);
+        res.status(500).json({ success: false, message: 'Error fetching dashboard stats', error: error.message });
     }
 };
 
