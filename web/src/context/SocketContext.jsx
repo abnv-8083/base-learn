@@ -16,7 +16,7 @@ export const SocketProvider = ({ children }) => {
         // Use provided backend URL, or existing API URL, or fallback to relative/localhost
         const socketUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 
                          process.env.NEXT_PUBLIC_API_URL || 
-                         (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:6000');
+                         (typeof window !== 'undefined' ? (window.location.hostname === 'localhost' ? 'http://localhost:5000' : window.location.origin) : 'http://localhost:5000');
         
         const newSocket = io(socketUrl, {
             withCredentials: true,

@@ -11,7 +11,7 @@ services:
     env_file:
       - ./server/.env
     volumes:
-      - ./server/public/uploads:/usr/src/app/public/uploads
+      - ./server/public/uploads:/app/public/uploads
     restart: always
 
   # Frontend Service

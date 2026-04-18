@@ -57,15 +57,10 @@ const uploadToS3 = async (file, folder = 'general') => {
         return `${origin.replace(/\/$/, '')}${relativePath}`;
     };
 
-    // Always use local storage for PDFs/assignments (E2E rate-limits them, Cloudinary 401s them)
-    // and for student-assignment/test submissions
-    const LOCAL_ONLY_FOLDERS = ['assignments', 'student-assignments', 'student-tests'];
-    if (!process.env.R2_BUCKET_NAME || !process.env.R2_ACCESS_KEY_ID || LOCAL_ONLY_FOLDERS.includes(folder)) {
-        if (LOCAL_ONLY_FOLDERS.includes(folder)) {
-            console.log('[Storage] Saving to local persistent volume:', folder, file.filename);
-        } else {
-            console.warn('[Storage] Missing E2E keys, falling back to local storage:', file.filename);
-        }
+    // Enable E2E S3 storage for all folders except when explicitly missing config
+    // (Render/Heroku ephemeral storage workaround)
+    if (!process.env.R2_BUCKET_NAME || !process.env.R2_ACCESS_KEY_ID) {
+        console.warn('[Storage] Missing E2E keys, falling back to local storage:', file.filename);
         return getLocalPath();
     }
 

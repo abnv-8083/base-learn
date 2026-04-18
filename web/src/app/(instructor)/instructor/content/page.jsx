@@ -45,10 +45,14 @@ export default function InstructorContentVerification() {
   const formatPreviewUrl = (url) => {
     if (!url) return '';
     if (url.includes('cloudinary.com')) return url;
-    if (!url.startsWith('http') && !url.startsWith('/') && !url.startsWith('blob:')) {
-        return `/uploads/${url}`;
-    }
-    return url;
+    if (url.startsWith('http') || url.startsWith('blob:') || url.startsWith('data:')) return url;
+    
+    // Fallback to backend API URL for relative paths
+    const baseUrl = process.env.NEXT_PUBLIC_BACKEND_URL || process.env.NEXT_PUBLIC_API_URL || '';
+    const cleanBaseUrl = baseUrl.replace(/\/$/, '');
+    
+    if (url.startsWith('/')) return `${cleanBaseUrl}${url}`;
+    return `${cleanBaseUrl}/uploads/${url}`;
   };
 
   useEffect(() => {
@@ -521,9 +525,7 @@ export default function InstructorContentVerification() {
                         <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', gap: '16px' }}>
                           <iframe 
                             src={previewItem.url?.toLowerCase().endsWith('.pdf') 
-                              ? (formatPreviewUrl(previewItem.url).startsWith('http') 
-                                  ? `https://docs.google.com/viewer?url=${encodeURIComponent(formatPreviewUrl(previewItem.url))}&embedded=true`
-                                  : formatPreviewUrl(previewItem.url))
+                              ? formatPreviewUrl(previewItem.url)
                               : formatPreviewUrl(previewItem.url)
                             } 
                             style={{ flex: 1, width: '100%', background: 'white', borderRadius: '16px', border: 'none' }} 
@@ -549,7 +551,7 @@ export default function InstructorContentVerification() {
                     ) : (
                       <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', gap: '16px' }}>
                         <iframe 
-                          src={`https://docs.google.com/viewer?url=${encodeURIComponent(formatPreviewUrl(previewItem.assignmentUrl).startsWith('http') ? formatPreviewUrl(previewItem.assignmentUrl) : window.location.origin + formatPreviewUrl(previewItem.assignmentUrl))}&embedded=true`} 
+                          src={formatPreviewUrl(previewItem.assignmentUrl)} 
                           style={{ flex: 1, width: '100%', background: 'white', borderRadius: '16px', border: 'none' }} 
                           title="Notes Preview"
                         />

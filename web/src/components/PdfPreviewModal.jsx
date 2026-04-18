@@ -9,30 +9,21 @@ export default function PdfPreviewModal({ isOpen, onClose, url, title }) {
   const formatPreviewUrl = (url) => {
     if (!url) return '';
     if (url.includes('cloudinary.com')) return url;
-    if (!url.startsWith('http') && !url.startsWith('/') && !url.startsWith('blob:')) {
-        return `/uploads/${url}`;
-    }
-    return url;
+    if (url.startsWith('http') || url.startsWith('blob:') || url.startsWith('data:')) return url;
+    
+    // Fallback to backend API URL for relative paths
+    const baseUrl = (typeof window !== 'undefined' ? (process.env.NEXT_PUBLIC_BACKEND_URL || process.env.NEXT_PUBLIC_API_URL || '') : '');
+    const cleanBaseUrl = baseUrl.replace(/\/$/, '');
+    
+    if (url.startsWith('/')) return `${cleanBaseUrl}${url}`;
+    return `${cleanBaseUrl}/uploads/${url}`;
   };
 
   const previewUrl = formatPreviewUrl(url);
   
   // Use Google Docs Viewer for reliable cross-browser PDF rendering
-  const isLocalFile = (url) => {
-    if (!url) return false;
-    return url.startsWith('/') || url.startsWith(window.location.origin);
-  };
-
   const getPreviewUrl = (url) => {
-    if (!url) return '';
-    const formattedUrl = formatPreviewUrl(url);
-    if (!formattedUrl.toLowerCase().endsWith('.pdf')) return formattedUrl;
-    
-    // Use native browser viewer for local files to avoid Google Docs Viewer flaky behavior in InPrivate modes
-    if (isLocalFile(formattedUrl)) return formattedUrl;
-    
-    // Fallback to Google Docs Viewer for external files (Cloudinary/S3)
-    return `https://docs.google.com/viewer?url=${encodeURIComponent(formattedUrl)}&embedded=true`;
+    return formatPreviewUrl(url);
   };
 
   return (
