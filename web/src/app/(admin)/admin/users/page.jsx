@@ -251,13 +251,33 @@ export default function AdminUsers() {
 
   const handleAssignInstructor = async () => {
     if (!selectedInstructor) return toast.error('Select an instructor first');
+    if (viewUser.assignedInstructors?.includes(selectedInstructor)) return toast.error('Instructor already assigned');
+    
     setAssigningInstructor(true);
     try {
-      await axios.put(`/api/admin/users/${viewUser._id}`, { role: 'faculty', assignedInstructor: selectedInstructor });
+      const updatedInstructors = [...(viewUser.assignedInstructors || []), selectedInstructor];
+      await axios.put(`/api/admin/users/${viewUser._id}`, { role: 'faculty', assignedInstructors: updatedInstructors });
       toast.success('Instructor assigned'); setSelectedInstructor(''); fetchUsers();
-      setViewUser({ ...viewUser, assignedInstructor: selectedInstructor });
+      setViewUser({ ...viewUser, assignedInstructors: updatedInstructors });
     } catch (err) { toast.error(err.response?.data?.message || 'Failed'); }
     finally { setAssigningInstructor(false); }
+  };
+
+  const handleRemoveInstructor = async (instructorId) => {
+    confirm({
+      title: 'Remove Instructor?',
+      message: 'This will revoke this instructor\'s oversight of this faculty.',
+      confirmText: 'Yes, Remove', type: 'danger',
+      onConfirm: async () => {
+        try {
+          const updatedInstructors = viewUser.assignedInstructors.filter(id => id !== instructorId);
+          await axios.put(`/api/admin/users/${viewUser._id}`, { role: 'faculty', assignedInstructors: updatedInstructors });
+          toast.success('Instructor removed');
+          setViewUser({ ...viewUser, assignedInstructors: updatedInstructors });
+          fetchUsers();
+        } catch { toast.error('Failed to remove instructor'); }
+      }
+    });
   };
 
   const handleToggleStatus = async (id, current) => {
@@ -543,20 +563,42 @@ export default function AdminUsers() {
                   </h3>
 
                   <div style={{ background: 'var(--color-bg)', borderRadius: '12px', padding: '16px', marginBottom: '14px' }}>
-                    <p style={{ fontSize: '12px', fontWeight: '600', color: 'var(--color-text-secondary)', marginBottom: '10px' }}>1. Assign Instructor</p>
-                    {viewUser.assignedInstructor && (
-                      <div style={{ fontSize: '12px', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '8px 12px', marginBottom: '10px', color: '#15803d', fontWeight: '600' }}>
-                        ✓ Currently assigned: {instructors.find(i => i._id === viewUser.assignedInstructor)?.name || 'Instructor'}
-                      </div>
-                    )}
+                    <p style={{ fontSize: '12px', fontWeight: '600', color: 'var(--color-text-secondary)', marginBottom: '10px' }}>Current Assigned Instructors</p>
+                    
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '16px' }}>
+                      {viewUser.assignedInstructors && viewUser.assignedInstructors.length > 0 ? (
+                        viewUser.assignedInstructors.map(id => {
+                          const inst = instructors.find(i => i._id === id);
+                          return (
+                            <div key={id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', background: 'white', borderRadius: '10px', border: '1px solid var(--color-border)' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                <div style={{ width: '24px', height: '24px', borderRadius: '6px', background: 'var(--color-primary-light)', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', fontWeight: '800' }}>
+                                  {inst?.name?.[0]}
+                                </div>
+                                <span style={{ fontSize: '13px', fontWeight: '600' }}>{inst?.name || 'Loading...'}</span>
+                              </div>
+                              <button onClick={() => handleRemoveInstructor(id)} style={{ border: 'none', background: 'none', color: '#ef4444', cursor: 'pointer', padding: '4px' }} title="Remove">
+                                <Trash2 size={14} />
+                              </button>
+                            </div>
+                          );
+                        })
+                      ) : (
+                        <div style={{ fontSize: '12px', color: 'var(--color-text-muted)', textAlign: 'center', padding: '10px' }}>No instructors assigned yet.</div>
+                      )}
+                    </div>
+
+                    <p style={{ fontSize: '12px', fontWeight: '600', color: 'var(--color-text-secondary)', marginBottom: '10px' }}>Add New Instructor</p>
                     <div style={{ display: 'flex', gap: '10px' }}>
                       <StyledSelect value={selectedInstructor} onChange={e => setSelectedInstructor(e.target.value)}>
                         <option value="">Select Instructor…</option>
-                        {instructors.map(inst => <option key={inst._id} value={inst._id}>{inst.name} ({inst.email})</option>)}
+                        {instructors.filter(inst => !viewUser.assignedInstructors?.includes(inst._id)).map(inst => (
+                          <option key={inst._id} value={inst._id}>{inst.name} ({inst.email})</option>
+                        ))}
                       </StyledSelect>
                       <button onClick={handleAssignInstructor} disabled={!selectedInstructor || assigningInstructor}
                         style={{ padding: '10px 18px', background: config.color, border: 'none', borderRadius: '10px', color: 'white', fontWeight: '700', fontSize: '13px', cursor: 'pointer', whiteSpace: 'nowrap', opacity: !selectedInstructor ? 0.5 : 1 }}>
-                        {assigningInstructor ? '...' : 'Assign'}
+                        {assigningInstructor ? '...' : 'Add'}
                       </button>
                     </div>
                   </div>

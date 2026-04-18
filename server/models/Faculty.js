@@ -17,7 +17,7 @@ const facultySchema = new mongoose.Schema({
     isVerified: { type: Boolean, default: true },
     profilePhoto: { type: String, default: '' },
     isActive: { type: Boolean, default: true },
-    assignedInstructor: { type: mongoose.Schema.Types.ObjectId, ref: 'Instructor', default: null }
+    assignedInstructors: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Instructor' }]
 }, { timestamps: true });
 
 facultySchema.pre('save', async function () {

@@ -57,7 +57,7 @@ exports.getDashboardStats = async (req, res) => {
         const RecordedClassModel = require('../models/RecordedClass');
         const FacultyModel = require('../models/Faculty');
 
-        const assignedFaculties = await FacultyModel.find({ assignedInstructor: userId }).distinct('_id');
+        const assignedFaculties = await FacultyModel.find({ assignedInstructors: userId }).distinct('_id');
         const facultyIds = assignedFaculties;
 
         // Count Videos (pending/draft)
@@ -775,7 +775,7 @@ exports.getContentForVerification = async (req, res) => {
         const instructorSubjects = await Subject.find(subjectQuery).select('_id name');
         const subjectIds = instructorSubjects.map(s => s._id);
 
-        const facultyQuery = req.user.role === 'admin' ? {} : { assignedInstructor: userId };
+        const facultyQuery = req.user.role === 'admin' ? {} : { assignedInstructors: userId };
         const assignedFaculties = await Faculty.find(facultyQuery).select('_id');
         const facultyIds = assignedFaculties.map(f => f._id);
 
@@ -1588,7 +1588,7 @@ exports.getLiveClasses = async (req, res) => {
         const subjectIds = instructorSubjects.map(s => s._id);
 
         // 2. Get Faculty IDs assigned to instructor
-        const facultyQuery = req.user.role === 'admin' ? {} : { assignedInstructor: userId };
+        const facultyQuery = req.user.role === 'admin' ? {} : { assignedInstructors: userId };
         const assignedFaculties = await Faculty.find(facultyQuery).select('_id');
         const facultyIds = assignedFaculties.map(f => f._id);
 

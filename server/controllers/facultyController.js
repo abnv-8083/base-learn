@@ -160,9 +160,9 @@ exports.getAssignedSubjects = asyncHandler(async (req, res) => {
     let subjects = await Subject.find({ faculty: req.user.userId }).lean();
     
     // Implicit fallback: If they have no explicitly assigned subjects, let them see subjects 
-    // owned by their assigned instructor (to prevent empty dashboard states)
-    if (subjects.length === 0 && facultyUser && facultyUser.assignedInstructor) {
-        subjects = await Subject.find({ instructor: facultyUser.assignedInstructor }).lean();
+    // owned by any of their assigned instructors (to prevent empty dashboard states)
+    if (subjects.length === 0 && facultyUser && facultyUser.assignedInstructors?.length > 0) {
+        subjects = await Subject.find({ instructor: { $in: facultyUser.assignedInstructors } }).lean();
     }
 
     const result = await Promise.all(subjects.map(async (sub) => {
