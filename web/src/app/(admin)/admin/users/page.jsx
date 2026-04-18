@@ -93,6 +93,8 @@ export default function AdminUsers() {
   const [showFilters, setShowFilters] = useState(false);
 
   const [showModal, setShowModal] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editingUserId, setEditingUserId] = useState(null);
   const [form, setForm] = useState({});
   const [errors, setErrors] = useState({});
   const [saving, setSaving] = useState(false);
@@ -148,11 +150,24 @@ export default function AdminUsers() {
   };
 
   const openCreate = () => {
+    setIsEditing(false);
+    setEditingUserId(null);
     const empty = {};
     config.fields.forEach(f => empty[f] = '');
     empty.password = '';
     if (activeTab === 'faculty') empty.subject = '';
     setForm(empty);
+    setErrors({});
+    if (activeTab === 'faculty') fetchSubjects();
+    setShowModal(true);
+  };
+
+  const openEdit = (u) => {
+    setIsEditing(true);
+    setEditingUserId(u._id);
+    const data = { ...u };
+    delete data.password; // Don't pre-fill password for editing
+    setForm(data);
     setErrors({});
     if (activeTab === 'faculty') fetchSubjects();
     setShowModal(true);
@@ -187,7 +202,7 @@ export default function AdminUsers() {
 
   const handleSave = async () => {
     // Validate required fields
-    const requiredFields = ['name', 'email', 'password'];
+    const requiredFields = isEditing ? ['name', 'email'] : ['name', 'email', 'password'];
     let valid = true;
     const newErrors = {};
     requiredFields.forEach(f => {
@@ -216,12 +231,17 @@ export default function AdminUsers() {
     setSaving(true);
     try {
       const payload = { ...form, role: activeTab };
-      await axios.post('/api/admin/users', payload);
-      toast.success(`${config.singular} created successfully`);
+      if (isEditing) {
+        await axios.put(`/api/admin/users/${editingUserId}`, payload);
+        toast.success(`${config.singular} updated successfully`);
+      } else {
+        await axios.post('/api/admin/users', payload);
+        toast.success(`${config.singular} created successfully`);
+      }
       setShowModal(false);
       fetchUsers();
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to create user');
+      toast.error(err.response?.data?.message || `Failed to ${isEditing ? 'update' : 'create'} user`);
     } finally { setSaving(false); }
   };
 
@@ -426,6 +446,10 @@ export default function AdminUsers() {
                   </td>
                   <td style={{ padding: '14px 20px', textAlign: 'center' }}>
                     <div style={{ display: 'flex', justifyContent: 'center', gap: '6px' }}>
+                      <button onClick={() => openEdit(u)} title="Edit User"
+                        style={{ width: '34px', height: '34px', borderRadius: '8px', border: 'none', background: '#ecfdf5', color: '#10b981', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s' }}>
+                        <Pencil size={15} />
+                      </button>
                       <button onClick={() => openViewUser(u)} title="View Profile"
                         style={{ width: '34px', height: '34px', borderRadius: '8px', border: 'none', background: '#ede9fe', color: '#7c3aed', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s' }}>
                         <Eye size={15} />
@@ -454,8 +478,8 @@ export default function AdminUsers() {
             {/* Modal header */}
             <div style={{ padding: '22px 28px', background: `linear-gradient(135deg, ${config.color}cc, ${config.color})`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
-                <h2 style={{ margin: 0, fontSize: '18px', fontWeight: '800', color: 'white' }}>Add New {config.singular}</h2>
-                <p style={{ margin: 0, fontSize: '12px', color: 'rgba(255,255,255,0.75)', marginTop: '2px' }}>Fill in all required fields to create the account</p>
+                <h2 style={{ margin: 0, fontSize: '18px', fontWeight: '800', color: 'white' }}>{isEditing ? 'Edit' : 'Add New'} {config.singular}</h2>
+                <p style={{ margin: 0, fontSize: '12px', color: 'rgba(255,255,255,0.75)', marginTop: '2px' }}>{isEditing ? 'Modify user information below' : 'Fill in all required fields to create the account'}</p>
               </div>
               <button onClick={() => setShowModal(false)} style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'rgba(255,255,255,0.2)', border: 'none', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <X size={16} />
@@ -510,7 +534,7 @@ export default function AdminUsers() {
             <div style={{ padding: '18px 28px', background: 'var(--color-bg)', borderTop: '1px solid var(--color-border)', display: 'flex', gap: '12px' }}>
               <button onClick={() => setShowModal(false)} className="btn btn-secondary" style={{ flex: 1 }}>Cancel</button>
               <button onClick={handleSave} disabled={saving} style={{ flex: 2, padding: '12px', background: config.color, border: 'none', borderRadius: '12px', color: 'white', fontSize: '14px', fontWeight: '700', cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.7 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', boxShadow: `0 4px 14px ${config.color}50` }}>
-                <CheckCircle size={16} /> {saving ? 'Creating...' : `Create ${config.singular}`}
+                <CheckCircle size={16} /> {saving ? (isEditing ? 'Updating...' : 'Creating...') : `${isEditing ? 'Update' : 'Create'} ${config.singular}`}
               </button>
             </div>
           </div>
