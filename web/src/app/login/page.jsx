@@ -149,8 +149,8 @@ export default function StudentLogin() {
             </div>
 
             {/* Submit */}
-            <button type="submit" disabled={loading}
-              style={{ width:'100%', padding:'15px', borderRadius:'12px', background:'linear-gradient(135deg, #0F2D6B, #1A3F8F)', color:'white', border:'none', fontWeight:'700', fontSize:'16px', cursor:loading ? 'not-allowed' : 'pointer', boxShadow:'0 6px 24px rgba(15,45,107,0.28)', transition:'all 0.2s', opacity:loading ? 0.7 : 1 }}>
+            <button type="submit" disabled={loading} className="login-btn"
+              style={{ width:'100%', padding:'15px', borderRadius:'12px', background:'linear-gradient(135deg, #0F2D6B, #1A3F8F)', color:'white', border:'none', fontWeight:'700', fontSize:'16px', cursor:loading ? 'not-allowed' : 'pointer', boxShadow:'0 6px 24px rgba(15,45,107,0.28)', transition:'all 0.3s ease', opacity:loading ? 0.7 : 1 }}>
               {loading ? 'Signing in...' : 'Sign In →'}
             </button>
           </form>
@@ -168,7 +168,11 @@ export default function StudentLogin() {
         </div>
       </div>
 
-      <style>{`
+      <style jsx>{`
+        .login-btn:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 8px 32px rgba(15, 45, 107, 0.4);
+        }
         @media (min-width: 900px) { .auth-left-panel { display: flex !important; } .mobile-only-logo { display: none !important; } }
       `}</style>
     </div>

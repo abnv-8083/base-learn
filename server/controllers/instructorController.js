@@ -13,6 +13,7 @@ const ProfileUpdateRequest = require('../models/ProfileUpdateRequest');
 const logAction = require('../utils/logAction');
 const sendEmail = require('../utils/sendEmail');
 const bcrypt = require('bcryptjs');
+const { emitToUser, emitToRole, emitToAll } = require('../utils/socket');
 
 // --- Helper for Chapter Resources ---
 const getChapterResource = (chapter, resourceId) => {
@@ -82,6 +83,16 @@ exports.assignRecordedClass = async (req, res) => {
 
         if (recording) {
             await logAction(req, 'Approved Video', `RecordedClass: ${recording.title}`, { targetId: recording._id, targetModel: 'RecordedClass' });
+            
+            // Notify Faculty Real-time
+            emitToUser(recording.faculty.toString(), 'content_status_changed', { 
+                id: recording._id, status: 'published', title: recording.title 
+            });
+
+            // Notify Students Real-time
+            emitToRole('student', 'content_published', { 
+                id: recording._id, title: recording.title, type: 'video' 
+            });
         }
         res.status(200).json({ success: true, data: recording });
     } catch (error) {
@@ -107,13 +118,19 @@ exports.rejectRecordedClass = async (req, res) => {
         if (recording) {
             await logAction(req, 'Rejected Video', `RecordedClass: ${recording.title}`, { targetId: recording._id, targetModel: 'RecordedClass' });
             
-            // Notify Faculty
+            // Notify Faculty Real-time
+            const facultyIdStr = recording.faculty.toString();
             await Notification.create({
                 message: `Recorded Class Rejected: "${recording.title}". Reason: ${reason}`,
                 type: 'alert',
-                recipient: recording.faculty,
+                recipient: facultyIdStr,
                 sender: req.user.userId
             });
+
+            emitToUser(facultyIdStr, 'content_status_changed', { 
+                id: recording._id, status: 'rejected', title: recording.title, reason 
+            });
+            emitToUser(facultyIdStr, 'badge_refresh', {});
         }
 
         res.status(200).json({ success: true, data: recording });
@@ -158,6 +175,17 @@ exports.approveAssessment = async (req, res) => {
 
         if (assessment) {
             await logAction(req, `Approved ${type.charAt(0).toUpperCase() + type.slice(1)}`, `Title: ${assessment.title}`, { targetId: assessment._id, targetModel: type === 'test' ? 'Test' : 'Assignment' });
+            
+            const facultyId = assessment.faculty || assessment.facultyId;
+            if (facultyId) {
+                emitToUser(facultyId.toString(), 'content_status_changed', { 
+                    id: assessment._id, status: 'published', title: assessment.title 
+                });
+            }
+
+            emitToRole('student', 'content_published', { 
+                id: assessment._id, title: assessment.title, type 
+            });
         }
 
         res.status(200).json({ success: true, data: assessment });

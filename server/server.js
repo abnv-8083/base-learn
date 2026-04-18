@@ -202,30 +202,43 @@ app.use(notFound);
 // Global error handler — must be last
 app.use(errorHandler);
 
+const http = require('http');
+const { initSocket } = require('./utils/socket');
+
 const PORT = process.env.PORT || 5000;
 
 const startServer = (port) => {
     return new Promise((resolve) => {
-        const s = app.listen(port, () => {
+        const server = http.createServer(app);
+        
+        // Initialize Socket.io only for the main port (or all if we want, but let's stick to one main instance)
+        initSocket(server);
+
+        server.listen(port, () => {
             console.log(`🚀 Server running on port ${port}`);
-            resolve(s);
+            resolve(server);
         });
-        s.on('error', (err) => {
+
+        server.on('error', (err) => {
             console.log(`Port ${port} in use or error:`, err.message);
-            resolve(null); // Resolve to prevent the init promise from hanging
+            resolve(null);
         });
     });
 };
 
 const init = async () => {
+    // Start main server first
+    const mainServer = await startServer(6000);
+    
+    // Optional compatibility ports
     await startServer(5000);
     await startServer(8080);
-    if (PORT && PORT.toString() !== '5000' && PORT.toString() !== '6000' && PORT.toString() !== '8080') {
+    
+    if (PORT && !['5000', '6000', '8080'].includes(PORT.toString())) {
         await startServer(PORT);
     }
-    await startServer(6000);
     
-    // Start background jobs only once
+    // Start background jobs
     require('./jobs/liveSessionJob').startJob();
     require('./utils/urlRefreshJob').startUrlRefreshJob();
 };

@@ -2,10 +2,11 @@
 
 import { Toaster } from "react-hot-toast";
 import ConfirmModal from "./ConfirmModal";
+import { SocketProvider } from "@/context/SocketContext";
 
 export function Providers({ children }) {
   return (
-    <>
+    <SocketProvider>
       {children}
       <ConfirmModal />
       <Toaster
@@ -23,6 +24,6 @@ export function Providers({ children }) {
           error: { iconTheme: { primary: "var(--color-error)", secondary: "#fff" } },
         }}
       />
-    </>
+    </SocketProvider>
   );
 }

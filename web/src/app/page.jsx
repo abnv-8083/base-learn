@@ -129,11 +129,11 @@ export default function Landing() {
             The ultimate learning platform built exclusively for 8th, 9th, and 10th graders — live classes, recorded sessions, smart assignments, and real progress tracking.
           </p>
 
-          <div style={{ display:'flex', gap:'14px', justifyContent:'center', flexWrap:'wrap' }}>
-            <a href="#enquiry" style={{ display:'inline-flex', alignItems:'center', gap:'8px', padding:'15px 36px', borderRadius:'12px', background:'linear-gradient(135deg, #00C2FF, #3B82F6)', color:'#0D1B3E', fontWeight:'800', fontSize:'16px', textDecoration:'none', boxShadow:'0 8px 28px rgba(0,194,255,0.4)', transition:'all 0.2s' }}>
+          <div style={{ display:'flex', gap:'16px', justifyContent:'center', flexWrap:'wrap' }}>
+            <a href="#enquiry" className="hero-btn-primary" style={{ display:'inline-flex', alignItems:'center', gap:'8px', padding:'16px 36px', borderRadius:'14px', background:'linear-gradient(135deg, #00C2FF, #3B82F6)', color:'#0D1B3E', fontWeight:'800', fontSize:'16px', textDecoration:'none', boxShadow:'0 8px 28px rgba(0,194,255,0.4)', transition:'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)' }}>
               Apply for Admission <ArrowRight size={18} />
             </a>
-            <Link href="/login" style={{ display:'inline-flex', alignItems:'center', gap:'8px', padding:'15px 36px', borderRadius:'12px', border:'1.5px solid rgba(255,255,255,0.25)', color:'white', fontWeight:'600', fontSize:'16px', textDecoration:'none', background:'rgba(255,255,255,0.06)', backdropFilter:'blur(8px)', transition:'all 0.2s' }}>
+            <Link href="/login" className="hero-btn-secondary" style={{ display:'inline-flex', alignItems:'center', gap:'8px', padding:'16px 36px', borderRadius:'14px', border:'1.5px solid rgba(255,255,255,0.25)', color:'white', fontWeight:'600', fontSize:'16px', textDecoration:'none', background:'rgba(255,255,255,0.06)', backdropFilter:'blur(8px)', transition:'all 0.3s ease' }}>
               Student Login
             </Link>
           </div>
@@ -370,7 +370,16 @@ export default function Landing() {
         </div>
       </footer>
 
-      <style>{`
+      <style jsx>{`
+        .hero-btn-primary:hover {
+          transform: translateY(-3px) scale(1.02);
+          box-shadow: 0 12px 32px rgba(0,194,255,0.5);
+        }
+        .hero-btn-secondary:hover {
+          background: rgba(255,255,255,0.12);
+          border-color: rgba(255,255,255,0.4);
+          transform: translateY(-2px);
+        }
         @media (max-width: 640px) {
           .hide-mobile { display: none !important; }
           .grid-4-col > div { border-right: none !important; border-bottom: 1px solid rgba(255,255,255,0.08); }

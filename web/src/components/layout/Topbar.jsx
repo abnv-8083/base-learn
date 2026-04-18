@@ -7,7 +7,7 @@ import axios from "axios";
 import { useAuthStore } from "@/store/authStore";
 import { Bell, User, Menu, X, Search, ChevronRight, Trash2 } from "lucide-react";
 import { useLayoutStore } from "@/store/layoutStore";
-
+import { useSocket } from "@/context/SocketContext";
 import toast from "react-hot-toast";
 
 const ROLE_COLORS = {
@@ -66,19 +66,16 @@ const isId = (seg) => /^[a-f0-9]{24}$|^[0-9a-f-]{36}$/i.test(seg);
 
 function buildBreadcrumbs(pathname, role) {
   const parts = pathname.split('/').filter(Boolean);
-  // parts[0] is the role slug, already shown as the portal root
   const crumbs = [];
 
-  // Root crumb → portal dashboard
   const roleLabel = role ? role.charAt(0).toUpperCase() + role.slice(1) : parts[0];
   crumbs.push({ label: roleLabel, href: ROLE_DASHBOARDS[role] || `/${parts[0]}/dashboard` });
 
-  // Build path incrementally
   let accumulated = '';
   for (let i = 0; i < parts.length; i++) {
     const seg = parts[i];
     accumulated += `/${seg}`;
-    if (i === 0) continue; // skip role slug, already added
+    if (i === 0) continue; 
     const label = isId(seg)
       ? (crumbs[crumbs.length - 1]?.label + ' Details')
       : (SEGMENT_LABELS[seg] || seg.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase()));
@@ -89,6 +86,7 @@ function buildBreadcrumbs(pathname, role) {
 
 export default function Topbar() {
   const { user } = useAuthStore();
+  const socket = useSocket();
   const router = useRouter();
   const pathname = usePathname();
   const { isSidebarOpen, toggleSidebar, setSidebarOpen } = useLayoutStore();
@@ -106,7 +104,6 @@ export default function Topbar() {
   useEffect(() => {
     setSidebarOpen(false);
     setNotifOpen(false);
-
   }, [pathname]);
 
   const fetchNotifications = async () => {
@@ -121,10 +118,25 @@ export default function Topbar() {
   useEffect(() => {
     if (user) {
       fetchNotifications();
-      const interval = setInterval(fetchNotifications, 60000); // Poll every 60s
-      return () => clearInterval(interval);
     }
   }, [user]);
+
+  useEffect(() => {
+    if (!socket || !user) return;
+
+    const handleNewNotification = (notif) => {
+      setNotifications(prev => [notif, ...prev]);
+      toast('New broadcast received', { icon: '📢', position: 'bottom-right' });
+    };
+
+    socket.on('new_notification', handleNewNotification);
+    socket.on('notifications_cleared', () => setNotifications([]));
+
+    return () => {
+      socket.off('new_notification');
+      socket.off('notifications_cleared');
+    };
+  }, [socket, user]);
 
   const handleDismiss = async (e, id) => {
     e.stopPropagation();
@@ -159,9 +171,6 @@ export default function Topbar() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [notifOpen]);
 
-  // (Removed manual DOM manipulation, now handled via layout store state)
-
-
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 10);
     window.addEventListener('scroll', onScroll);
@@ -179,7 +188,6 @@ export default function Topbar() {
         aria-hidden
       />
 
-
       <header style={{
         height: '64px',
         background: 'var(--color-surface)',
@@ -195,7 +203,6 @@ export default function Topbar() {
         boxShadow: scrolled ? '0 2px 16px rgba(15,45,107,0.07)' : 'none',
       }}>
 
-        {/* Left: hamburger + breadcrumb */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <button
             type="button"
@@ -206,8 +213,6 @@ export default function Topbar() {
             {isSidebarOpen ? <X size={20} /> : <Menu size={20} />}
           </button>
 
-
-          {/* Dynamic Breadcrumbs */}
           <nav style={{ display: 'flex', alignItems: 'center', gap: '4px' }} aria-label="Breadcrumb">
             {breadcrumbs.map((crumb, idx) => {
               const isLast = idx === breadcrumbs.length - 1;
@@ -245,10 +250,7 @@ export default function Topbar() {
           </nav>
         </div>
 
-        {/* Right: notifications + user */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-
-          {/* Notification bell */}
           <div style={{ position: 'relative' }}>
             <button
               id="notif-bell-btn"
@@ -286,7 +288,7 @@ export default function Topbar() {
                   <div style={{ fontWeight: '800', fontSize: '15px', color: 'var(--color-text-primary)' }}>Broadcasts</div>
                   <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
                     {notifications.length > 0 && (
-                      <button onClick={handleDismissAll} style={{ fontSize: '11px', fontWeight: '700', color: 'var(--color-primary)', background: 'transparent', border: 'none', cursor: 'pointer', padding: 0, transition: 'color 0.2s' }} className="hover:text-indigo-600">
+                      <button onClick={handleDismissAll} style={{ fontSize: '11px', fontWeight: '700', color: 'var(--color-primary)', background: 'transparent', border: 'none', cursor: 'pointer', padding: 0, transition: 'color 0.2s' }}>
                         Mark all
                       </button>
                     )}
@@ -342,10 +344,8 @@ export default function Topbar() {
             )}
           </div>
 
-          {/* Divider */}
           <div style={{ width: '1px', height: '24px', background: 'var(--color-border)', margin: '0 4px' }} />
 
-          {/* User chip */}
           <Link 
             href={`/${user.role}/profile`}
             style={{

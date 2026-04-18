@@ -14,6 +14,7 @@ const logAction = require('../utils/logAction');
 const bbb = require('../utils/bbb');
 const { uploadToS3, deleteFromS3 } = require('../utils/s3');
 const cloudinary = require('cloudinary').v2;
+const { emitToUser, emitToRole } = require('../utils/socket');
 
 /**
  * Upload any file to Cloudinary (images, PDFs, documents)
@@ -164,12 +165,15 @@ exports.uploadContent = asyncHandler(async (req, res) => {
         try {
             const subject = await require('../models/Subject').findById(subjectId);
             if (subject && subject.instructor) {
+                const instructorId = subject.instructor.toString();
                 await require('../models/Notification').create({
                     message: `Faculty uploaded new content pending verification: "${contentTitle}"`,
                     type: 'info',
-                    recipient: subject.instructor,
+                    recipient: instructorId,
                     sender: req.user.userId
                 });
+                // Real-time socket notification
+                emitToUser(instructorId, 'content_submitted', { title: contentTitle });
             }
         } catch (err) {
             console.error('[Notify Instructor Error]', err);
