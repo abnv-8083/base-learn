@@ -35,9 +35,26 @@ const uploadToS3 = async (file, folder = 'general') => {
     const getLocalPath = () => {
         const pathSuffix = file.path.replace(/\\/g, '/');
         const uploadIndex = pathSuffix.indexOf('/uploads/');
-        let relativePath = uploadIndex !== -1 ? pathSuffix.substring(uploadIndex) : `/uploads/${folder}/${file.filename}`;
-        const origin = process.env.NODE_ENV === 'development' ? 'http://localhost:5000' : 'https://api.baselearn.in';
-        return `${origin}${relativePath}`;
+        
+        let relativePath;
+        if (uploadIndex !== -1) {
+            // If the physical path already contains /uploads/, extract everything from there
+            relativePath = pathSuffix.substring(uploadIndex);
+        } else {
+            // Fallback to checking for standard subdirectories if /uploads/ is missing in the absolute path
+            const subdirs = ['documents', 'videos', 'profiles', 'materials'];
+            let foundSubdir = folder;
+            for (const dir of subdirs) {
+                if (pathSuffix.includes(`/${dir}/`)) {
+                    foundSubdir = dir;
+                    break;
+                }
+            }
+            relativePath = `/uploads/${foundSubdir}/${file.filename}`;
+        }
+
+        const origin = process.env.BACKEND_URL || (process.env.NODE_ENV === 'development' ? 'http://localhost:5000' : 'https://api.baselearn.in');
+        return `${origin.replace(/\/$/, '')}${relativePath}`;
     };
 
     // Always use local storage for PDFs/assignments (E2E rate-limits them, Cloudinary 401s them)

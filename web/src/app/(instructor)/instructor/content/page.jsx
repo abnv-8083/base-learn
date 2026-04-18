@@ -316,7 +316,7 @@ export default function InstructorContentVerification() {
               >
                 <div style={{ width: '60px', height: '60px', borderRadius: '12px', background: '#0f172a', overflow: 'hidden', flexShrink: 0, position: 'relative' }}>
                   {item.thumbnail ? (
-                    <img src={item.thumbnail} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    <img src={formatPreviewUrl(item.thumbnail)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                   ) : (
                     <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0.3, color: 'white' }}>
                       {item.type === 'video' ? <FileVideo size={24} /> : <FileText size={24} />}
@@ -390,7 +390,7 @@ export default function InstructorContentVerification() {
                   flexShrink: 0
                 }}>
                   {item.thumbnail ? (
-                    <img src={item.thumbnail} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    <img src={formatPreviewUrl(item.thumbnail)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                   ) : (
                     <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', opacity: 0.3 }}>
                       {item.type === 'video' ? <FileVideo size={48} /> : <FileText size={48} />}
@@ -521,7 +521,9 @@ export default function InstructorContentVerification() {
                         <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', gap: '16px' }}>
                           <iframe 
                             src={previewItem.url?.toLowerCase().endsWith('.pdf') 
-                              ? `https://docs.google.com/viewer?url=${encodeURIComponent(formatPreviewUrl(previewItem.url))}&embedded=true` 
+                              ? (formatPreviewUrl(previewItem.url).startsWith('http') 
+                                  ? `https://docs.google.com/viewer?url=${encodeURIComponent(formatPreviewUrl(previewItem.url))}&embedded=true`
+                                  : formatPreviewUrl(previewItem.url))
                               : formatPreviewUrl(previewItem.url)
                             } 
                             style={{ flex: 1, width: '100%', background: 'white', borderRadius: '16px', border: 'none' }} 
@@ -547,7 +549,7 @@ export default function InstructorContentVerification() {
                     ) : (
                       <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', gap: '16px' }}>
                         <iframe 
-                          src={`https://docs.google.com/viewer?url=${encodeURIComponent(formatPreviewUrl(previewItem.assignmentUrl))}&embedded=true`} 
+                          src={`https://docs.google.com/viewer?url=${encodeURIComponent(formatPreviewUrl(previewItem.assignmentUrl).startsWith('http') ? formatPreviewUrl(previewItem.assignmentUrl) : window.location.origin + formatPreviewUrl(previewItem.assignmentUrl))}&embedded=true`} 
                           style={{ flex: 1, width: '100%', background: 'white', borderRadius: '16px', border: 'none' }} 
                           title="Notes Preview"
                         />

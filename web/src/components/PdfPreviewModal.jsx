@@ -18,9 +18,22 @@ export default function PdfPreviewModal({ isOpen, onClose, url, title }) {
   const previewUrl = formatPreviewUrl(url);
   
   // Use Google Docs Viewer for reliable cross-browser PDF rendering
-  const embedUrl = previewUrl.toLowerCase().endsWith('.pdf') 
-    ? `https://docs.google.com/viewer?url=${encodeURIComponent(previewUrl.startsWith('http') ? previewUrl : window.location.origin + previewUrl)}&embedded=true`
-    : previewUrl;
+  const isLocalFile = (url) => {
+    if (!url) return false;
+    return url.startsWith('/') || url.startsWith(window.location.origin);
+  };
+
+  const getPreviewUrl = (url) => {
+    if (!url) return '';
+    const formattedUrl = formatPreviewUrl(url);
+    if (!formattedUrl.toLowerCase().endsWith('.pdf')) return formattedUrl;
+    
+    // Use native browser viewer for local files to avoid Google Docs Viewer flaky behavior in InPrivate modes
+    if (isLocalFile(formattedUrl)) return formattedUrl;
+    
+    // Fallback to Google Docs Viewer for external files (Cloudinary/S3)
+    return `https://docs.google.com/viewer?url=${encodeURIComponent(formattedUrl)}&embedded=true`;
+  };
 
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2000, backdropFilter: 'blur(12px)' }}>
@@ -61,7 +74,7 @@ export default function PdfPreviewModal({ isOpen, onClose, url, title }) {
         <div style={{ flex: 1, background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px', overflow: 'hidden' }}>
            <div style={{ width: '100%', height: '100%', background: 'white', borderRadius: '16px', border: '1px solid #e2e8f0', overflow: 'hidden', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)' }}>
               <iframe 
-                src={embedUrl} 
+                src={getPreviewUrl(previewUrl)} 
                 style={{ width: '100%', height: '100%', border: 'none' }} 
                 title={title || "Document Preview"}
               />

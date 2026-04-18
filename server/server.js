@@ -28,11 +28,11 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       ...helmet.contentSecurityPolicy.getDefaultDirectives(),
-      "img-src": ["'self'", "data:", "res.cloudinary.com", "http://localhost:6000", "http://127.0.0.1:6000", process.env.BACKEND_URL],
+      "img-src": ["'self'", "data:", "res.cloudinary.com", "*.google.com", "*.gstatic.com", "http://localhost:6000", "http://127.0.0.1:6000", process.env.BACKEND_URL],
       "media-src": ["'self'", "http://localhost:6000", "http://127.0.0.1:6000", "res.cloudinary.com", process.env.BACKEND_URL],
-      "connect-src": ["'self'", "http://localhost:6000", "http://127.0.0.1:6000", "res.cloudinary.com", process.env.BACKEND_URL],
-      "frame-src": ["'self'", "blob:", "data:", "res.cloudinary.com", "http://localhost:6000", "http://127.0.0.1:6000", process.env.BACKEND_URL],
-      "object-src": ["'self'", "blob:", "data:", "res.cloudinary.com", "http://localhost:6000", "http://127.0.0.1:6000", process.env.BACKEND_URL]
+      "connect-src": ["'self'", "http://localhost:6000", "http://127.0.0.1:6000", "res.cloudinary.com", "*.googleapis.com", process.env.BACKEND_URL],
+      "frame-src": ["'self'", "blob:", "data:", "docs.google.com", "res.cloudinary.com", "http://localhost:6000", "http://127.0.0.1:6000", process.env.BACKEND_URL],
+      "object-src": ["'self'", "blob:", "data:", "docs.google.com", "res.cloudinary.com", "http://localhost:6000", "http://127.0.0.1:6000", process.env.BACKEND_URL]
     },
   },
 }));
