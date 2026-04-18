@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Upload, Eye, CheckCircle, XCircle, Clock, FileText, AlertCircle, ExternalLink } from 'lucide-react';
 import toast from 'react-hot-toast';
+import PdfPreviewModal from '@/components/PdfPreviewModal';
 
 export default function StudentAssignments() {
   const [activeTab, setActiveTab] = useState('view'); // 'view' or 'submitted'
@@ -11,6 +11,7 @@ export default function StudentAssignments() {
   const [assignments, setAssignments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [uploadingId, setUploadingId] = useState(null);
+  const [previewModal, setPreviewModal] = useState({ isOpen: false, url: '', title: '' });
 
   const fetchAssignments = async () => {
     try {
@@ -182,7 +183,7 @@ export default function StudentAssignments() {
                 
                 <div style={{ display: 'flex', gap: '12px' }}>
                   <button 
-                    onClick={() => window.open(formatFileUrl(task.fileUrl), '_blank')} 
+                    onClick={() => setPreviewModal({ isOpen: true, url: task.fileUrl, title: task.title })} 
                     className="btn" 
                     style={{ flex: 1, padding: '12px', borderRadius: '12px', background: '#fff', border: '1.5px solid #e2e8f0', color: '#475569', fontSize: '13px', fontWeight: '700', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', cursor: 'pointer' }}
                   >
@@ -259,7 +260,7 @@ export default function StudentAssignments() {
                 
                 <div style={{ marginTop: 'auto' }}>
                   <button 
-                    onClick={() => window.open(formatFileUrl(task.mySubmission?.fileUrl), '_blank')} 
+                    onClick={() => setPreviewModal({ isOpen: true, url: task.mySubmission?.fileUrl, title: `${task.title} (Submission)` })} 
                     className="btn btn-ghost" 
                     style={{ width: '100%', justifyContent: 'center', border: '1px solid var(--color-border)', cursor: 'pointer' }}
                   >
@@ -271,6 +272,12 @@ export default function StudentAssignments() {
           </div>
         </div>
       )}
+      <PdfPreviewModal 
+        isOpen={previewModal.isOpen} 
+        onClose={() => setPreviewModal({ ...previewModal, isOpen: false })} 
+        url={previewModal.url} 
+        title={previewModal.title} 
+      />
     </div>
   );
 }

@@ -6,6 +6,8 @@ import { UploadCloud, FileText, CheckCircle, Search, Clock, Plus, X, ListPlus, E
 import { useAuthStore } from '@/store/authStore';
 import { useConfirmStore } from '@/store/confirmStore';
 import toast from 'react-hot-toast';
+import { Eye } from 'lucide-react';
+import PdfPreviewModal from '@/components/PdfPreviewModal';
 
 export default function FacultyContent() {
   const { user } = useAuthStore();
@@ -25,6 +27,8 @@ export default function FacultyContent() {
   const [analysisItem, setAnalysisItem] = useState(null);
   const [analysisLoading, setAnalysisLoading] = useState(false);
   const [statusFilter, setStatusFilter] = useState('all'); // all, pending, approved, rejected
+  
+  const [previewModal, setPreviewModal] = useState({ isOpen: false, url: '', title: '' });
   
   const [form, setForm] = useState({ title: '', description: '', subjectId: '', chapterId: '', type: 'video', file: null, assignmentFile: null, thumbnail: null });
   const [subjects, setSubjects] = useState([]);
@@ -289,6 +293,14 @@ export default function FacultyContent() {
                    <Clock size={16} /> {new Date(item.createdAt || item.uploadedAt || Date.now()).toLocaleDateString()}
                  </div>
                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <button onClick={() => setPreviewModal({ isOpen: true, url: item.url, title: item.title })} className="btn btn-ghost" style={{ padding: '6px', color: 'var(--color-primary)' }} title="Preview Document">
+                      <Eye size={16} />
+                    </button>
+                    {item.assignmentUrl && (
+                      <button onClick={() => setPreviewModal({ isOpen: true, url: item.assignmentUrl, title: `${item.title} (Exercise)` })} className="btn btn-ghost" style={{ padding: '6px', color: '#f59e0b' }} title="Preview Exercise">
+                        <FileText size={16} />
+                      </button>
+                    )}
                     {rawStatus === 'published' && (
                       <button onClick={() => fetchAnalysis(item._id)} className="btn btn-ghost" style={{ padding: '6px', color: 'var(--color-primary)' }} title="View Analysis">
                         <BarChart2 size={16} />
@@ -559,6 +571,12 @@ export default function FacultyContent() {
         </div>
       )}
 
+      <PdfPreviewModal 
+        isOpen={previewModal.isOpen} 
+        onClose={() => setPreviewModal({ ...previewModal, isOpen: false })} 
+        url={previewModal.url} 
+        title={previewModal.title} 
+      />
     </div>
   );
 }

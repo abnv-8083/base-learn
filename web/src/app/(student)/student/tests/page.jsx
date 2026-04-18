@@ -2,16 +2,16 @@
 
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Upload, Eye, CheckCircle, XCircle, Clock, FileText, AlertCircle, Search, Award } from 'lucide-react';
 import toast from 'react-hot-toast';
+import PdfPreviewModal from '@/components/PdfPreviewModal';
 
 export default function StudentTests() {
   const [activeTab, setActiveTab] = useState('view'); // 'view' or 'submitted'
   const [filterStatus, setFilterStatus] = useState('All');
   const [tests, setTests] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [uploadingId, setUploadingId] = useState(null);
   const [search, setSearch] = useState('');
+  const [previewModal, setPreviewModal] = useState({ isOpen: false, url: '', title: '' });
 
   const fetchTests = async () => {
     try {
@@ -158,9 +158,13 @@ export default function StudentTests() {
                 </div>
                 
                 <div style={{ display: 'flex', gap: '12px' }}>
-                  <a href={task.fileUrl} target="_blank" rel="noreferrer" className="btn" style={{ flex: 1, padding: '12px', borderRadius: '12px', background: '#fff', border: '1.5px solid #e2e8f0', color: '#475569', fontSize: '13px', fontWeight: '700', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                  <button 
+                    onClick={() => setPreviewModal({ isOpen: true, url: task.fileUrl, title: task.title })} 
+                    className="btn" 
+                    style={{ flex: 1, padding: '12px', borderRadius: '12px', background: '#fff', border: '1.5px solid #e2e8f0', color: '#475569', fontSize: '13px', fontWeight: '700', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', cursor: 'pointer' }}
+                  >
                     <FileText size={16} /> View Ques
-                  </a>
+                  </button>
                   
                   <div style={{ flex: 1, position: 'relative' }}>
                     <button className="btn btn-primary" style={{ width: '100%', height: '45px', borderRadius: '12px', fontSize: '13px', fontWeight: '800', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }} disabled={uploadingId === task._id}>
@@ -231,15 +235,25 @@ export default function StudentTests() {
                 )}
                 
                 <div style={{ marginTop: 'auto' }}>
-                  <a href={task.mySubmission?.fileUrl} target="_blank" rel="noreferrer" className="btn btn-ghost" style={{ width: '100%', justifyContent: 'center', border: '1px solid var(--color-border)' }}>
+                  <button 
+                    onClick={() => setPreviewModal({ isOpen: true, url: task.mySubmission?.fileUrl, title: `${task.title} (Submission)` })} 
+                    className="btn btn-ghost" 
+                    style={{ width: '100%', justifyContent: 'center', border: '1px solid var(--color-border)', cursor: 'pointer' }}
+                  >
                     <Eye size={16} style={{ marginRight: '8px' }} /> View Submission
-                  </a>
+                  </button>
                 </div>
               </div>
             ))}
           </div>
         </div>
       )}
+      <PdfPreviewModal 
+        isOpen={previewModal.isOpen} 
+        onClose={() => setPreviewModal({ ...previewModal, isOpen: false })} 
+        url={previewModal.url} 
+        title={previewModal.title} 
+      />
     </div>
   );
 }
