@@ -352,9 +352,9 @@ export default function InstructorContentVerification() {
                   {item.approvalStatus === 'pending' ? (
                     <button 
                       onClick={() => openReviewModal(item)}
-                      style={{ padding: '10px 16px', borderRadius: '10px', background: 'var(--linear-primary)', color: 'white', border: 'none', fontWeight: '700', fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}
+                      style={{ padding: '10px 16px', borderRadius: '10px', background: 'var(--color-primary)', color: 'white', border: 'none', fontWeight: '700', fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 4px 12px rgba(99, 102, 241, 0.2)' }}
                     >
-                      Verify
+                      <Eye size={16} /> Verify
                     </button>
                   ) : (
                     <>
