@@ -48,7 +48,14 @@ exports.getDashboardStats = asyncHandler(async (req, res) => {
     ]);
 
     const paidStudents = await Student.countDocuments({ hasPaid: true });
-    const revenue = (paidStudents * 3500).toLocaleString('en-IN');
+    
+    // Calculate actual revenue from Successful Payments
+    const totalPayment = await Payment.aggregate([
+        { $match: { status: 'paid' } },
+        { $group: { _id: null, total: { $sum: '$amount' } } }
+    ]);
+    const revenueAmount = totalPayment[0]?.total || 0;
+    const revenue = revenueAmount.toLocaleString('en-IN');
 
     res.status(200).json({ 
         success: true, 
