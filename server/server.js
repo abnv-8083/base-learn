@@ -144,7 +144,19 @@ app.get('/api/media/stream', asyncHandler(async (req, res) => {
         let externalUrl = req.query.url;
         const key = req.query.key;
 
-        // If a key is provided, construct the S3 URL
+        // Auto-migrate Cloudinary links to E2E EOS (S3) on the fly
+        if (externalUrl && externalUrl.includes('cloudinary.com') && externalUrl.includes('/upload/')) {
+            try {
+                const s3Key = externalUrl.split('/upload/')[1].replace(/^fl_attachment:false\//, '').replace(/^v\d+\//, '');
+                const { getPresignedUrl } = require('./utils/s3');
+                externalUrl = await getPresignedUrl(s3Key);
+                console.log('[MediaProxy] Auto-converted Cloudinary URL to E2E S3 key:', s3Key);
+            } catch (err) {
+                console.warn('[MediaProxy] Failed to convert Cloudinary URL to S3:', err.message);
+            }
+        }
+
+        // If a key is provided directly, construct the S3 URL
         if (key && !externalUrl) {
             const { getPresignedUrl } = require('./utils/s3');
             externalUrl = await getPresignedUrl(key);
