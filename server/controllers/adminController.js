@@ -38,18 +38,31 @@ const getModelByRole = (role) => {
 
 // GET /api/admin/dashboard
 exports.getDashboardStats = asyncHandler(async (req, res) => {
-    const [students, faculty, instructors, classes, subjects] = await Promise.all([
+    const [students, faculty, instructors, classes, subjects, batches] = await Promise.all([
         Student.countDocuments(),
         Faculty.countDocuments(),
         Instructor.countDocuments(),
         StudyClass.countDocuments(),
         Subject.countDocuments(),
+        Batch.countDocuments(),
     ]);
 
     const paidStudents = await Student.countDocuments({ hasPaid: true });
-    const revenue = `₹${(paidStudents * 3500).toLocaleString('en-IN')}`;
+    const revenue = (paidStudents * 3500).toLocaleString('en-IN');
 
-    res.status(200).json({ success: true, data: { students, faculty, instructors, classes, subjects, revenue, enrollments: paidStudents } });
+    res.status(200).json({ 
+        success: true, 
+        data: { 
+            students, 
+            faculty, 
+            instructors, 
+            classes, 
+            subjects, 
+            batches,
+            revenue, 
+            enrollments: paidStudents 
+        } 
+    });
 });
 
 // GET /api/admin/users?role=student|faculty|instructor
