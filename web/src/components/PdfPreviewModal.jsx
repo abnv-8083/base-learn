@@ -8,13 +8,17 @@ export default function PdfPreviewModal({ isOpen, onClose, url, title }) {
 
   const formatPreviewUrl = (url) => {
     if (!url) return '';
-    if (url.includes('cloudinary.com')) return url;
+    const isExternal = url.includes('cloudinary.com') || url.includes('e2enetworks.net') || url.includes('objectstore');
+    const baseUrl = (typeof window !== 'undefined' ? (process.env.NEXT_PUBLIC_BACKEND_URL || process.env.NEXT_PUBLIC_API_URL || '') : '');
+    const cleanBaseUrl = baseUrl.replace(/\/$/, '');
+
+    if (isExternal) {
+        return `${cleanBaseUrl}/api/media/stream?url=${encodeURIComponent(url)}`;
+    }
+
     if (url.startsWith('http') || url.startsWith('blob:') || url.startsWith('data:')) return url;
     
     // Fallback to backend API URL for relative paths
-    const baseUrl = (typeof window !== 'undefined' ? (process.env.NEXT_PUBLIC_BACKEND_URL || process.env.NEXT_PUBLIC_API_URL || '') : '');
-    const cleanBaseUrl = baseUrl.replace(/\/$/, '');
-    
     if (url.startsWith('/')) return `${cleanBaseUrl}${url}`;
     return `${cleanBaseUrl}/uploads/${url}`;
   };

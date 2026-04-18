@@ -136,46 +136,49 @@ app.get('/api/debug-smtp', asyncHandler(async (req, res) => {
     }
 }));
 
-// ── Media Proxy: Stream E2E EOS files through backend ──────────────────────
-// GET /api/media/stream?key=assignments/file.pdf
-// Browsers cannot access E2E directly (503 SlowDown). The backend runs on
-// E2E's network and can fetch files, then stream them to the client.
+// ── Media Proxy: Stream external files through backend ──────────────────────
+// This bypasses "Tracking Prevention" in InPrivate modes and Cloudinary/S3 rate limits.
+// GET /api/media/stream?key=... OR GET /api/media/stream?url=...
 app.get('/api/media/stream', asyncHandler(async (req, res) => {
-    const { key } = req.query;
-    if (!key) return res.status(400).json({ success: false, message: 'Missing key parameter' });
-
-    const { S3Client, GetObjectCommand } = require('@aws-sdk/client-s3');
-    const s3 = new S3Client({
-        region: process.env.AWS_REGION || 'ap-south-1',
-        endpoint: process.env.R2_ENDPOINT,
-        forcePathStyle: true,
-        credentials: {
-            accessKeyId: process.env.R2_ACCESS_KEY_ID,
-            secretAccessKey: process.env.R2_SECRET_ACCESS_KEY,
-        },
-    });
-
     try {
-        const cmd = new GetObjectCommand({ Bucket: process.env.R2_BUCKET_NAME, Key: key });
-        const data = await s3.send(cmd);
+        let externalUrl = req.query.url;
+        const key = req.query.key;
 
-        // Set content headers
-        res.setHeader('Content-Type', data.ContentType || 'application/octet-stream');
-        if (data.ContentLength) res.setHeader('Content-Length', data.ContentLength);
-        res.setHeader('Cache-Control', 'public, max-age=86400'); // Cache 1 day
-        res.setHeader('Content-Disposition', `inline; filename="${path.basename(key)}"`);
+        // If a key is provided, construct the S3 URL
+        if (key && !externalUrl) {
+            const { getPresignedUrl } = require('./utils/s3');
+            externalUrl = await getPresignedUrl(key);
+        }
 
-        // Stream body to client
-        data.Body.pipe(res);
-    } catch (err) {
-        const errMsg = err.message || 'Unknown error';
-        console.error('[MediaProxy] Failed to stream from E2E:', errMsg, '| key:', key);
-        res.status(404).json({ 
-            success: false, 
-            message: 'File not found or inaccessible',
-            debug: errMsg,  // Visible in response for debugging
-            key
+        if (!externalUrl) {
+            return res.status(400).json({ success: false, message: 'Missing URL or key' });
+        }
+
+        // Security check: Only proxy allowed domains
+        const allowedDomains = ['cloudinary.com', 'e2enetworks.net', 'googleusercontent.com'];
+        if (!allowedDomains.some(domain => externalUrl.includes(domain))) {
+            return res.status(403).json({ success: false, message: 'Domain not allowed for proxying' });
+        }
+
+        const axios = require('axios');
+        const response = await axios({
+            method: 'get',
+            url: externalUrl,
+            responseType: 'stream'
         });
+
+        // Set appropriate headers from external source
+        res.setHeader('Content-Type', response.headers['content-type'] || 'application/octet-stream');
+        if (response.headers['content-length']) res.setHeader('Content-Length', response.headers['content-length']);
+        
+        // Ensure PDF/Videos can be previewed/streamed
+        res.setHeader('Content-Disposition', 'inline');
+
+        response.data.pipe(res);
+
+    } catch (error) {
+        console.error('[MediaProxy] Error:', error.message);
+        res.status(500).json({ success: false, message: 'Proxy failed' });
     }
 }));
 
