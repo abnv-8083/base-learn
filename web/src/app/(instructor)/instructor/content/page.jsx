@@ -30,6 +30,7 @@ export default function InstructorContentVerification() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [deadline, setDeadline] = useState('');
   const [maxMarks, setMaxMarks] = useState(100);
+  const [activeTab, setActiveTab] = useState('content'); // 'content' or 'notes'
   
   // Rejection
   const [showRejectModal, setShowRejectModal] = useState(false);
@@ -97,6 +98,7 @@ export default function InstructorContentVerification() {
         setDeadline(item.deadline ? new Date(item.deadline).toISOString().split('T')[0] : '');
         setMaxMarks(item.maxMarks || 100);
     }
+    setActiveTab('content');
     setShowReviewModal(true);
   };
 
@@ -484,39 +486,90 @@ export default function InstructorContentVerification() {
             
             <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
                {/* Preview Panel */}
-               <div style={{ flex: 1, background: '#020617', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                <div style={{ flex: 1, background: '#020617', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                  {/* Tab Selector for dual-content (Video + Notes) */}
+                  {previewItem.url && previewItem.assignmentUrl && (
+                    <div style={{ display: 'flex', background: 'rgba(255,255,255,0.05)', padding: '4px', margin: '16px auto 0', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', width: 'fit-content', zIndex: 10 }}>
+                      <button 
+                        onClick={() => setActiveTab('content')}
+                        style={{ 
+                          padding: '8px 20px', borderRadius: '10px', fontSize: '13px', fontWeight: '700', cursor: 'pointer', border: 'none', transition: 'all 0.2s',
+                          background: activeTab === 'content' ? 'var(--color-primary)' : 'transparent',
+                          color: activeTab === 'content' ? 'white' : 'rgba(255,255,255,0.6)'
+                        }}
+                      >
+                        Video Content
+                      </button>
+                      <button 
+                        onClick={() => setActiveTab('notes')}
+                        style={{ 
+                          padding: '8px 20px', borderRadius: '10px', fontSize: '13px', fontWeight: '700', cursor: 'pointer', border: 'none', transition: 'all 0.2s',
+                          background: activeTab === 'notes' ? 'var(--color-primary)' : 'transparent',
+                          color: activeTab === 'notes' ? 'white' : 'rgba(255,255,255,0.6)'
+                        }}
+                      >
+                        Attached Notes
+                      </button>
+                    </div>
+                  )}
+
                   <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
-                    {previewItem.type === 'video' ? (
-                      <video controls className="video-player" src={formatPreviewUrl(previewItem.url)} style={{ width: '100%', maxHeight: '100%', borderRadius: '16px', boxShadow: '0 20px 50px rgba(0,0,0,0.5)' }} />
+                    {activeTab === 'content' ? (
+                      previewItem.type === 'video' ? (
+                        <video controls className="video-player" src={formatPreviewUrl(previewItem.url)} style={{ width: '100%', maxHeight: '100%', borderRadius: '16px', boxShadow: '0 20px 50px rgba(0,0,0,0.5)' }} />
+                      ) : (
+                        <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                          <iframe 
+                            src={previewItem.url?.toLowerCase().endsWith('.pdf') 
+                              ? `https://docs.google.com/viewer?url=${encodeURIComponent(formatPreviewUrl(previewItem.url))}&embedded=true` 
+                              : formatPreviewUrl(previewItem.url)
+                            } 
+                            style={{ flex: 1, width: '100%', background: 'white', borderRadius: '16px', border: 'none' }} 
+                            title="Preview"
+                          />
+                          <div style={{ display: 'flex', justifyContent: 'center', gap: '12px' }}>
+                            <button 
+                              onClick={() => window.open(formatPreviewUrl(previewItem.url), '_blank')}
+                              style={{ padding: '8px 20px', borderRadius: '10px', background: 'rgba(255,255,255,0.1)', color: 'white', border: '1px solid rgba(255,255,255,0.2)', fontSize: '12px', fontWeight: '700', cursor: 'pointer' }}
+                            >
+                              Open in New Tab
+                            </button>
+                            <a 
+                              href={formatPreviewUrl(previewItem.url)} 
+                              download 
+                              style={{ padding: '8px 20px', borderRadius: '10px', background: 'var(--color-primary)', color: 'white', textDecoration: 'none', fontSize: '12px', fontWeight: '700' }}
+                            >
+                              Download File
+                            </a>
+                          </div>
+                        </div>
+                      )
                     ) : (
                       <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', gap: '16px' }}>
                         <iframe 
-                          src={previewItem.url?.toLowerCase().endsWith('.pdf') 
-                            ? `https://docs.google.com/viewer?url=${encodeURIComponent(formatPreviewUrl(previewItem.url))}&embedded=true` 
-                            : formatPreviewUrl(previewItem.url)
-                          } 
+                          src={`https://docs.google.com/viewer?url=${encodeURIComponent(formatPreviewUrl(previewItem.assignmentUrl))}&embedded=true`} 
                           style={{ flex: 1, width: '100%', background: 'white', borderRadius: '16px', border: 'none' }} 
-                          title="Preview"
+                          title="Notes Preview"
                         />
                         <div style={{ display: 'flex', justifyContent: 'center', gap: '12px' }}>
                           <button 
-                            onClick={() => window.open(formatPreviewUrl(previewItem.url), '_blank')}
+                            onClick={() => window.open(formatPreviewUrl(previewItem.assignmentUrl), '_blank')}
                             style={{ padding: '8px 20px', borderRadius: '10px', background: 'rgba(255,255,255,0.1)', color: 'white', border: '1px solid rgba(255,255,255,0.2)', fontSize: '12px', fontWeight: '700', cursor: 'pointer' }}
                           >
-                            Open in New Tab
+                            Open Notes in New Tab
                           </button>
                           <a 
-                            href={formatPreviewUrl(previewItem.url)} 
+                            href={formatPreviewUrl(previewItem.assignmentUrl)} 
                             download 
                             style={{ padding: '8px 20px', borderRadius: '10px', background: 'var(--color-primary)', color: 'white', textDecoration: 'none', fontSize: '12px', fontWeight: '700' }}
                           >
-                            Download File
+                            Download Notes
                           </a>
                         </div>
                       </div>
                     )}
                   </div>
-               </div>
+                </div>
 
                {/* Configuration Panel */}
                <div style={{ width: '400px', borderLeft: '1px solid var(--color-border)', flexShrink: 0, display: 'flex', flexDirection: 'column', background: 'var(--color-surface)' }}>
