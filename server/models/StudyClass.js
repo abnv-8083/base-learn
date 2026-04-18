@@ -11,6 +11,11 @@ const studyClassSchema = new mongoose.Schema({
         required: false,
         trim: true
     },
+    description: {
+        type: String,
+        required: false,
+        trim: true
+    },
     instructor: { 
         type: mongoose.Schema.Types.ObjectId, 
         ref: 'Instructor', 

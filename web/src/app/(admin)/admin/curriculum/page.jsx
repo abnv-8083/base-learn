@@ -339,8 +339,13 @@ export default function AdminCurriculum() {
               </>)}
 
               {activeTab === 'classes' && (
-                <FormField label="Grade Level" hint="Numeric grade, e.g. 10 for Class 10">
-                  <SInput type="number" value={form.gradeLevel || 10} onChange={e => setForm({...form, gradeLevel: e.target.value})} />
+                <FormField label="Grade Level" hint="Select the target grade for this class">
+                  <SSelect value={form.gradeLevel || ''} onChange={e => setForm({...form, gradeLevel: e.target.value})}>
+                    <option value="">Select Grade</option>
+                    {[8, 9, 10, 11, 12].map(g => (
+                      <option key={g} value={g}>Grade {g}</option>
+                    ))}
+                  </SSelect>
                 </FormField>
               )}
 
