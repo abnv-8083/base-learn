@@ -36,6 +36,9 @@ export const metadata = {
   title: "Base Learn — Grades 8–12 Learning Platform",
   description:
     "Live classes, recordings, assignments, and progress tracking for students, faculty, instructors, and admins.",
+  icons: {
+    icon: "/favicon.ico",
+  },
 };
 
 export default function RootLayout({ children }) {
