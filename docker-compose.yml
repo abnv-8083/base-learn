@@ -23,6 +23,7 @@ services:
       - "3000:3000"
     environment:
       - NEXT_PUBLIC_API_URL=https://api.baselearn.in
+      - NEXT_PUBLIC_BACKEND_URL=https://api.baselearn.in
       - API_PROXY_TARGET=http://backend:5000
     depends_on:
       - backend

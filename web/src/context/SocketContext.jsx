@@ -13,7 +13,11 @@ export const SocketProvider = ({ children }) => {
     const { user } = useAuthStore();
 
     useEffect(() => {
-        const socketUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:6000';
+        // Use provided backend URL, or existing API URL, or fallback to relative/localhost
+        const socketUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 
+                         process.env.NEXT_PUBLIC_API_URL || 
+                         (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:6000');
+        
         const newSocket = io(socketUrl, {
             withCredentials: true,
             transports: ['websocket', 'polling']
