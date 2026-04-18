@@ -96,10 +96,10 @@ const localAssignmentUpload = multer({
   limits: { fileSize: 20 * 1024 * 1024 } // 20MB for PDFs
 });
 
-// Ensure local uploads directories exist (kept for legacy support/local fallback)
-const videoDir = path.join(__dirname, '..', 'public', 'uploads', 'videos');
-const documentDir = path.join(__dirname, '..', 'public', 'uploads', 'documents');
-const profileDir = path.join(__dirname, '..', 'public', 'uploads', 'profiles');
+// Ensure local uploads directories exist (Unified absolute resolution)
+const videoDir    = path.resolve(__dirname, '..', 'public', 'uploads', 'videos');
+const documentDir = path.resolve(__dirname, '..', 'public', 'uploads', 'documents');
+const profileDir  = path.resolve(__dirname, '..', 'public', 'uploads', 'profiles');
 
 if (!fs.existsSync(videoDir)) fs.mkdirSync(videoDir, { recursive: true });
 if (!fs.existsSync(documentDir)) fs.mkdirSync(documentDir, { recursive: true });

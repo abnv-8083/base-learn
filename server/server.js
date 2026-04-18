@@ -74,8 +74,14 @@ app.use(express.json());
 // 8. Cookie Parsing
 app.use(cookieParser());
 
-// Serve uploaded videos
-app.use('/uploads', express.static(path.join(__dirname, 'public', 'uploads')));
+// Serve uploaded files - Unified and absolute path resolution
+const uploadsPath = path.resolve(__dirname, 'public', 'uploads');
+app.use('/uploads', express.static(uploadsPath, {
+    maxAge: '1d',
+    etag: true,
+    index: false
+}));
+console.log(`[STORAGE] Serving uploads from: ${uploadsPath}`);
 
 // Routes
 app.use('/api/auth', require('./routes/authRoutes'));
@@ -198,6 +204,12 @@ app.get('/', (req, res) => res.json({ message: '🎓 Base Learn API is running' 
 
 const { notFound, errorHandler } = require('./middleware/errorMiddleware');
 // 404 catch-all — must be after all routes
+app.use((req, res, next) => {
+    if (req.originalUrl.startsWith('/uploads')) {
+        console.error(`[404-UPLOAD] File not found: ${req.originalUrl} | Logical Path: ${path.join(uploadsPath, req.url)}`);
+    }
+    next();
+});
 app.use(notFound);
 // Global error handler — must be last
 app.use(errorHandler);
