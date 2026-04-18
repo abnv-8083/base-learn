@@ -487,9 +487,33 @@ export default function InstructorContentVerification() {
                <div style={{ flex: 1, background: '#020617', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
                   <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
                     {previewItem.type === 'video' ? (
-                      <video controls className="video-player" src={formatPreviewUrl(previewItem.url)} style={{ width: '100%', maxHeight: '100%', borderRadius: '16px' }} />
+                      <video controls className="video-player" src={formatPreviewUrl(previewItem.url)} style={{ width: '100%', maxHeight: '100%', borderRadius: '16px', boxShadow: '0 20px 50px rgba(0,0,0,0.5)' }} />
                     ) : (
-                      <iframe src={formatPreviewUrl(previewItem.url)} style={{ width: '100%', height: '100%', background: 'white', borderRadius: '16px', border: 'none' }} />
+                      <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                        <iframe 
+                          src={previewItem.url?.toLowerCase().endsWith('.pdf') 
+                            ? `https://docs.google.com/viewer?url=${encodeURIComponent(formatPreviewUrl(previewItem.url))}&embedded=true` 
+                            : formatPreviewUrl(previewItem.url)
+                          } 
+                          style={{ flex: 1, width: '100%', background: 'white', borderRadius: '16px', border: 'none' }} 
+                          title="Preview"
+                        />
+                        <div style={{ display: 'flex', justifyContent: 'center', gap: '12px' }}>
+                          <button 
+                            onClick={() => window.open(formatPreviewUrl(previewItem.url), '_blank')}
+                            style={{ padding: '8px 20px', borderRadius: '10px', background: 'rgba(255,255,255,0.1)', color: 'white', border: '1px solid rgba(255,255,255,0.2)', fontSize: '12px', fontWeight: '700', cursor: 'pointer' }}
+                          >
+                            Open in New Tab
+                          </button>
+                          <a 
+                            href={formatPreviewUrl(previewItem.url)} 
+                            download 
+                            style={{ padding: '8px 20px', borderRadius: '10px', background: 'var(--color-primary)', color: 'white', textDecoration: 'none', fontSize: '12px', fontWeight: '700' }}
+                          >
+                            Download File
+                          </a>
+                        </div>
+                      </div>
                     )}
                   </div>
                </div>
