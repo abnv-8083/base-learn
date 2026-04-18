@@ -151,23 +151,37 @@ app.get('/api/media/stream', asyncHandler(async (req, res) => {
         }
 
         if (!externalUrl) {
-            return res.status(400).json({ success: false, message: 'Missing URL or key' });
+            return res.status(400).send('Missing URL or key');
         }
 
         // Security check: Only proxy allowed domains
-        const allowedDomains = ['cloudinary.com', 'e2enetworks.net', 'googleusercontent.com'];
+        const allowedDomains = ['cloudinary.com', 'e2enetworks.net', 'googleusercontent.com', 'amazonaws.com', 'objectstore'];
         if (!allowedDomains.some(domain => externalUrl.includes(domain))) {
-            return res.status(403).json({ success: false, message: 'Domain not allowed for proxying' });
+            return res.status(403).send('Domain not allowed for proxying');
         }
 
         const axios = require('axios');
         const response = await axios({
             method: 'get',
             url: externalUrl,
-            responseType: 'stream'
+            responseType: 'stream',
+            validateStatus: status => true // Do not throw on 4xx/5xx errors
         });
 
+        // If the external source returns an error (like Cloudinary 404/401)
+        if (response.status >= 400) {
+            res.setHeader('Content-Type', 'text/html');
+            return res.status(200).send(`
+                <div style="font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; background: #f8fafc; color: #334155; text-align: center; padding: 20px;">
+                    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom: 16px;"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                    <h2 style="margin: 0 0 8px 0;">Document Not Found or Access Denied</h2>
+                    <p style="margin: 0; max-width: 400px; font-size: 14px;">The requested file could not be loaded from the external storage provider (Status ${response.status}). It may have been deleted or moved.</p>
+                </div>
+            `);
+        }
+
         // Set appropriate headers from external source
+        res.status(200);
         res.setHeader('Content-Type', response.headers['content-type'] || 'application/octet-stream');
         if (response.headers['content-length']) res.setHeader('Content-Length', response.headers['content-length']);
         
@@ -177,8 +191,14 @@ app.get('/api/media/stream', asyncHandler(async (req, res) => {
         response.data.pipe(res);
 
     } catch (error) {
-        console.error('[MediaProxy] Error:', error.message);
-        res.status(500).json({ success: false, message: 'Proxy failed' });
+        console.error('[MediaProxy] Critical Error proxying url:', req.query.url, '\nDetails:', error.message);
+        res.setHeader('Content-Type', 'text/html');
+        res.status(200).send(`
+            <div style="font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; background: #0f172a; color: #f1f5f9; text-align: center; padding: 20px;">
+                <h3 style="margin: 0 0 8px 0; color: #f87171;">Proxy Media Stream Error</h3>
+                <p style="margin: 0; font-size: 14px; color: #94a3b8;">${error.message}</p>
+            </div>
+        `);
     }
 }));
 
