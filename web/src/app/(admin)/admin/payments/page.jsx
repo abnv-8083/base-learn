@@ -55,6 +55,23 @@ function StatusBadge({ status }) {
   );
 }
 
+// ─── Shared UI Helpers ────────────────────────────────────────────────────────
+const F = ({ label, children, req }) => (
+  <div style={{ marginBottom: '16px' }}>
+    <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: '#475569', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+      {label} {req && <span style={{ color: '#ef4444' }}>*</span>}
+    </label>
+    {children}
+  </div>
+);
+
+const SelFilter = ({ options, setter, current }) => (
+  <select value={current} onChange={e => setter(e.target.value)}
+    style={{ padding: '9px 12px', borderRadius: '10px', border: '1.5px solid #e2e8f0', fontSize: '13px', fontWeight: '600', background: current ? '#6366f10d' : 'white', color: current ? '#6366f1' : '#64748b', outline: 'none', cursor: 'pointer' }}>
+    {options}
+  </select>
+);
+
 // ─── Payment Modal ────────────────────────────────────────────────────────────
 function PaymentModal({ payment, students, onClose, onSave }) {
   const isEdit = !!payment?._id;
@@ -86,15 +103,6 @@ function PaymentModal({ payment, students, onClose, onSave }) {
       setSaving(false);
     }
   };
-
-  const F = ({ label, children, req }) => (
-    <div style={{ marginBottom: '16px' }}>
-      <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: '#475569', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-        {label} {req && <span style={{ color: '#ef4444' }}>*</span>}
-      </label>
-      {children}
-    </div>
-  );
 
   const inputStyle = { width: '100%', padding: '10px 13px', borderRadius: '10px', border: '1.5px solid #e2e8f0', fontSize: '14px', outline: 'none', transition: 'border-color 0.2s', background: 'white', boxSizing: 'border-box' };
 
@@ -290,13 +298,6 @@ export default function AdminPaymentsPage() {
   const paidStudentIds = new Set(payments.filter(p => p.status === 'paid').map(p => p.student?._id?.toString()));
   const unpaidCount    = students.filter(s => !paidStudentIds.has(s._id?.toString())).length;
 
-  const selFilter = (value, setter, current) => (
-    <select value={current} onChange={e => setter(e.target.value)}
-      style={{ padding: '9px 12px', borderRadius: '10px', border: '1.5px solid #e2e8f0', fontSize: '13px', fontWeight: '600', background: current ? '#6366f10d' : 'white', color: current ? '#6366f1' : '#64748b', outline: 'none', cursor: 'pointer' }}>
-      {value}
-    </select>
-  );
-
   return (
     <div style={{ paddingBottom: '80px' }}>
 
@@ -331,9 +332,9 @@ export default function AdminPaymentsPage() {
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search student, receipt, transaction ID…"
             style={{ width: '100%', padding: '10px 12px 10px 34px', borderRadius: '10px', border: '1.5px solid #e2e8f0', fontSize: '13px', outline: 'none', boxSizing: 'border-box' }} />
         </div>
-        {selFilter(<><option value="">All Statuses</option>{STATUSES.map(s => <option key={s} value={s}>{STATUS_STYLES[s].label}</option>)}</>, setFilterStatus, filterStatus)}
-        {selFilter(<><option value="">All Methods</option>{METHODS.map(m => <option key={m} value={m}>{METHOD_LABELS[m]}</option>)}</>, setFilterMethod, filterMethod)}
-        {selFilter(<><option value="">All Categories</option>{CATEGORIES.map(c => <option key={c} value={c}>{c.charAt(0).toUpperCase() + c.slice(1)}</option>)}</>, setFilterCategory, filterCategory)}
+        <SelFilter options={<><option value="">All Statuses</option>{STATUSES.map(s => <option key={s} value={s}>{STATUS_STYLES[s].label}</option>)}</>} setter={setFilterStatus} current={filterStatus} />
+        <SelFilter options={<><option value="">All Methods</option>{METHODS.map(m => <option key={m} value={m}>{METHOD_LABELS[m]}</option>)}</>} setter={setFilterMethod} current={filterMethod} />
+        <SelFilter options={<><option value="">All Categories</option>{CATEGORIES.map(c => <option key={c} value={c}>{c.charAt(0).toUpperCase() + c.slice(1)}</option>)}</>} setter={setFilterCategory} current={filterCategory} />
         {(filterStatus || filterMethod || filterCategory) && (
           <button onClick={() => { setFilterStatus(''); setFilterMethod(''); setFilterCategory(''); }} style={{ padding: '9px 14px', borderRadius: '10px', border: '1px solid #e2e8f0', background: '#fee2e2', color: '#dc2626', fontSize: '12px', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px' }}>
             <X size={12} /> Clear
