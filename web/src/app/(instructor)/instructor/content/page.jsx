@@ -23,9 +23,155 @@ export default function InstructorContentVerification() {
   const [viewMode, setViewMode] = useState('list'); // Default to list as requested
   const confirm = useConfirmStore(s => s.confirm);
 
-  // ... (rest of state items remain same)
+  // Modal State
+  const [showReviewModal, setShowReviewModal] = useState(false);
+  const [previewItem, setPreviewItem] = useState(null);
+  const [selectedBatches, setSelectedBatches] = useState([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [deadline, setDeadline] = useState('');
+  const [maxMarks, setMaxMarks] = useState(100);
+  
+  // Rejection
+  const [showRejectModal, setShowRejectModal] = useState(false);
+  const [rejectItem, setRejectItem] = useState(null);
+  const [rejectionReason, setRejectionReason] = useState('');
+  
+  // Edit
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editItem, setEditItem] = useState(null);
+  const [editForm, setEditForm] = useState({ title: '', description: '', batchIds: [] });
 
-  // ... (rest of logic remains same)
+  const formatPreviewUrl = (url) => {
+    if (!url) return '';
+    if (url.includes('cloudinary.com')) return url;
+    if (!url.startsWith('http') && !url.startsWith('/') && !url.startsWith('blob:')) {
+        return `/uploads/${url}`;
+    }
+    return url;
+  };
+
+  useEffect(() => {
+    if (user?.role === 'instructor') {
+      fetchContent();
+      fetchBatches();
+    }
+  }, [user, filter]);
+
+  // Socket.io for real-time updates
+  useEffect(() => {
+    if (socket) {
+      socket.on('content_submitted', () => {
+        toast('New content submitted for review!', { icon: '🔔' });
+        fetchContent();
+      });
+      return () => socket.off('content_submitted');
+    }
+  }, [socket]);
+
+  const fetchContent = async () => {
+    setLoading(true);
+    try {
+      const res = await axios.get(`/api/instructor/content?status=${filter}`);
+      setContent(Array.isArray(res.data.data) ? res.data.data : []);
+    } catch {
+       toast.error(`Failed to load content.`);
+       setContent([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchBatches = async () => {
+    try {
+      const { data } = await axios.get('/api/instructor/batches?managed=true');
+      setBatches(Array.isArray(data.data) ? data.data : []);
+    } catch (err) {
+      console.error('Failed to load batches');
+    }
+  };
+
+  const openReviewModal = (item) => {
+    setPreviewItem(item);
+    setSelectedBatches(item.assignedTo || []);
+    if (item.type === 'test' || item.type === 'assignment') {
+        setDeadline(item.deadline ? new Date(item.deadline).toISOString().split('T')[0] : '');
+        setMaxMarks(item.maxMarks || 100);
+    }
+    setShowReviewModal(true);
+  };
+
+  const toggleBatch = (batchId) => {
+    setSelectedBatches(prev => prev.includes(batchId) ? prev.filter(id => id !== batchId) : [...prev, batchId]);
+  };
+
+  const handleStatusUpdate = async (item, status, batchIds = [], reason = '') => {
+    if (status === 'rejected' && !reason) {
+      setRejectItem(item);
+      setShowRejectModal(true);
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      await axios.patch(`/api/instructor/content/${item._id}/status`, { 
+        approvalStatus: status,
+        itemModel: item.itemModel,
+        chapterId: item.chapterId,
+        batchIds: batchIds,
+        rejectionReason: reason,
+        deadline: deadline,
+        maxMarks: maxMarks
+      });
+      
+      // Emit socket event for faculty to know status change
+      if (socket) socket.emit('content_status_changed', { userId: item.faculty?._id, status });
+
+      toast.success(`Content ${status === 'approved' ? 'published' : status} successfully.`);
+      setShowReviewModal(false);
+      setShowRejectModal(false);
+      fetchContent();
+    } catch (err) {
+      toast.error(`Error updating content status`);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const submitEdit = async () => {
+    setIsSubmitting(true);
+    try {
+      await axios.put(`/api/instructor/content/${editItem._id}/manage`, {
+        ...editForm,
+        itemModel: editItem.itemModel,
+        chapterId: editItem.chapterId
+      });
+      toast.success('Content updated');
+      setShowEditModal(false);
+      fetchContent();
+    } catch (err) {
+      toast.error('Failed to update');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDelete = async (item) => {
+    confirm({
+      title: 'Remove assigned content?',
+      message: 'This will remove the material from all assigned batches.',
+      confirmText: 'Yes, Delete',
+      type: 'danger',
+      onConfirm: async () => {
+        try {
+          await axios.delete(`/api/instructor/content/${item._id}/manage?itemModel=${item.itemModel}${item.chapterId ? `&chapterId=${item.chapterId}` : ''}`);
+          toast.success('Deleted');
+          fetchContent();
+        } catch (err) {
+          toast.error('Delete failed');
+        }
+      }
+    });
+  };
 
   const filtered = content.filter(c => c.title?.toLowerCase().includes(search.toLowerCase()));
 
