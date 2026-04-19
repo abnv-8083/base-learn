@@ -709,9 +709,36 @@ exports.getBatches = asyncHandler(async (req, res) => {
 });
 
 exports.getStudents = asyncHandler(async (req, res) => {
-    const students = await Student.find({}).select('-password').limit(100);
+    const facultyId = req.user.userId;
+
+    // 1. Find subjects this faculty teaches
+    const subjects = await Subject.find({ faculty: facultyId }).select('_id assignedTo');
+
+    // 2. Collect all batch IDs from those subjects
+    const batchIds = [...new Set(subjects.flatMap(s => s.assignedTo.map(b => b.toString())))];
+
+    // 3. Find students in those batches
+    let students = [];
+    if (batchIds.length > 0) {
+        const batches = await Batch.find({ _id: { $in: batchIds } }).select('students name');
+        const studentIds = [...new Set(batches.flatMap(b => b.students.map(s => s.toString())))];
+        students = await Student.find({ _id: { $in: studentIds } }).select('-password').lean();
+
+        // Attach batch name to each student
+        const studentBatchMap = {};
+        batches.forEach(b => {
+            b.students.forEach(sId => {
+                const key = sId.toString();
+                if (!studentBatchMap[key]) studentBatchMap[key] = [];
+                studentBatchMap[key].push(b.name);
+            });
+        });
+        students = students.map(s => ({ ...s, batches: studentBatchMap[s._id.toString()] || [] }));
+    }
+
     res.status(200).json({ success: true, data: students });
 });
+
 
 exports.getStudentMetrics = asyncHandler(async (req, res) => {
     const { id } = req.params;
