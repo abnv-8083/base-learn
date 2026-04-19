@@ -3,10 +3,10 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import {
-  UploadCloud, FileText, CheckCircle, Search, Clock, Plus, X,
-  ListPlus, Edit2, Trash2, Filter, BarChart2, Users, CheckCircle2,
-  AlertCircle, LayoutGrid, ChevronDown, ChevronUp, Eye, Play,
-  TrendingUp, Activity, Target, BookOpen, Calendar, Hash, Award, Layers
+  UploadCloud, FileText, CheckCircle, Search, Clock, X,
+  ListPlus, Edit2, Trash2, BarChart2, Users, CheckCircle2,
+  AlertCircle, LayoutGrid, Eye, Play, ChevronRight,
+  BookOpen, Calendar, Layers
 } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import { useConfirmStore } from '@/store/confirmStore';
@@ -29,11 +29,6 @@ export default function FacultyContent() {
   const [showModal, setShowModal] = useState(false);
   const [saving, setSaving] = useState(false);
   const [editItem, setEditItem] = useState(null);
-
-  // Inline oversight state - keyed by item._id
-  const [openOversightId, setOpenOversightId] = useState(null);
-  const [analysisData, setAnalysisData] = useState({}); // { id: data }
-  const [analysisLoading, setAnalysisLoading] = useState({});
 
   const [statusFilter, setStatusFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -169,26 +164,7 @@ export default function FacultyContent() {
     setShowModal(true);
   };
 
-  const toggleOversight = async (item) => {
-    const id = item._id;
-    if (openOversightId === id) {
-      setOpenOversightId(null);
-      return;
-    }
-    setOpenOversightId(id);
-    if (!analysisData[id]) {
-      setAnalysisLoading(prev => ({ ...prev, [id]: true }));
-      try {
-        const res = await axios.get(`/api/faculty/content/analysis/${id}`);
-        setAnalysisData(prev => ({ ...prev, [id]: res.data.data }));
-      } catch {
-        toast.error('Failed to load content metrics.');
-        setAnalysisData(prev => ({ ...prev, [id]: null }));
-      } finally {
-        setAnalysisLoading(prev => ({ ...prev, [id]: false }));
-      }
-    }
-  };
+
 
   const formatPreviewUrl = (url) => {
     if (!url) return '';
@@ -523,16 +499,16 @@ export default function FacultyContent() {
                       </button>
                     )}
                     {rawStatus === 'published' && (
-                      <button
-                        onClick={() => toggleOversight(item)}
-                        className={`btn ${isOversightOpen ? 'btn-primary' : 'btn-ghost'}`}
-                        style={{ padding: '8px 12px', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: '600', color: isOversightOpen ? 'white' : 'var(--color-primary)' }}
+                      <Link
+                        href={`/faculty/content-oversight?item=${item._id}`}
+                        className="btn btn-ghost"
+                        style={{ padding: '8px 12px', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: '600', color: 'var(--color-primary)', textDecoration: 'none' }}
                         title="Content Oversight"
                       >
                         <BarChart2 size={15} />
-                        {isOversightOpen ? 'Hide' : 'Oversight'}
-                        {isOversightOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-                      </button>
+                        Oversight
+                        <ChevronRight size={14} />
+                      </Link>
                     )}
                     {(rawStatus === 'rejected' || rawStatus === 'draft' || rawStatus === 'published') && (
                       <button onClick={() => openEditModal(item)} className="btn btn-ghost" style={{ padding: '8px', color: 'var(--color-primary)' }} title="Edit & Re-upload">
