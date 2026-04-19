@@ -217,20 +217,21 @@ exports.uploadContent = asyncHandler(async (req, res) => {
                 return;
             }
 
-            // Create a persistent DB notification for each assigned instructor
-            const notifDocs = instructorIds.map(instrId => ({
-                message: `New content pending verification: "${contentTitle}" — uploaded by ${faculty.name}.`,
-                type: 'info',
-                recipient: instrId.toString(),
-                sender: req.user.userId
-            }));
-            await Notification.insertMany(notifDocs);
+            for (const instrId of instructorIds) {
+                // Use .create() so the post('save') Mongoose hook fires automatically
+                // (which also emits new_notification + badge_refresh via the model hook)
+                const notif = await Notification.create({
+                    message: `New content pending verification: "${contentTitle}" — uploaded by ${faculty.name}.`,
+                    type: 'info',
+                    recipient: instrId.toString(),
+                    sender: req.user.userId
+                });
 
-            // Real-time socket notification + badge refresh for each instructor
-            instructorIds.forEach(instrId => {
-                emitToUser(instrId.toString(), 'content_submitted', { title: contentTitle, faculty: faculty.name });
+                // Also explicitly emit the full notification object so the Topbar
+                // dropdown updates instantly without needing a page refresh
+                emitToUser(instrId.toString(), 'new_notification', notif.toObject());
                 emitToUser(instrId.toString(), 'badge_refresh', {});
-            });
+            }
         } catch (err) {
             console.error('[Notify Instructor Error]', err);
         }

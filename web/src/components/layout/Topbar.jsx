@@ -125,18 +125,30 @@ export default function Topbar() {
     if (!socket || !user) return;
 
     const handleNewNotification = (notif) => {
-      setNotifications(prev => [notif, ...prev]);
-      toast('New broadcast received', { icon: '📢', position: 'bottom-right' });
+      setNotifications(prev => {
+        // avoid duplicates if both hook + manual emit fire
+        if (prev.some(n => n._id === notif._id)) return prev;
+        return [notif, ...prev];
+      });
+      toast('New notification received', { icon: '🔔', position: 'bottom-right' });
+    };
+
+    const handleBadgeRefresh = () => {
+      // Re-fetch from API to ensure accuracy (catches any missed real-time events)
+      fetchNotifications();
     };
 
     socket.on('new_notification', handleNewNotification);
+    socket.on('badge_refresh', handleBadgeRefresh);
     socket.on('notifications_cleared', () => setNotifications([]));
 
     return () => {
-      socket.off('new_notification');
+      socket.off('new_notification', handleNewNotification);
+      socket.off('badge_refresh', handleBadgeRefresh);
       socket.off('notifications_cleared');
     };
   }, [socket, user]);
+
 
   const handleDismiss = async (e, id) => {
     e.stopPropagation();
