@@ -197,15 +197,28 @@ export default function InstructorContentVerification() {
 
   return (
     <div style={{ padding: '0 0 80px 0', minHeight: '100vh' }}>
+      <style>{`
+        @media (max-width: 640px) {
+          .content-page-header { flex-direction: column !important; align-items: flex-start !important; }
+          .content-page-header h1 { font-size: 22px !important; }
+          .content-view-toggles { align-self: flex-end; }
+          .content-filter-row { flex-direction: column !important; align-items: stretch !important; }
+          .content-filter-tabs { overflow-x: auto; scrollbar-width: none; }
+          .content-filter-tabs::-webkit-scrollbar { display: none; }
+          .content-search { max-width: 100% !important; min-width: 0 !important; }
+          .content-table th:nth-child(1), .content-table td:nth-child(1) { display: none; }
+        }
+      `}</style>
+
       {/* Header Section */}
       <div style={{ marginBottom: '32px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '24px' }}>
+        <div className="content-page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '24px', gap: '12px' }}>
           <div>
-            <h1 style={{ fontSize: '28px', fontWeight: '800', color: 'var(--color-text-primary)', letterSpacing: '-0.02em', margin: '0 0 8px 0' }}>Content Verification</h1>
+            <h1 style={{ fontSize: 'clamp(20px, 4vw, 28px)', fontWeight: '800', color: 'var(--color-text-primary)', letterSpacing: '-0.02em', margin: '0 0 8px 0' }}>Content Verification</h1>
             <p style={{ fontSize: '15px', color: 'var(--color-text-secondary)', margin: 0 }}>Review, configure, and publish academic materials submitted by your faculty.</p>
           </div>
           
-          <div style={{ display: 'flex', gap: '8px' }}>
+          <div className="content-view-toggles" style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
             <div style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: '12px', padding: '4px', display: 'flex' }}>
               <button 
                 onClick={() => setViewMode('grid')}
@@ -225,15 +238,15 @@ export default function InstructorContentVerification() {
         </div>
 
         {/* Filters & Tabs */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '20px', flexWrap: 'wrap' }}>
-          <div style={{ display: 'flex', gap: '6px', background: 'var(--color-bg)', padding: '6px', borderRadius: '16px', border: '1px solid var(--color-border)' }}>
+        <div className="content-filter-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+          <div className="content-filter-tabs" style={{ display: 'flex', gap: '6px', background: 'var(--color-bg)', padding: '6px', borderRadius: '16px', border: '1px solid var(--color-border)', flexShrink: 0 }}>
             {['all', 'pending', 'approved', 'rejected'].map(f => (
               <button 
                 key={f}
                 onClick={() => setFilter(f)}
                 style={{ 
                   padding: '10px 20px', borderRadius: '12px', fontSize: '13px', fontWeight: '700', 
-                  cursor: 'pointer', textTransform: 'capitalize', border: 'none', 
+                  cursor: 'pointer', textTransform: 'capitalize', border: 'none', whiteSpace: 'nowrap',
                   background: filter === f ? 'var(--color-primary)' : 'transparent', 
                   color: filter === f ? 'white' : 'var(--color-text-secondary)',
                   transition: 'all 0.2s',
@@ -245,7 +258,7 @@ export default function InstructorContentVerification() {
             ))}
           </div>
 
-          <div style={{ position: 'relative', flex: 1, minWidth: '300px', maxWidth: '400px' }}>
+          <div className="content-search" style={{ position: 'relative', flex: 1, minWidth: '200px', maxWidth: '400px' }}>
             <Search size={18} style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'var(--color-text-muted)' }} />
             <input 
               value={search} 

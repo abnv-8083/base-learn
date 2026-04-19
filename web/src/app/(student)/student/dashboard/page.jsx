@@ -67,6 +67,13 @@ export default function StudentDashboard() {
 
   return (
     <div style={{ paddingBottom: '60px' }}>
+      <style>{`
+        @media (max-width: 640px) {
+          .student-assessments-grid { grid-template-columns: 1fr !important; gap: 16px !important; }
+          .student-video-grid { grid-template-columns: 1fr !important; gap: 16px !important; }
+          .student-dash-chart { flex-direction: column !important; }
+        }
+      `}</style>
       <div className="page-header">
         <div className="page-header-inner">
           <div>
@@ -119,11 +126,7 @@ export default function StudentDashboard() {
               <h2 style={{ fontSize: '20px', fontWeight: '700' }}>📽️ Recently Uploaded Classes</h2>
           </div>
           {dashboardData.recentVideos.length > 0 ? (
-              <div style={{ 
-                  display: 'grid', 
-                  gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', 
-                  gap: '24px' 
-              }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '24px' }}>
                   {dashboardData.recentVideos.map(v => (
                       <Link key={v._id} href={`/student/recorded-classes?videoId=${v._id}`} className="card hover-lift" style={{ overflow: 'hidden', padding: '0', textDecoration: 'none' }}>
                           <div style={{ position: 'relative', width: '100%', aspectRatio: '16/9', background: '#000' }}>
@@ -158,7 +161,7 @@ export default function StudentDashboard() {
           <div className="page-header" style={{ height: 'auto', padding: '0 0 16px', background: 'transparent', border: 'none', boxShadow: 'none' }}>
               <h2 style={{ fontSize: '20px', fontWeight: '700' }}>📋 New Assessments</h2>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '32px' }}>
+          <div className="student-assessments-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '32px' }}>
               <div className="card" style={{ borderTop: '4px solid var(--color-warning)' }}>
                   <div className="card-header">
                       <h3 className="card-title" style={{ fontSize: '15px' }}>Latest Assignments</h3>

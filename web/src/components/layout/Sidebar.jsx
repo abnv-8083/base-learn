@@ -85,6 +85,7 @@ export default function Sidebar({ menuItems, role }) {
               key={idx}
               href={item.path}
               className={`sidebar-link ${isActive ? "active" : ""}`}
+              onClick={() => setSidebarOpen(false)}
               style={isActive ? {
                 background: roleStyle.light,
                 color: '#fff',

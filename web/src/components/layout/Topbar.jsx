@@ -207,7 +207,7 @@ export default function Topbar() {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        padding: '0 28px',
+        padding: '0 clamp(12px, 3vw, 28px)',
         position: 'sticky',
         top: 0,
         zIndex: 100,
