@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
+import { FileText, Clock, AlertCircle, Upload, CheckCircle, Eye, ExternalLink } from 'lucide-react';
 import PdfPreviewModal from '@/components/PdfPreviewModal';
 
 export default function StudentAssignments() {
