@@ -1517,13 +1517,50 @@ exports.requestProfileUpdate = async (req, res) => {
 // GET /api/instructor/assessments/active
 exports.getActiveAssessments = async (req, res) => {
     try {
-        const tests = await Test.find({ status: 'published' })
+        const userId = req.user.userId || req.user._id;
+
+        // 1. Get instructor's assigned subjects
+        const instructorSubjectDocs = await Subject.find({ instructor: userId }).select('_id');
+        const instructorSubjectIds = instructorSubjectDocs.map(s => s._id);
+
+        // 2. Get instructor's assigned faculties
+        const assignedFaculties = await Faculty.find({ assignedInstructors: userId }).distinct('_id');
+        const facultyIds = assignedFaculties;
+
+        // 3. Define the query filter
+        const query = {
+            status: 'published',
+            $or: [
+                { assignedBy: userId },
+                { subject: { $in: instructorSubjectIds } }
+            ]
+        };
+
+        // For tests, we also check the faculty field
+        const testQuery = {
+            ...query,
+            $or: [
+                ...query.$or,
+                { faculty: { $in: facultyIds } }
+            ]
+        };
+
+        // For assignments, we check facultyId field
+        const assignmentQuery = {
+            ...query,
+            $or: [
+                ...query.$or,
+                { facultyId: { $in: facultyIds } }
+            ]
+        };
+
+        const tests = await Test.find(testQuery)
             .populate('subject', 'name')
             .populate('chapter', 'name')
             .populate('assignedTo', 'name')
             .lean();
             
-        const assignments = await Assignment.find({ status: 'published' })
+        const assignments = await Assignment.find(assignmentQuery)
             .populate('subject', 'name')
             .populate('chapter', 'name')
             .populate('assignedBatches', 'name')
