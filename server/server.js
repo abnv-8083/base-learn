@@ -32,9 +32,11 @@ app.use(helmet({
       "media-src": ["'self'", "http://localhost:6000", "http://127.0.0.1:6000", "res.cloudinary.com", process.env.BACKEND_URL],
       "connect-src": ["'self'", "http://localhost:6000", "http://127.0.0.1:6000", "res.cloudinary.com", "*.googleapis.com", process.env.BACKEND_URL],
       "frame-src": ["'self'", "blob:", "data:", "docs.google.com", "res.cloudinary.com", "http://localhost:6000", "http://127.0.0.1:6000", process.env.BACKEND_URL],
-      "object-src": ["'self'", "blob:", "data:", "docs.google.com", "res.cloudinary.com", "http://localhost:6000", "http://127.0.0.1:6000", process.env.BACKEND_URL]
+      "object-src": ["'self'", "blob:", "data:", "docs.google.com", "res.cloudinary.com", "http://localhost:6000", "http://127.0.0.1:6000", process.env.BACKEND_URL],
+      "frame-ancestors": ["'self'", "https://baselearn.in", "http://localhost:3000"],
     },
   },
+  xFrameOptions: false, // Rely on CSP frame-ancestors instead of X-Frame-Options to allow cross-origin framing
 }));
 
 // 2. Logging
