@@ -750,6 +750,13 @@ const submitAssessment = asyncHandler(async (req, res) => {
         });
 
         await assessment.save();
+
+        const { emitToUser } = require('../utils/socket');
+        emitToUser(studentId.toString(), 'badge_refresh', {});
+        if (assessment.faculty || assessment.facultyId) {
+            emitToUser((assessment.faculty || assessment.facultyId).toString(), 'badge_refresh', {});
+        }
+
         res.status(200).json({ success: true, message: 'Assessment submitted successfully.' });
     } catch (error) {
         console.error('[SUBMIT_ERROR]', error);
@@ -987,24 +994,44 @@ const getStudentBadgeCounts = asyncHandler(async (req, res) => {
         return res.json({ success: true, data: { upcomingLive: 0, pendingAssignments: 0, pendingTests: 0 } });
     }
 
+    const batchId = studentBatch._id;
+    const classId = studentBatch.studyClass;
+
+    const subjects = await Subject.find({ 
+        $or: [
+          { assignedTo: batchId },
+          ...(classId ? [{ assignedTo: classId }] : [])
+        ]
+    }).distinct('_id');
+
     const [upcomingLive, pendingAssignments, pendingTests] = await Promise.all([
         // 2. Scheduled Live Classes for this batch (Upcoming/Ongoing)
         LiveClass.countDocuments({ 
-            batches: studentBatch._id, 
+            batches: batchId, 
             status: { $in: ['upcoming', 'ongoing'] } 
         }),
 
-        // 3. Pending Assignments (assigned to batch, published, not yet submitted by THIS student)
+        // 3. Pending Assignments (published, not yet submitted by THIS student)
         Assignment.countDocuments({
-            assignedBatches: studentBatch._id,
             status: 'published',
+            $or: [
+                { subject: { $in: subjects } },
+                { assignedBatches: batchId },
+                ...(classId ? [{ assignedClasses: classId }] : []),
+                { assignedStudents: studentId }
+            ],
             'submissions.studentId': { $ne: studentId }
         }),
 
-        // 4. Pending Tests (assigned to batch, published, not yet submitted by THIS student)
+        // 4. Pending Tests (published, not yet submitted by THIS student)
         Test.countDocuments({
-            assignedTo: studentBatch._id,
             status: 'published',
+            $or: [
+                { subject: { $in: subjects } },
+                { assignedTo: batchId },
+                ...(classId ? [{ assignedClasses: classId }] : []),
+                { assignedStudents: studentId }
+            ],
             'submissions.studentId': { $ne: studentId }
         })
     ]);
