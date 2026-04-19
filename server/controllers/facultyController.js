@@ -202,38 +202,40 @@ exports.uploadContent = asyncHandler(async (req, res) => {
         }
     }
 
-    // Helper to notify the assigned instructor when new content is uploaded
+    // Helper to notify all instructors assigned to this faculty when new content is uploaded
     const notifyInstructorAsync = async (contentTitle) => {
         try {
-            let instructorId = null;
+            const Faculty = require('../models/Faculty');
+            const Notification = require('../models/Notification');
 
-            // Try resolving via subjectId first
-            if (subjectId) {
-                const subject = await require('../models/Subject').findById(subjectId);
-                if (subject?.instructor) instructorId = subject.instructor.toString();
+            // The uploading faculty's own assigned instructors are the correct recipients
+            const faculty = await Faculty.findById(req.user.userId).select('assignedInstructors name');
+            const instructorIds = faculty?.assignedInstructors || [];
+
+            if (instructorIds.length === 0) {
+                console.warn(`[Notify Instructor] Faculty ${req.user.userId} has no assigned instructors.`);
+                return;
             }
 
-            // Fallback: resolve via chapterId → subject → instructor
-            if (!instructorId && chapterId) {
-                const chap = await require('../models/Chapter').findById(chapterId).populate('subject', 'instructor');
-                if (chap?.subject?.instructor) instructorId = chap.subject.instructor.toString();
-            }
+            // Create a persistent DB notification for each assigned instructor
+            const notifDocs = instructorIds.map(instrId => ({
+                message: `New content pending verification: "${contentTitle}" — uploaded by ${faculty.name}.`,
+                type: 'info',
+                recipient: instrId.toString(),
+                sender: req.user.userId
+            }));
+            await Notification.insertMany(notifDocs);
 
-            if (instructorId) {
-                await require('../models/Notification').create({
-                    message: `New content pending verification: "${contentTitle}" — uploaded by faculty.`,
-                    type: 'info',
-                    recipient: instructorId,
-                    sender: req.user.userId
-                });
-                // Real-time socket notification + badge refresh
-                emitToUser(instructorId, 'content_submitted', { title: contentTitle });
-                emitToUser(instructorId, 'badge_refresh', {});
-            }
+            // Real-time socket notification + badge refresh for each instructor
+            instructorIds.forEach(instrId => {
+                emitToUser(instrId.toString(), 'content_submitted', { title: contentTitle, faculty: faculty.name });
+                emitToUser(instrId.toString(), 'badge_refresh', {});
+            });
         } catch (err) {
             console.error('[Notify Instructor Error]', err);
         }
     };
+
 
     // 1. Upload files:
     // ...
