@@ -80,44 +80,36 @@ export default function StudentDashboard() {
       </div>
 
       <div className="stats-grid">
-        <Link href="/student/recorded-classes" className="stat-card stat-card--accent" style={{ textDecoration: 'none', cursor: 'pointer', transition: 'transform 0.2s, box-shadow 0.2s', display: 'block' }}>
-          <div className="stat-card-header">
+        <Link href="/student/recorded-classes" className="stat-card stat-card--accent" style={{ textDecoration: 'none', cursor: 'pointer', transition: 'transform 0.2s, box-shadow 0.2s', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
             <div className="stat-card-icon"><PlaySquare size={20} /></div>
+            <div className="stat-card-value text-glow" style={{ margin: 0, lineHeight: 1 }}>{stats.recorded}</div>
           </div>
-          <div>
-            <div className="stat-card-value text-glow">{stats.recorded}</div>
-            <div className="stat-card-label">Videos Available</div>
-          </div>
+          <div className="stat-card-label" style={{ marginTop: '16px' }}>Videos Available</div>
         </Link>
 
-        <Link href="/student/live-classes" className="stat-card stat-card--student" style={{ textDecoration: 'none', cursor: 'pointer', transition: 'transform 0.2s, box-shadow 0.2s', display: 'block' }}>
-          <div className="stat-card-header">
+        <Link href="/student/live-classes" className="stat-card stat-card--student" style={{ textDecoration: 'none', cursor: 'pointer', transition: 'transform 0.2s, box-shadow 0.2s', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
             <div className="stat-card-icon"><Calendar size={20} /></div>
+            <div className="stat-card-value text-glow" style={{ margin: 0, lineHeight: 1 }}>{stats.live}</div>
           </div>
-          <div>
-            <div className="stat-card-value text-glow">{stats.live}</div>
-            <div className="stat-card-label">Upcoming Live</div>
-          </div>
+          <div className="stat-card-label" style={{ marginTop: '16px' }}>Upcoming Live</div>
         </Link>
 
-        <Link href="/student/assignments" className="stat-card stat-card--warning" style={{ textDecoration: 'none', cursor: 'pointer', transition: 'transform 0.2s, box-shadow 0.2s', display: 'block' }}>
-          <div className="stat-card-header">
+        <Link href="/student/assignments" className="stat-card stat-card--warning" style={{ textDecoration: 'none', cursor: 'pointer', transition: 'transform 0.2s, box-shadow 0.2s', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
             <div className="stat-card-icon"><ClipboardList size={20} /></div>
+            <div className="stat-card-value text-glow" style={{ margin: 0, lineHeight: 1 }}>{stats.assignments}</div>
           </div>
-          <div>
-            <div className="stat-card-value text-glow">{stats.assignments}</div>
-            <div className="stat-card-label">Pending Tasks</div>
-          </div>
+          <div className="stat-card-label" style={{ marginTop: '16px' }}>Pending Tasks</div>
         </Link>
 
-        <Link href="/student/progression" className="stat-card stat-card--success" style={{ textDecoration: 'none', cursor: 'pointer', transition: 'transform 0.2s, box-shadow 0.2s', display: 'block' }}>
-          <div className="stat-card-header">
+        <Link href="/student/progression" className="stat-card stat-card--success" style={{ textDecoration: 'none', cursor: 'pointer', transition: 'transform 0.2s, box-shadow 0.2s', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
             <div className="stat-card-icon"><Award size={20} /></div>
+            <div className="stat-card-value text-glow" style={{ margin: 0, lineHeight: 1 }}>{stats.completion}%</div>
           </div>
-          <div>
-            <div className="stat-card-value text-glow">{stats.completion}%</div>
-            <div className="stat-card-label">Total Progress</div>
-          </div>
+          <div className="stat-card-label" style={{ marginTop: '16px' }}>Total Progress</div>
         </Link>
       </div>
 
