@@ -7,6 +7,7 @@ import { useAuthStore } from '@/store/authStore';
 import { useConfirmStore } from '@/store/confirmStore';
 import toast from 'react-hot-toast';
 import { Eye } from 'lucide-react';
+import Link from 'next/link';
 import PdfPreviewModal from '@/components/PdfPreviewModal';
 
 export default function FacultyContent() {
@@ -24,8 +25,6 @@ export default function FacultyContent() {
   const [showModal, setShowModal] = useState(false);
   const [saving, setSaving] = useState(false);
   const [editItem, setEditItem] = useState(null);
-  const [analysisItem, setAnalysisItem] = useState(null);
-  const [analysisLoading, setAnalysisLoading] = useState(false);
   const [statusFilter, setStatusFilter] = useState('all'); // all, pending, approved, rejected
   
   const [previewModal, setPreviewModal] = useState({ isOpen: false, url: '', title: '' });
@@ -167,18 +166,6 @@ export default function FacultyContent() {
     setShowModal(true);
   };
 
-  const fetchAnalysis = async (id) => {
-    setAnalysisLoading(true);
-    try {
-      const res = await axios.get(`/api/faculty/content/analysis/${id}`);
-      setAnalysisItem(res.data.data);
-    } catch {
-      toast.error('Failed to load content metrics.');
-    } finally {
-      setAnalysisLoading(false);
-    }
-  };
-
   const handleDelete = async (item) => {
     confirm({
       title: item.status === 'published' ? 'Request Deletion?' : 'Delete Resource?',
@@ -302,9 +289,9 @@ export default function FacultyContent() {
                       </button>
                     )}
                     {rawStatus === 'published' && (
-                      <button onClick={() => fetchAnalysis(item._id)} className="btn btn-ghost" style={{ padding: '6px', color: 'var(--color-primary)' }} title="View Analysis">
+                      <Link href={`/faculty/content-oversight?item=${item._id}`} className="btn btn-ghost" style={{ padding: '6px', color: 'var(--color-primary)' }} title="Content Oversight">
                         <BarChart2 size={16} />
-                      </button>
+                      </Link>
                     )}
                     {(rawStatus === 'rejected' || rawStatus === 'draft' || rawStatus === 'published') && (
                       <button onClick={() => openEditModal(item)} className="btn btn-ghost" style={{ padding: '6px', color: 'var(--color-primary)' }} title="Edit & Re-upload">
@@ -323,80 +310,7 @@ export default function FacultyContent() {
         </div>
       )}
 
-      {/* Analysis Modal */}
-      {analysisItem && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(15, 45, 107, 0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100, backdropFilter: 'blur(8px)' }}>
-           <div className="card" style={{ width: '90%', maxWidth: '700px', maxHeight: '90vh', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-              <div style={{ padding: '24px', background: 'white', borderBottom: '1px solid var(--color-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'var(--color-primary-light)', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                       <BarChart2 size={20} />
-                    </div>
-                    <div>
-                       <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 'bold' }}>Content Analytics</h2>
-                       <p style={{ margin: 0, fontSize: '13px', color: 'var(--color-text-secondary)' }}>{analysisItem.title}</p>
-                    </div>
-                 </div>
-                 <button onClick={() => setAnalysisItem(null)} className="btn btn-ghost" style={{ padding: '8px' }}><X size={20} /></button>
-              </div>
-              
-              <div style={{ padding: '32px', overflowY: 'auto', flex: 1 }}>
-                 <div className="grid-3-col" style={{ marginBottom: '32px' }}>
-                    <div style={{ background: 'var(--color-bg)', padding: '20px', borderRadius: '16px', textAlign: 'center' }}>
-                       <div style={{ color: 'var(--color-text-secondary)', fontSize: '12px', textTransform: 'uppercase', fontWeight: 'bold', marginBottom: '8px' }}>Total Views</div>
-                       <div style={{ fontSize: '28px', fontWeight: '800', color: 'var(--color-primary)' }}>{analysisItem.totalViews || 0}</div>
-                    </div>
-                    <div style={{ background: 'var(--color-bg)', padding: '20px', borderRadius: '16px', textAlign: 'center' }}>
-                       <div style={{ color: 'var(--color-text-secondary)', fontSize: '12px', textTransform: 'uppercase', fontWeight: 'bold', marginBottom: '8px' }}>Total Clicks</div>
-                       <div style={{ fontSize: '28px', fontWeight: '800', color: 'var(--color-accent)' }}>{analysisItem.totalClicks || 0}</div>
-                    </div>
-                    <div style={{ background: 'var(--color-bg)', padding: '20px', borderRadius: '16px', textAlign: 'center' }}>
-                       <div style={{ color: 'var(--color-text-secondary)', fontSize: '12px', textTransform: 'uppercase', fontWeight: 'bold', marginBottom: '8px' }}>Student Count</div>
-                       <div style={{ fontSize: '28px', fontWeight: '800', color: '#10b981' }}>{analysisItem.watchProgress?.length || 0}</div>
-                    </div>
-                 </div>
-
-                 <h4 style={{ fontSize: '14px', fontWeight: 'bold', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <Users size={16} /> Batch Assignments
-                 </h4>
-                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginBottom: '32px' }}>
-                    {analysisItem.assignedTo?.length > 0 ? analysisItem.assignedTo.map(batch => (
-                      <div key={batch._id} style={{ background: 'white', border: '1px solid var(--color-border)', padding: '8px 16px', borderRadius: '10px', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                         <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#10b981' }} />
-                         {batch.name}
-                      </div>
-                    )) : (
-                      <div style={{ color: 'var(--color-text-secondary)', fontSize: '13px', fontStyle: 'italic' }}>Not assigned to any batches yet.</div>
-                    )}
-                 </div>
-
-                 {analysisItem.watchProgress?.length > 0 && (
-                   <>
-                     <h4 style={{ fontSize: '14px', fontWeight: 'bold', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <CheckCircle2 size={16} /> Watch Progress
-                     </h4>
-                     <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                        {analysisItem.watchProgress.map(p => (
-                          <div key={p._id} style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '12px', background: 'var(--color-bg)', borderRadius: '12px' }}>
-                             <div style={{ flex: 1 }}>
-                                <div style={{ fontSize: '14px', fontWeight: 'bold' }}>{p.student?.name}</div>
-                                <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>{p.student?.email}</div>
-                             </div>
-                             <div style={{ width: '150px' }}>
-                                <div style={{ height: '6px', width: '100%', background: '#e2e8f0', borderRadius: '3px', overflow: 'hidden', marginBottom: '4px' }}>
-                                   <div style={{ height: '100%', width: `${p.watchPercentage}%`, background: p.watchPercentage >= 90 ? '#10b981' : 'var(--color-primary)' }} />
-                                </div>
-                                <div style={{ fontSize: '11px', textAlign: 'right', fontWeight: 'bold' }}>{p.watchPercentage}%</div>
-                             </div>
-                          </div>
-                        ))}
-                     </div>
-                   </>
-                 )}
-              </div>
-           </div>
-        </div>
-      )}
+      {/* Analysis Modal Removed - Moved to Content Oversight */}
 
       {/* Modal */}
       {showModal && (
