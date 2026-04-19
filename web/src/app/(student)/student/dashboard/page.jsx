@@ -80,7 +80,7 @@ export default function StudentDashboard() {
       </div>
 
       <div className="stats-grid">
-        <div className="stat-card stat-card--accent">
+        <Link href="/student/recorded-classes" className="stat-card stat-card--accent" style={{ textDecoration: 'none', cursor: 'pointer', transition: 'transform 0.2s, box-shadow 0.2s', display: 'block' }}>
           <div className="stat-card-header">
             <div className="stat-card-icon"><PlaySquare size={20} /></div>
           </div>
@@ -88,9 +88,9 @@ export default function StudentDashboard() {
             <div className="stat-card-value text-glow">{stats.recorded}</div>
             <div className="stat-card-label">Videos Available</div>
           </div>
-        </div>
+        </Link>
 
-        <div className="stat-card stat-card--student">
+        <Link href="/student/live-classes" className="stat-card stat-card--student" style={{ textDecoration: 'none', cursor: 'pointer', transition: 'transform 0.2s, box-shadow 0.2s', display: 'block' }}>
           <div className="stat-card-header">
             <div className="stat-card-icon"><Calendar size={20} /></div>
           </div>
@@ -98,9 +98,9 @@ export default function StudentDashboard() {
             <div className="stat-card-value text-glow">{stats.live}</div>
             <div className="stat-card-label">Upcoming Live</div>
           </div>
-        </div>
+        </Link>
 
-        <div className="stat-card stat-card--warning">
+        <Link href="/student/assignments" className="stat-card stat-card--warning" style={{ textDecoration: 'none', cursor: 'pointer', transition: 'transform 0.2s, box-shadow 0.2s', display: 'block' }}>
           <div className="stat-card-header">
             <div className="stat-card-icon"><ClipboardList size={20} /></div>
           </div>
@@ -108,9 +108,9 @@ export default function StudentDashboard() {
             <div className="stat-card-value text-glow">{stats.assignments}</div>
             <div className="stat-card-label">Pending Tasks</div>
           </div>
-        </div>
+        </Link>
 
-        <div className="stat-card stat-card--success">
+        <Link href="/student/progression" className="stat-card stat-card--success" style={{ textDecoration: 'none', cursor: 'pointer', transition: 'transform 0.2s, box-shadow 0.2s', display: 'block' }}>
           <div className="stat-card-header">
             <div className="stat-card-icon"><Award size={20} /></div>
           </div>
@@ -118,7 +118,7 @@ export default function StudentDashboard() {
             <div className="stat-card-value text-glow">{stats.completion}%</div>
             <div className="stat-card-label">Total Progress</div>
           </div>
-        </div>
+        </Link>
       </div>
 
       {/* Main Grid: Live Classes & Progression */}
