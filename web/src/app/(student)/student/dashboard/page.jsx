@@ -113,7 +113,47 @@ export default function StudentDashboard() {
         </Link>
       </div>
 
-      {/* Latest Assignments & Tests */}
+      {/* Recently Added Videos (Today) */}
+      <div style={{ marginTop: '40px' }}>
+          <div className="page-header" style={{ height: 'auto', padding: '0 0 16px', background: 'transparent', border: 'none', boxShadow: 'none' }}>
+              <h2 style={{ fontSize: '20px', fontWeight: '700' }}>📽️ Recently Uploaded Classes</h2>
+          </div>
+          {dashboardData.recentVideos.length > 0 ? (
+              <div style={{ 
+                  display: 'grid', 
+                  gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', 
+                  gap: '24px' 
+              }}>
+                  {dashboardData.recentVideos.map(v => (
+                      <Link key={v._id} href={`/student/recorded-classes?videoId=${v._id}`} className="card hover-lift" style={{ overflow: 'hidden', padding: '0', textDecoration: 'none' }}>
+                          <div style={{ position: 'relative', width: '100%', aspectRatio: '16/9', background: '#000' }}>
+                              {v.thumbnail ? (
+                                  <img src={v.thumbnail} alt={v.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                              ) : (
+                                  <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--linear-primary)', color: 'white' }}>🎓</div>
+                              )}
+                              <div style={{ position: 'absolute', bottom: '8px', right: '8px', background: 'rgba(0,0,0,0.8)', color: 'white', padding: '2px 8px', borderRadius: '4px', fontSize: '11px' }}>
+                                  New
+                              </div>
+                          </div>
+                          <div style={{ padding: '16px' }}>
+                              <div style={{ fontWeight: '700', fontSize: '15px', color: 'var(--color-text)' }}>{v.title}</div>
+                              <div style={{ fontSize: '13px', color: 'var(--color-text-secondary)', marginTop: '4px', display: 'flex', justifyContent: 'space-between' }}>
+                                  <span>{v.subject?.name}</span>
+                                  <span>{v.faculty?.name}</span>
+                              </div>
+                          </div>
+                      </Link>
+                  ))}
+              </div>
+          ) : (
+            <div className="card" style={{ padding: '40px', textAlign: 'center', color: 'var(--color-text-secondary)' }}>
+                <p>No new videos uploaded today. Visit your "Recorded Classes" to catch up on previous sessions!</p>
+            </div>
+          )}
+      </div>
+
+{/* Latest Assignments & Tests */}
       <div style={{ marginTop: '32px' }}>
           <div className="page-header" style={{ height: 'auto', padding: '0 0 16px', background: 'transparent', border: 'none', boxShadow: 'none' }}>
               <h2 style={{ fontSize: '20px', fontWeight: '700' }}>📋 New Assessments</h2>
@@ -167,47 +207,7 @@ export default function StudentDashboard() {
           </div>
       </div>
 
-      {/* Recently Added Videos (Today) */}
-      <div style={{ marginTop: '40px' }}>
-          <div className="page-header" style={{ height: 'auto', padding: '0 0 16px', background: 'transparent', border: 'none', boxShadow: 'none' }}>
-              <h2 style={{ fontSize: '20px', fontWeight: '700' }}>📽️ Recently Uploaded Classes</h2>
-          </div>
-          {dashboardData.recentVideos.length > 0 ? (
-              <div style={{ 
-                  display: 'grid', 
-                  gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', 
-                  gap: '24px' 
-              }}>
-                  {dashboardData.recentVideos.map(v => (
-                      <Link key={v._id} href={`/student/recorded-classes?videoId=${v._id}`} className="card hover-lift" style={{ overflow: 'hidden', padding: '0', textDecoration: 'none' }}>
-                          <div style={{ position: 'relative', width: '100%', aspectRatio: '16/9', background: '#000' }}>
-                              {v.thumbnail ? (
-                                  <img src={v.thumbnail} alt={v.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                              ) : (
-                                  <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--linear-primary)', color: 'white' }}>🎓</div>
-                              )}
-                              <div style={{ position: 'absolute', bottom: '8px', right: '8px', background: 'rgba(0,0,0,0.8)', color: 'white', padding: '2px 8px', borderRadius: '4px', fontSize: '11px' }}>
-                                  New
-                              </div>
-                          </div>
-                          <div style={{ padding: '16px' }}>
-                              <div style={{ fontWeight: '700', fontSize: '15px', color: 'var(--color-text)' }}>{v.title}</div>
-                              <div style={{ fontSize: '13px', color: 'var(--color-text-secondary)', marginTop: '4px', display: 'flex', justifyContent: 'space-between' }}>
-                                  <span>{v.subject?.name}</span>
-                                  <span>{v.faculty?.name}</span>
-                              </div>
-                          </div>
-                      </Link>
-                  ))}
-              </div>
-          ) : (
-            <div className="card" style={{ padding: '40px', textAlign: 'center', color: 'var(--color-text-secondary)' }}>
-                <p>No new videos uploaded today. Visit your "Recorded Classes" to catch up on previous sessions!</p>
-            </div>
-          )}
-      </div>
-
-{/* Main Grid: Live Classes & Progression */}
+      {/* Main Grid: Live Classes & Progression */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '32px', marginTop: '32px' }}>
         
         {/* Upcoming Live Section */}
