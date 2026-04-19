@@ -10,14 +10,35 @@ axios.defaults.baseURL = process.env.NODE_ENV === 'development'
 
 const getTokenKey = (role) => `bl_token_${role || 'student'}`;
 
+// ── Storage helpers: use localStorage so sessions survive browser restarts ──
+const saveToken = (role, token) => {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(getTokenKey(role), token);
+  localStorage.setItem('last_active_role', role);
+  // Also clean up old sessionStorage entries (migration)
+  sessionStorage.removeItem(getTokenKey(role));
+};
+
+const loadToken = (role) => {
+  if (typeof window === 'undefined') return null;
+  // Try localStorage first (new), fallback to sessionStorage (old)
+  return localStorage.getItem(getTokenKey(role)) || sessionStorage.getItem(getTokenKey(role));
+};
+
+const clearToken = (role) => {
+  if (typeof window === 'undefined') return;
+  localStorage.removeItem(getTokenKey(role));
+  sessionStorage.removeItem(getTokenKey(role));
+};
+
 // Create an interceptor to insert Bearer Token
 axios.interceptors.request.use(config => {
   let token = useAuthStore.getState().token;
   
-  // Fallback to storage for rehydration resilience
+  // Fallback to storage for rehydration resilience (survives hot reload & SSR)
   if (!token && typeof window !== 'undefined') {
     const role = localStorage.getItem('last_active_role') || 'student';
-    token = sessionStorage.getItem(`bl_token_${role}`);
+    token = loadToken(role);
   }
 
   if (token) {
@@ -44,10 +65,8 @@ export const useAuthStore = create((set, get) => ({
       const userData = res.data;
       const assignedRole = userData.role || role;
       
-      if (typeof window !== 'undefined') {
-        sessionStorage.setItem(getTokenKey(assignedRole), userData.token);
-        localStorage.setItem('last_active_role', assignedRole);
-      }
+      // Persist to localStorage so session survives browser restart
+      saveToken(assignedRole, userData.token);
       
       set({ token: userData.token, user: userData, loading: false });
       return userData;
@@ -63,16 +82,15 @@ export const useAuthStore = create((set, get) => ({
     } catch (err) {
       console.error('Server logout failed:', err.message);
     } finally {
-      if (typeof window !== 'undefined') {
-        sessionStorage.removeItem(getTokenKey(role));
-      }
+      clearToken(role);
+      localStorage.removeItem('last_active_role');
       set({ user: null, token: null });
     }
   },
 
   syncPortalSession: (role) => {
     if (typeof window !== 'undefined') {
-      const roleToken = sessionStorage.getItem(getTokenKey(role));
+      const roleToken = loadToken(role);
       const currentToken = get().token;
       
       if (roleToken !== currentToken) {
@@ -83,7 +101,7 @@ export const useAuthStore = create((set, get) => ({
   },
 
   loadUser: async (role) => {
-    const roleToken = typeof window !== 'undefined' ? sessionStorage.getItem(getTokenKey(role)) : null;
+    const roleToken = typeof window !== 'undefined' ? loadToken(role) : null;
     if (!roleToken) {
       set({ user: null, loading: false });
       return;
@@ -99,10 +117,14 @@ export const useAuthStore = create((set, get) => ({
       if (res.data.role === role) {
         set({ user: res.data, token: roleToken });
       } else {
+        // Token is valid but for a different role — clear it
+        clearToken(role);
         set({ user: null, token: null });
       }
     } catch (error) {
       console.warn('Silent user load failed:', error.message);
+      // If token is expired/invalid, clear it so user is prompted to log in again
+      clearToken(role);
       set({ user: null, token: null });
     } finally {
       set({ loading: false });
