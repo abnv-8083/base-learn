@@ -121,7 +121,101 @@ export default function StudentDashboard() {
         </Link>
       </div>
 
-      {/* Main Grid: Live Classes & Progression */}
+      {/* Latest Assignments & Tests */}
+      <div style={{ marginTop: '32px' }}>
+          <div className="page-header" style={{ height: 'auto', padding: '0 0 16px', background: 'transparent', border: 'none', boxShadow: 'none' }}>
+              <h2 style={{ fontSize: '20px', fontWeight: '700' }}>📋 New Assessments</h2>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '32px' }}>
+              <div className="card" style={{ borderTop: '4px solid var(--color-warning)' }}>
+                  <div className="card-header">
+                      <h3 className="card-title" style={{ fontSize: '15px' }}>Latest Assignments</h3>
+                  </div>
+                  <div className="card-body" style={{ padding: '8px 20px' }}>
+                      {dashboardData.assessments?.assignments?.length > 0 ? (
+                          dashboardData.assessments.assignments.map(a => (
+                              <div key={a._id} style={{ padding: '16px 0', borderBottom: '1px solid var(--color-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                  <div>
+                                      <div style={{ fontWeight: '600', fontSize: '14px' }}>{a.title}</div>
+                                      <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)', marginTop: '4px' }}>
+                                          {a.subject?.name} • Due: {a.deadline ? new Date(a.deadline).toLocaleDateString() : 'N/A'}
+                                      </div>
+                                  </div>
+                                  <Link href="/student/assignments" style={{ color: 'var(--color-primary)', fontSize: '13px', fontWeight: '500' }}>Open</Link>
+                              </div>
+                          ))
+                      ) : (
+                          <p style={{ padding: '20px 0', fontSize: '13px', color: 'var(--color-text-secondary)' }}>No new assignments.</p>
+                      )}
+                  </div>
+              </div>
+
+              <div className="card" style={{ borderTop: '4px solid var(--color-success)' }}>
+                  <div className="card-header">
+                      <h3 className="card-title" style={{ fontSize: '15px' }}>Upcoming Tests</h3>
+                  </div>
+                  <div className="card-body" style={{ padding: '8px 20px' }}>
+                    {dashboardData.assessments?.tests?.length > 0 ? (
+                        dashboardData.assessments.tests.map(t => (
+                            <div key={t._id} style={{ padding: '16px 0', borderBottom: '1px solid var(--color-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <div>
+                                    <div style={{ fontWeight: '600', fontSize: '14px' }}>{t.title}</div>
+                                    <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)', marginTop: '4px' }}>
+                                        {t.subject?.name} • Scheduled: {t.deadline ? new Date(t.deadline).toLocaleDateString() : 'N/A'}
+                                    </div>
+                                </div>
+                                <Link href="/student/tests" style={{ color: 'var(--color-primary)', fontSize: '13px', fontWeight: '500' }}>Start</Link>
+                            </div>
+                        ))
+                    ) : (
+                        <p style={{ padding: '20px 0', fontSize: '13px', color: 'var(--color-text-secondary)' }}>No tests scheduled.</p>
+                    )}
+                  </div>
+              </div>
+          </div>
+      </div>
+
+      {/* Recently Added Videos (Today) */}
+      <div style={{ marginTop: '40px' }}>
+          <div className="page-header" style={{ height: 'auto', padding: '0 0 16px', background: 'transparent', border: 'none', boxShadow: 'none' }}>
+              <h2 style={{ fontSize: '20px', fontWeight: '700' }}>📽️ Recently Uploaded Classes</h2>
+          </div>
+          {dashboardData.recentVideos.length > 0 ? (
+              <div style={{ 
+                  display: 'grid', 
+                  gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', 
+                  gap: '24px' 
+              }}>
+                  {dashboardData.recentVideos.map(v => (
+                      <Link key={v._id} href={`/student/recorded-classes?videoId=${v._id}`} className="card hover-lift" style={{ overflow: 'hidden', padding: '0', textDecoration: 'none' }}>
+                          <div style={{ position: 'relative', width: '100%', aspectRatio: '16/9', background: '#000' }}>
+                              {v.thumbnail ? (
+                                  <img src={v.thumbnail} alt={v.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                              ) : (
+                                  <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--linear-primary)', color: 'white' }}>🎓</div>
+                              )}
+                              <div style={{ position: 'absolute', bottom: '8px', right: '8px', background: 'rgba(0,0,0,0.8)', color: 'white', padding: '2px 8px', borderRadius: '4px', fontSize: '11px' }}>
+                                  New
+                              </div>
+                          </div>
+                          <div style={{ padding: '16px' }}>
+                              <div style={{ fontWeight: '700', fontSize: '15px', color: 'var(--color-text)' }}>{v.title}</div>
+                              <div style={{ fontSize: '13px', color: 'var(--color-text-secondary)', marginTop: '4px', display: 'flex', justifyContent: 'space-between' }}>
+                                  <span>{v.subject?.name}</span>
+                                  <span>{v.faculty?.name}</span>
+                              </div>
+                          </div>
+                      </Link>
+                  ))}
+              </div>
+          ) : (
+            <div className="card" style={{ padding: '40px', textAlign: 'center', color: 'var(--color-text-secondary)' }}>
+                <p>No new videos uploaded today. Visit your "Recorded Classes" to catch up on previous sessions!</p>
+            </div>
+          )}
+      </div>
+
+{/* Main Grid: Live Classes & Progression */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '32px', marginTop: '32px' }}>
         
         {/* Upcoming Live Section */}
@@ -227,100 +321,6 @@ export default function StudentDashboard() {
         </div>
       </div>
 
-      {/* Latest Assignments & Tests */}
-      <div style={{ marginTop: '32px' }}>
-          <div className="page-header" style={{ height: 'auto', padding: '0 0 16px', background: 'transparent', border: 'none', boxShadow: 'none' }}>
-              <h2 style={{ fontSize: '20px', fontWeight: '700' }}>📋 New Assessments</h2>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '32px' }}>
-              <div className="card" style={{ borderTop: '4px solid var(--color-warning)' }}>
-                  <div className="card-header">
-                      <h3 className="card-title" style={{ fontSize: '15px' }}>Latest Assignments</h3>
-                  </div>
-                  <div className="card-body" style={{ padding: '8px 20px' }}>
-                      {dashboardData.assessments?.assignments?.length > 0 ? (
-                          dashboardData.assessments.assignments.map(a => (
-                              <div key={a._id} style={{ padding: '16px 0', borderBottom: '1px solid var(--color-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                  <div>
-                                      <div style={{ fontWeight: '600', fontSize: '14px' }}>{a.title}</div>
-                                      <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)', marginTop: '4px' }}>
-                                          {a.subject?.name} • Due: {a.deadline ? new Date(a.deadline).toLocaleDateString() : 'N/A'}
-                                      </div>
-                                  </div>
-                                  <Link href="/student/assignments" style={{ color: 'var(--color-primary)', fontSize: '13px', fontWeight: '500' }}>Open</Link>
-                              </div>
-                          ))
-                      ) : (
-                          <p style={{ padding: '20px 0', fontSize: '13px', color: 'var(--color-text-secondary)' }}>No new assignments.</p>
-                      )}
-                  </div>
-              </div>
-
-              <div className="card" style={{ borderTop: '4px solid var(--color-success)' }}>
-                  <div className="card-header">
-                      <h3 className="card-title" style={{ fontSize: '15px' }}>Upcoming Tests</h3>
-                  </div>
-                  <div className="card-body" style={{ padding: '8px 20px' }}>
-                    {dashboardData.assessments?.tests?.length > 0 ? (
-                        dashboardData.assessments.tests.map(t => (
-                            <div key={t._id} style={{ padding: '16px 0', borderBottom: '1px solid var(--color-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <div>
-                                    <div style={{ fontWeight: '600', fontSize: '14px' }}>{t.title}</div>
-                                    <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)', marginTop: '4px' }}>
-                                        {t.subject?.name} • Scheduled: {t.deadline ? new Date(t.deadline).toLocaleDateString() : 'N/A'}
-                                    </div>
-                                </div>
-                                <Link href="/student/tests" style={{ color: 'var(--color-primary)', fontSize: '13px', fontWeight: '500' }}>Start</Link>
-                            </div>
-                        ))
-                    ) : (
-                        <p style={{ padding: '20px 0', fontSize: '13px', color: 'var(--color-text-secondary)' }}>No tests scheduled.</p>
-                    )}
-                  </div>
-              </div>
-          </div>
-      </div>
-
-      {/* Recently Added Videos (Today) */}
-      <div style={{ marginTop: '40px' }}>
-          <div className="page-header" style={{ height: 'auto', padding: '0 0 16px', background: 'transparent', border: 'none', boxShadow: 'none' }}>
-              <h2 style={{ fontSize: '20px', fontWeight: '700' }}>📽️ Recently Uploaded Classes</h2>
-          </div>
-          {dashboardData.recentVideos.length > 0 ? (
-              <div style={{ 
-                  display: 'grid', 
-                  gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', 
-                  gap: '24px' 
-              }}>
-                  {dashboardData.recentVideos.map(v => (
-                      <Link key={v._id} href={`/student/recorded-classes?videoId=${v._id}`} className="card hover-lift" style={{ overflow: 'hidden', padding: '0', textDecoration: 'none' }}>
-                          <div style={{ position: 'relative', width: '100%', aspectRatio: '16/9', background: '#000' }}>
-                              {v.thumbnail ? (
-                                  <img src={v.thumbnail} alt={v.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                              ) : (
-                                  <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--linear-primary)', color: 'white' }}>🎓</div>
-                              )}
-                              <div style={{ position: 'absolute', bottom: '8px', right: '8px', background: 'rgba(0,0,0,0.8)', color: 'white', padding: '2px 8px', borderRadius: '4px', fontSize: '11px' }}>
-                                  New
-                              </div>
-                          </div>
-                          <div style={{ padding: '16px' }}>
-                              <div style={{ fontWeight: '700', fontSize: '15px', color: 'var(--color-text)' }}>{v.title}</div>
-                              <div style={{ fontSize: '13px', color: 'var(--color-text-secondary)', marginTop: '4px', display: 'flex', justifyContent: 'space-between' }}>
-                                  <span>{v.subject?.name}</span>
-                                  <span>{v.faculty?.name}</span>
-                              </div>
-                          </div>
-                      </Link>
-                  ))}
-              </div>
-          ) : (
-            <div className="card" style={{ padding: '40px', textAlign: 'center', color: 'var(--color-text-secondary)' }}>
-                <p>No new videos uploaded today. Visit your "Recorded Classes" to catch up on previous sessions!</p>
-            </div>
-          )}
-      </div>
-
-    </div>
   );
 }
