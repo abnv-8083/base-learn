@@ -415,23 +415,27 @@ const getPendingProfileRequest = async (req, res) => {
 
 const getNotifications = async (req, res) => {
     try {
+        const userId = req.user.userId || req.user._id;
         const notifications = await Notification.find({
             $and: [
                 {
                     $or: [
-                        { recipient: req.user.userId.toString() },
+                        { recipient: userId.toString() },
                         { recipient: 'all' },
                         ...(req.user.role === 'admin' ? [{ recipient: 'all_admins' }] : [])
                     ]
                 },
-                { dismissedBy: { $ne: req.user.userId } }
+                // dismissedBy is an array — use $nin (not $ne) to check membership
+                { dismissedBy: { $nin: [userId] } }
             ]
-        }).sort({ createdAt: -1 }).limit(20);
+        }).sort({ createdAt: -1 }).limit(50);
         res.status(200).json(notifications);
     } catch (error) {
+        console.error('[getNotifications] Error:', error.message);
         res.status(500).json({ message: 'Error fetching notifications' });
     }
 };
+
 
 const dismissNotification = async (req, res) => {
     try {
@@ -447,21 +451,22 @@ const dismissNotification = async (req, res) => {
 
 const dismissAllNotifications = async (req, res) => {
     try {
+        const userId = req.user.userId || req.user._id;
         await Notification.updateMany(
             {
                 $and: [
                     {
                         $or: [
-                            { recipient: req.user.userId.toString() },
+                            { recipient: userId.toString() },
                             { recipient: 'all' },
                             ...(req.user.role === 'admin' ? [{ recipient: 'all_admins' }] : [])
                         ]
                     },
-                    { dismissedBy: { $ne: req.user.userId } }
+                    { dismissedBy: { $nin: [userId] } }
                 ]
             },
             {
-                $addToSet: { dismissedBy: req.user.userId }
+                $addToSet: { dismissedBy: userId }
             }
         );
         res.status(200).json({ message: 'All notifications dismissed' });

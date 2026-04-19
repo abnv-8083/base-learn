@@ -315,7 +315,7 @@ export default function Topbar() {
                       >
                         <div style={{ 
                           width: '8px', height: '8px', borderRadius: '50%', 
-                          background: notif.type === 'alert' ? '#ef4444' : '#3b82f6',
+                          background: notif.type === 'alert' ? '#ef4444' : notif.type === 'success' ? '#10b981' : notif.type === 'warning' ? '#f59e0b' : '#3b82f6',
                           marginTop: '6px'
                         }} />
                         <div style={{ flex: 1 }}>
