@@ -49,7 +49,7 @@ export default function InstructorContentVerification() {
     const cleanBaseUrl = baseUrl.replace(/\/$/, '');
 
     if (isExternal) {
-        return `${cleanBaseUrl}/api/media/stream?url=${encodeURIComponent(url)}`;
+        return url;
     }
 
     if (url.startsWith('http') || url.startsWith('blob:') || url.startsWith('data:')) return url;
