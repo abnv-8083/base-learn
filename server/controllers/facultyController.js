@@ -205,17 +205,30 @@ exports.uploadContent = asyncHandler(async (req, res) => {
     // Helper to notify the assigned instructor when new content is uploaded
     const notifyInstructorAsync = async (contentTitle) => {
         try {
-            const subject = await require('../models/Subject').findById(subjectId);
-            if (subject && subject.instructor) {
-                const instructorId = subject.instructor.toString();
+            let instructorId = null;
+
+            // Try resolving via subjectId first
+            if (subjectId) {
+                const subject = await require('../models/Subject').findById(subjectId);
+                if (subject?.instructor) instructorId = subject.instructor.toString();
+            }
+
+            // Fallback: resolve via chapterId → subject → instructor
+            if (!instructorId && chapterId) {
+                const chap = await require('../models/Chapter').findById(chapterId).populate('subject', 'instructor');
+                if (chap?.subject?.instructor) instructorId = chap.subject.instructor.toString();
+            }
+
+            if (instructorId) {
                 await require('../models/Notification').create({
-                    message: `Faculty uploaded new content pending verification: "${contentTitle}"`,
+                    message: `New content pending verification: "${contentTitle}" — uploaded by faculty.`,
                     type: 'info',
                     recipient: instructorId,
                     sender: req.user.userId
                 });
-                // Real-time socket notification
+                // Real-time socket notification + badge refresh
                 emitToUser(instructorId, 'content_submitted', { title: contentTitle });
+                emitToUser(instructorId, 'badge_refresh', {});
             }
         } catch (err) {
             console.error('[Notify Instructor Error]', err);

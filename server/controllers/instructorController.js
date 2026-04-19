@@ -191,15 +191,37 @@ exports.assignRecordedClass = async (req, res) => {
         if (recording) {
             await logAction(req, 'Approved Video', `RecordedClass: ${recording.title}`, { targetId: recording._id, targetModel: 'RecordedClass' });
             
-            // Notify Faculty Real-time
-            emitToUser(recording.faculty.toString(), 'content_status_changed', { 
+            // 1. Notify Faculty Real-time + badge refresh
+            const facultyIdStr = recording.faculty.toString();
+            await Notification.create({
+                message: `Your video "${recording.title}" has been approved and published to students.`,
+                type: 'success',
+                recipient: facultyIdStr,
+                sender: req.user.userId
+            });
+            emitToUser(facultyIdStr, 'content_status_changed', { 
                 id: recording._id, status: 'published', title: recording.title 
             });
+            emitToUser(facultyIdStr, 'badge_refresh', {});
 
-            // Notify Students Real-time
-            emitToRole('student', 'content_published', { 
-                id: recording._id, title: recording.title, type: 'video' 
-            });
+            // 2. Notify each student in assigned batches (persistent + real-time)
+            if (batchIds && batchIds.length > 0) {
+                const batches = await Batch.find({ _id: { $in: batchIds } }).select('students').lean();
+                const studentIds = [...new Set(batches.flatMap(b => b.students.map(s => s.toString())))];
+                if (studentIds.length > 0) {
+                    const notifDocs = studentIds.map(sId => ({
+                        message: `New class available: "${recording.title}" has been published for your batch.`,
+                        type: 'info',
+                        recipient: sId,
+                        sender: req.user.userId
+                    }));
+                    await Notification.insertMany(notifDocs);
+                    studentIds.forEach(sId => {
+                        emitToUser(sId, 'content_published', { id: recording._id, title: recording.title, type: 'video' });
+                        emitToUser(sId, 'badge_refresh', {});
+                    });
+                }
+            }
         }
         res.status(200).json({ success: true, data: recording });
     } catch (error) {
@@ -283,16 +305,41 @@ exports.approveAssessment = async (req, res) => {
         if (assessment) {
             await logAction(req, `Approved ${type.charAt(0).toUpperCase() + type.slice(1)}`, `Title: ${assessment.title}`, { targetId: assessment._id, targetModel: type === 'test' ? 'Test' : 'Assignment' });
             
+            // 1. Notify Faculty (persistent + real-time)
             const facultyId = assessment.faculty || assessment.facultyId;
             if (facultyId) {
+                const typeLabel = type === 'test' ? 'Test' : 'Assignment';
+                await Notification.create({
+                    message: `Your ${typeLabel} "${assessment.title}" has been approved and assigned to students.`,
+                    type: 'success',
+                    recipient: facultyId.toString(),
+                    sender: req.user.userId
+                });
                 emitToUser(facultyId.toString(), 'content_status_changed', { 
                     id: assessment._id, status: 'published', title: assessment.title 
                 });
+                emitToUser(facultyId.toString(), 'badge_refresh', {});
             }
 
-            emitToRole('student', 'content_published', { 
-                id: assessment._id, title: assessment.title, type 
-            });
+            // 2. Notify each student in the assigned batches (persistent + real-time)
+            if (assignedTo && assignedTo.length > 0) {
+                const batches = await Batch.find({ _id: { $in: assignedTo } }).select('students').lean();
+                const studentIds = [...new Set(batches.flatMap(b => b.students.map(s => s.toString())))];
+                if (studentIds.length > 0) {
+                    const typeLabel = type === 'test' ? 'test' : 'assignment';
+                    const notifDocs = studentIds.map(sId => ({
+                        message: `New ${typeLabel} available: "${assessment.title}". Check your ${typeLabel}s page.`,
+                        type: 'info',
+                        recipient: sId,
+                        sender: req.user.userId
+                    }));
+                    await Notification.insertMany(notifDocs);
+                    studentIds.forEach(sId => {
+                        emitToUser(sId, 'content_published', { id: assessment._id, title: assessment.title, type });
+                        emitToUser(sId, 'badge_refresh', {});
+                    });
+                }
+            }
         }
 
         res.status(200).json({ success: true, data: assessment });
