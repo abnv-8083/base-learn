@@ -25,6 +25,13 @@ const uploadToCloudinary = async (file, folder = 'bl_uploads') => {
     if (!file || !file.path) return null;
     const isPdf = file.mimetype === 'application/pdf' || file.originalname?.toLowerCase().endsWith('.pdf');
     const isImage = file.mimetype?.startsWith('image/');
+    
+    // If it's a PDF, we bypass Cloudinary/S3 and keep it local
+    if (isPdf) {
+        console.log('[Cloudinary] Intercepted PDF - Keeping locally on server');
+        return null; // Will be handled by formatLocalPath downstream
+    }
+
     try {
         const result = await cloudinary.uploader.upload(file.path, {
             folder,
@@ -34,13 +41,7 @@ const uploadToCloudinary = async (file, folder = 'bl_uploads') => {
         });
         // Clean up local temp file
         try { require('fs').unlinkSync(file.path); } catch {}
-
-        // For PDFs: append fl_attachment:false to force inline display in browser
-        let url = result.secure_url;
-        if (isPdf && url.includes('/upload/')) {
-            url = url.replace('/upload/', '/upload/fl_attachment:false/');
-        }
-        return url;
+        return result.secure_url;
     } catch (err) {
         console.error('[Cloudinary] Upload failed:', err.message);
         return null;
@@ -226,9 +227,9 @@ exports.uploadContent = asyncHandler(async (req, res) => {
     const filePath = videoFile
         ? (videoFile.mimetype?.startsWith('video/')
             ? await uploadToS3(videoFile, 'videos')
-            : await uploadToCloudinary(videoFile, 'bl_materials'))
+            : formatLocalPath(req, videoFile.path, videoFile))
         : null;
-    const assignmentPath = assignmentFile ? await uploadToS3(assignmentFile, 'assignments') : null;
+    const assignmentPath = assignmentFile ? formatLocalPath(req, assignmentFile.path, assignmentFile) : null;
     const thumbnailPath  = thumbnailFile  ? await uploadToCloudinary(thumbnailFile, 'bl_thumbnails') : null;
 
     // 1. Handle FAQ Sessions, Recorded Classes & Live Recordings
@@ -599,10 +600,10 @@ exports.updateUploadedContent = asyncHandler(async (req, res) => {
     const thumbnailFile = req.files?.['thumbnail']?.[0];
 
     const updateData = { title, description, status: 'draft' };
-    if (videoFile) updateData.videoUrl = await uploadToS3(videoFile, ['video', 'faq', 'liveRecording'].includes(type) ? 'videos' : 'materials');
+    if (videoFile) updateData.videoUrl = videoFile.mimetype?.startsWith('video/') ? await uploadToS3(videoFile, ['video', 'faq', 'liveRecording'].includes(type) ? 'videos' : 'materials') : formatLocalPath(req, videoFile.path, videoFile);
     if (videoFile && !['video', 'faq', 'liveRecording'].includes(type)) updateData.url = updateData.videoUrl; 
-    if (assignmentFile) updateData.assignmentUrl = await uploadToS3(assignmentFile, 'assignments');
-    if (thumbnailFile) updateData.thumbnail = await uploadToS3(thumbnailFile, 'thumbnails');
+    if (assignmentFile) updateData.assignmentUrl = formatLocalPath(req, assignmentFile.path, assignmentFile);
+    if (thumbnailFile) updateData.thumbnail = await uploadToCloudinary(thumbnailFile, 'bl_thumbnails');
 
     if (['video', 'faq', 'liveRecording'].includes(type)) {
         const item = await RecordedClass.findOneAndUpdate({ _id: id, faculty: facultyId }, updateData, { new: true });
@@ -623,7 +624,7 @@ exports.updateUploadedContent = asyncHandler(async (req, res) => {
             resource.title = title || resource.title;
             resource.description = description || resource.description;
             resource.status = 'draft'; // Reset status to draft for re-review
-            if (videoFile) resource.url = await uploadToS3(videoFile, 'materials');
+            if (videoFile) resource.url = videoFile.mimetype?.startsWith('video/') ? await uploadToS3(videoFile, 'materials') : formatLocalPath(req, videoFile.path, videoFile);
             await chapter.save();
         }
         return res.status(200).json({ success: true, data: resource });
