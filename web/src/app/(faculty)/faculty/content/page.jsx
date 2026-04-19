@@ -2,11 +2,15 @@
 
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { UploadCloud, FileText, CheckCircle, Search, Clock, Plus, X, ListPlus, Edit2, Trash2, Filter, BarChart2, Users, CheckCircle2, AlertCircle, LayoutGrid } from 'lucide-react';
+import {
+  UploadCloud, FileText, CheckCircle, Search, Clock, Plus, X,
+  ListPlus, Edit2, Trash2, Filter, BarChart2, Users, CheckCircle2,
+  AlertCircle, LayoutGrid, ChevronDown, ChevronUp, Eye, Play,
+  TrendingUp, Activity, Target, BookOpen, Calendar, Hash, Award, Layers
+} from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import { useConfirmStore } from '@/store/confirmStore';
 import toast from 'react-hot-toast';
-import { Eye } from 'lucide-react';
 import Link from 'next/link';
 import PdfPreviewModal from '@/components/PdfPreviewModal';
 
@@ -21,14 +25,21 @@ export default function FacultyContent() {
     const s = sec % 60;
     return `${m}:${s < 10 ? '0' : ''}${s}`;
   };
-  
+
   const [showModal, setShowModal] = useState(false);
   const [saving, setSaving] = useState(false);
   const [editItem, setEditItem] = useState(null);
-  const [statusFilter, setStatusFilter] = useState('all'); // all, pending, approved, rejected
-  
+
+  // Inline oversight state - keyed by item._id
+  const [openOversightId, setOpenOversightId] = useState(null);
+  const [analysisData, setAnalysisData] = useState({}); // { id: data }
+  const [analysisLoading, setAnalysisLoading] = useState({});
+
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
+
   const [previewModal, setPreviewModal] = useState({ isOpen: false, url: '', title: '' });
-  
+
   const [form, setForm] = useState({ title: '', description: '', subjectId: '', chapterId: '', type: 'video', file: null, assignmentFile: null, thumbnail: null });
   const [subjects, setSubjects] = useState([]);
   const [showAddChapter, setShowAddChapter] = useState(false);
@@ -72,18 +83,17 @@ export default function FacultyContent() {
       toast.error('Select a subject and enter a chapter name!');
       return;
     }
-    
     setIsChapterSaving(true);
     try {
-      const res = await axios.post('/api/faculty/chapters', { 
-        name: newChapterName.trim(), 
-        subjectId: form.subjectId 
+      const res = await axios.post('/api/faculty/chapters', {
+        name: newChapterName.trim(),
+        subjectId: form.subjectId
       });
       toast.success('Chapter created successfully!');
       setNewChapterName('');
       setShowAddChapter(false);
-      await fetchSubjects(); // Refresh list
-      setForm(prev => ({ ...prev, chapterId: res.data._id })); // Pre-select new chapter
+      await fetchSubjects();
+      setForm(prev => ({ ...prev, chapterId: res.data._id }));
     } catch (err) {
       toast.error('Failed to create chapter.');
     } finally {
@@ -92,15 +102,13 @@ export default function FacultyContent() {
   };
 
   const handleFileChange = (e, fieldName = 'file') => {
-    if (e.target.files[0]) {
-      setForm({ ...form, [fieldName]: e.target.files[0] });
-    }
+    if (e.target.files[0]) setForm({ ...form, [fieldName]: e.target.files[0] });
   };
 
   const handleUpload = async () => {
     if (!form.title || !form.subjectId || (!form.file && !editItem)) {
-       toast.error('File, Title, and Subject mapping are required!');
-       return;
+      toast.error('File, Title, and Subject mapping are required!');
+      return;
     }
 
     setSaving(true);
@@ -109,9 +117,7 @@ export default function FacultyContent() {
     const startTime = Date.now();
     setUploadStartTime(startTime);
 
-    const timer = setInterval(() => {
-      setElapsedTime(Math.floor((Date.now() - startTime) / 1000));
-    }, 1000);
+    const timer = setInterval(() => setElapsedTime(Math.floor((Date.now() - startTime) / 1000)), 1000);
 
     const formData = new FormData();
     formData.append('title', form.title);
@@ -126,10 +132,7 @@ export default function FacultyContent() {
     try {
       const config = {
         headers: { 'Content-Type': 'multipart/form-data' },
-        onUploadProgress: (progressEvent) => {
-          const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-          setUploadProgress(percentCompleted);
-        }
+        onUploadProgress: (e) => setUploadProgress(Math.round((e.loaded * 100) / e.total))
       };
 
       if (editItem) {
@@ -153,23 +156,53 @@ export default function FacultyContent() {
 
   const openEditModal = (item) => {
     setEditItem(item);
-    setForm({ 
-       title: item.title || '', 
-       description: item.description || '', 
-       subjectId: item.subject?._id || item.subject || '', 
-       chapterId: item.chapterId || '', 
-       type: item.type || 'video', 
-       file: null, 
-       assignmentFile: null,
-       thumbnail: null 
+    setForm({
+      title: item.title || '',
+      description: item.description || '',
+      subjectId: item.subject?._id || item.subject || '',
+      chapterId: item.chapterId || '',
+      type: item.type || 'video',
+      file: null,
+      assignmentFile: null,
+      thumbnail: null
     });
     setShowModal(true);
+  };
+
+  const toggleOversight = async (item) => {
+    const id = item._id;
+    if (openOversightId === id) {
+      setOpenOversightId(null);
+      return;
+    }
+    setOpenOversightId(id);
+    if (!analysisData[id]) {
+      setAnalysisLoading(prev => ({ ...prev, [id]: true }));
+      try {
+        const res = await axios.get(`/api/faculty/content/analysis/${id}`);
+        setAnalysisData(prev => ({ ...prev, [id]: res.data.data }));
+      } catch {
+        toast.error('Failed to load content metrics.');
+        setAnalysisData(prev => ({ ...prev, [id]: null }));
+      } finally {
+        setAnalysisLoading(prev => ({ ...prev, [id]: false }));
+      }
+    }
+  };
+
+  const formatPreviewUrl = (url) => {
+    if (!url) return '';
+    const isExternal = url.includes('cloudinary.com') || url.includes('e2enetworks.net') || url.includes('objectstore');
+    const baseUrl = (process.env.NEXT_PUBLIC_BACKEND_URL || process.env.NEXT_PUBLIC_API_URL || '').replace(/\/$/, '');
+    if (isExternal || url.startsWith('http') || url.startsWith('blob:') || url.startsWith('data:')) return url;
+    if (url.startsWith('/')) return `${baseUrl}${url}`;
+    return `${baseUrl}/uploads/${url}`;
   };
 
   const handleDelete = async (item) => {
     confirm({
       title: item.status === 'published' ? 'Request Deletion?' : 'Delete Resource?',
-      message: item.status === 'published' 
+      message: item.status === 'published'
         ? 'This resource is already published. Deleting it will request the instructor to remove it from the platform. Are you sure?'
         : 'Are you sure you want to permanently remove this resource? This action cannot be undone.',
       confirmText: item.status === 'published' ? 'Request Removal' : 'Delete Permanently',
@@ -189,12 +222,213 @@ export default function FacultyContent() {
 
   const filteredContent = contentList.filter(item => {
     const s = (item.status || item.approvalStatus || 'draft');
-    if (statusFilter === 'all') return true;
-    if (statusFilter === 'pending') return s === 'draft';
-    if (statusFilter === 'approved') return s === 'published';
-    if (statusFilter === 'rejected') return s === 'rejected';
-    return true;
+    const matchesStatus =
+      statusFilter === 'all' ||
+      (statusFilter === 'pending' && s === 'draft') ||
+      (statusFilter === 'approved' && s === 'published') ||
+      (statusFilter === 'rejected' && s === 'rejected');
+    const matchesSearch = !searchQuery || item.title?.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesStatus && matchesSearch;
   });
+
+  // ── Oversight Panel Component (inline) ──────────────────────
+  const OversightPanel = ({ item }) => {
+    const id = item._id;
+    const data = analysisData[id];
+    const isLoading = analysisLoading[id];
+    const rawStatus = item.status || item.approvalStatus || 'draft';
+    const previewUrl = formatPreviewUrl(item.url);
+
+    const avgWatch = data?.watchProgress?.length > 0
+      ? Math.round(data.watchProgress.reduce((a, p) => a + (p.watchPercentage || 0), 0) / data.watchProgress.length)
+      : 0;
+
+    const completedStudents = data?.watchProgress?.filter(p => p.watchPercentage >= 90).length || 0;
+    const inProgressStudents = data?.watchProgress?.filter(p => p.watchPercentage > 0 && p.watchPercentage < 90).length || 0;
+
+    return (
+      <div style={{
+        borderTop: '2px solid var(--color-primary)',
+        background: 'linear-gradient(135deg, #f0f7ff 0%, #fafbff 100%)',
+        padding: '0',
+        animation: 'slideDown 0.3s ease-out',
+      }}>
+        {isLoading ? (
+          <div style={{ padding: '48px', textAlign: 'center' }}>
+            <div className="spinner" style={{ margin: '0 auto 12px' }}></div>
+            <p style={{ color: 'var(--color-text-secondary)', fontSize: '14px' }}>Loading content analytics...</p>
+          </div>
+        ) : !data ? (
+          <div style={{ padding: '48px', textAlign: 'center', color: 'var(--color-text-secondary)' }}>
+            <AlertCircle size={32} style={{ margin: '0 auto 12px', opacity: 0.5 }} />
+            <p>Analytics data is not available for this resource.</p>
+          </div>
+        ) : (
+          <div>
+            {/* Section Header */}
+            <div style={{ padding: '20px 28px 16px', display: 'flex', alignItems: 'center', gap: '10px', borderBottom: '1px solid rgba(99,102,241,0.15)' }}>
+              <div style={{ width: '32px', height: '32px', background: 'var(--color-primary)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <BarChart2 size={18} color="white" />
+              </div>
+              <div>
+                <div style={{ fontSize: '16px', fontWeight: '700', color: 'var(--color-text-primary)' }}>Content Oversight</div>
+                <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>Live analytics & media preview — {item.title}</div>
+              </div>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0' }}>
+
+              {/* LEFT: Media Preview + Info */}
+              <div style={{ padding: '24px 20px 24px 28px', borderRight: '1px solid rgba(99,102,241,0.15)' }}>
+                <div style={{ fontSize: '12px', fontWeight: '700', color: 'var(--color-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <Eye size={12} /> Media Preview
+                </div>
+
+                {/* Media Player */}
+                <div style={{ background: '#0f172a', borderRadius: '12px', overflow: 'hidden', marginBottom: '16px', aspectRatio: item.type === 'video' ? '16/9' : '4/3' }}>
+                  {item.type === 'video' ? (
+                    <video
+                      key={previewUrl}
+                      controls
+                      controlsList="nodownload"
+                      style={{ width: '100%', height: '100%', display: 'block' }}
+                      src={previewUrl}
+                      poster={item.thumbnail || undefined}
+                    />
+                  ) : previewUrl ? (
+                    <iframe
+                      key={previewUrl}
+                      src={`${previewUrl}#toolbar=0`}
+                      style={{ width: '100%', height: '100%', border: 'none', background: 'white' }}
+                      title={item.title}
+                    />
+                  ) : (
+                    <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#64748b' }}>
+                      <FileText size={40} style={{ marginBottom: '8px', opacity: 0.5 }} />
+                      <span style={{ fontSize: '13px' }}>No preview available</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Resource Meta */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                  {[
+                    { icon: <Layers size={13} />, label: 'Type', value: item.type?.toUpperCase() || 'N/A' },
+                    { icon: <BookOpen size={13} />, label: 'Subject', value: item.subject?.name || 'Unlinked' },
+                    { icon: <Calendar size={13} />, label: 'Uploaded', value: new Date(item.createdAt || item.uploadedAt || Date.now()).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) },
+                    { icon: <Hash size={13} />, label: 'Status', value: rawStatus === 'published' ? '✅ Approved' : rawStatus === 'rejected' ? '❌ Rejected' : '⏳ Pending' },
+                  ].map(({ icon, label, value }) => (
+                    <div key={label} style={{ background: 'white', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--color-border)' }}>
+                      <div style={{ fontSize: '11px', color: 'var(--color-text-secondary)', display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '4px', fontWeight: '600', textTransform: 'uppercase' }}>
+                        {icon} {label}
+                      </div>
+                      <div style={{ fontSize: '13px', fontWeight: '700', color: 'var(--color-text-primary)' }}>{value}</div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Assignment PDF link */}
+                {item.assignmentUrl && (
+                  <div style={{ marginTop: '12px' }}>
+                    <button onClick={() => setPreviewModal({ isOpen: true, url: item.assignmentUrl, title: `${item.title} — Exercise Sheet` })} style={{ width: '100%', padding: '10px', background: '#fef3c7', border: '1px solid #fde68a', borderRadius: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: '600', color: '#92400e', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                      <FileText size={14} /> Preview Exercise Sheet
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* RIGHT: Analytics */}
+              <div style={{ padding: '24px 28px 24px 20px' }}>
+                <div style={{ fontSize: '12px', fontWeight: '700', color: 'var(--color-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <Activity size={12} /> Engagement Metrics
+                </div>
+
+                {/* Stats Grid */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '20px' }}>
+                  {[
+                    { icon: <Eye size={16} color="white" />, bg: 'linear-gradient(135deg, #6366f1, #4f46e5)', label: 'Total Views', value: data.totalViews || 0 },
+                    { icon: <TrendingUp size={16} color="white" />, bg: 'linear-gradient(135deg, #8b5cf6, #7c3aed)', label: 'Total Clicks', value: data.totalClicks || 0 },
+                    { icon: <Users size={16} color="white" />, bg: 'linear-gradient(135deg, #06b6d4, #0891b2)', label: 'Students Watching', value: data.watchProgress?.length || 0 },
+                    { icon: <Award size={16} color="white" />, bg: 'linear-gradient(135deg, #10b981, #059669)', label: 'Avg Watch %', value: `${avgWatch}%` },
+                  ].map(({ icon, bg, label, value }) => (
+                    <div key={label} style={{ background: 'white', borderRadius: '12px', padding: '14px', border: '1px solid var(--color-border)', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: bg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{icon}</div>
+                      <div>
+                        <div style={{ fontSize: '11px', color: 'var(--color-text-secondary)', fontWeight: '600' }}>{label}</div>
+                        <div style={{ fontSize: '22px', fontWeight: '800', color: 'var(--color-text-primary)', lineHeight: 1.1 }}>{value}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Completion Breakdown */}
+                {data.watchProgress?.length > 0 && (
+                  <div style={{ background: 'white', borderRadius: '10px', padding: '14px', border: '1px solid var(--color-border)', marginBottom: '16px' }}>
+                    <div style={{ fontSize: '12px', fontWeight: '700', color: 'var(--color-text-secondary)', textTransform: 'uppercase', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <Target size={12} /> Completion Breakdown
+                    </div>
+                    <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
+                      {[
+                        { label: 'Completed', count: completedStudents, color: '#10b981', bg: '#d1fae5' },
+                        { label: 'In Progress', count: inProgressStudents, color: '#f59e0b', bg: '#fef3c7' },
+                        { label: 'Not Started', count: (data.watchProgress.length - completedStudents - inProgressStudents), color: '#6b7280', bg: '#f3f4f6' },
+                      ].map(({ label, count, color, bg }) => (
+                        <div key={label} style={{ flex: 1, background: bg, borderRadius: '8px', padding: '8px 10px', textAlign: 'center' }}>
+                          <div style={{ fontSize: '18px', fontWeight: '800', color }}>{count}</div>
+                          <div style={{ fontSize: '10px', color, fontWeight: '600' }}>{label}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Batch Assignments */}
+                <div style={{ marginBottom: '16px' }}>
+                  <div style={{ fontSize: '12px', fontWeight: '700', color: 'var(--color-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <Users size={12} /> Batch Assignments ({data.assignedTo?.length || 0})
+                  </div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                    {data.assignedTo?.length > 0 ? data.assignedTo.map(batch => (
+                      <span key={batch._id} style={{ background: '#ede9fe', color: '#5b21b6', padding: '4px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: '600' }}>
+                        {batch.name}
+                      </span>
+                    )) : (
+                      <span style={{ color: 'var(--color-text-secondary)', fontSize: '13px', fontStyle: 'italic' }}>No batches assigned yet.</span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Student Watch Progress List */}
+                {data.watchProgress?.length > 0 && (
+                  <div>
+                    <div style={{ fontSize: '12px', fontWeight: '700', color: 'var(--color-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <CheckCircle2 size={12} /> Student Progress ({data.watchProgress.length})
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '180px', overflowY: 'auto', paddingRight: '4px' }}>
+                      {data.watchProgress.map(p => (
+                        <div key={p._id} style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'white', padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--color-border)' }}>
+                          <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '11px', fontWeight: 'bold', flexShrink: 0 }}>
+                            {p.student?.name?.[0]?.toUpperCase() || '?'}
+                          </div>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontSize: '12px', fontWeight: '600', color: 'var(--color-text-primary)', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>{p.student?.name}</div>
+                            <div style={{ height: '4px', background: '#e2e8f0', borderRadius: '2px', marginTop: '4px', overflow: 'hidden' }}>
+                              <div style={{ height: '100%', width: `${p.watchPercentage || 0}%`, background: p.watchPercentage >= 90 ? '#10b981' : p.watchPercentage > 0 ? '#f59e0b' : '#e2e8f0', borderRadius: '2px', transition: 'width 0.5s ease' }} />
+                            </div>
+                          </div>
+                          <div style={{ fontSize: '12px', fontWeight: '700', color: p.watchPercentage >= 90 ? '#10b981' : '#6366f1', width: '36px', textAlign: 'right' }}>{p.watchPercentage || 0}%</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
 
   return (
     <div style={{ paddingBottom: '60px' }}>
@@ -204,31 +438,31 @@ export default function FacultyContent() {
           <p className="page-subtitle">Upload lesson PDFs or Video recordings for Instructor verification.</p>
         </div>
         <button className="btn btn-primary" onClick={() => { setEditItem(null); setForm({ title: '', description: '', subjectId: '', chapterId: '', type: 'video', file: null, assignmentFile: null, thumbnail: null }); setShowModal(true); }} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-           <UploadCloud size={18} /> Upload Resource
+          <UploadCloud size={18} /> Upload Resource
         </button>
       </div>
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', background: 'white', padding: '16px 24px', borderRadius: '16px', border: '1px solid var(--color-border)' }}>
         <div style={{ display: 'flex', gap: '8px' }}>
-           {['all', 'pending', 'approved', 'rejected'].map(f => (
-             <button key={f} onClick={() => setStatusFilter(f)} className={`btn ${statusFilter === f ? 'btn-primary' : 'btn-ghost'}`} style={{ textTransform: 'capitalize', padding: '8px 16px', fontSize: '13px' }}>
-                {f === 'pending' && <Clock size={14} style={{marginRight: '6px'}} />}
-                {f === 'approved' && <CheckCircle size={14} style={{marginRight: '6px'}} />}
-                {f === 'rejected' && <X size={14} style={{marginRight: '6px'}} />}
-                {f}
-             </button>
-           ))}
+          {['all', 'pending', 'approved', 'rejected'].map(f => (
+            <button key={f} onClick={() => setStatusFilter(f)} className={`btn ${statusFilter === f ? 'btn-primary' : 'btn-ghost'}`} style={{ textTransform: 'capitalize', padding: '8px 16px', fontSize: '13px' }}>
+              {f === 'pending' && <Clock size={14} style={{ marginRight: '6px' }} />}
+              {f === 'approved' && <CheckCircle size={14} style={{ marginRight: '6px' }} />}
+              {f === 'rejected' && <X size={14} style={{ marginRight: '6px' }} />}
+              {f}
+            </button>
+          ))}
         </div>
         <div style={{ position: 'relative', width: '250px' }}>
-           <Search size={14} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', opacity: 0.5 }} />
-           <input type="text" placeholder="Search my uploads..." style={{ width: '100%', padding: '8px 12px 8px 36px', borderRadius: '8px', border: '1px solid var(--color-border)', fontSize: '13px' }} />
+          <Search size={14} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', opacity: 0.5 }} />
+          <input type="text" placeholder="Search my uploads..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} style={{ width: '100%', padding: '8px 12px 8px 36px', borderRadius: '8px', border: '1px solid var(--color-border)', fontSize: '13px' }} />
         </div>
       </div>
 
       {loading ? <div className="spinner" style={{ margin: 'auto', display: 'block', marginTop: '20vh' }}></div> : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '24px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           {filteredContent.length === 0 ? (
-            <div style={{ gridColumn: '1 / -1', padding: '80px', textAlign: 'center', background: 'var(--color-bg)', borderRadius: '16px', border: '2px dashed var(--color-border)' }}>
+            <div style={{ padding: '80px', textAlign: 'center', background: 'var(--color-bg)', borderRadius: '16px', border: '2px dashed var(--color-border)' }}>
               <ListPlus size={48} color="var(--color-primary)" style={{ margin: '0 auto 16px', opacity: 0.5 }} />
               <h3 style={{ fontSize: '18px', fontWeight: 'bold' }}>No {statusFilter !== 'all' ? statusFilter : ''} Content Found</h3>
               <p style={{ color: 'var(--color-text-secondary)' }}>Try adjusting your filters or upload new material.</p>
@@ -236,83 +470,92 @@ export default function FacultyContent() {
           ) : filteredContent.map(item => {
             const rawStatus = item.status || item.approvalStatus || 'draft';
             const displayStatus = rawStatus === 'published' ? 'approved' : (rawStatus === 'draft' ? 'pending' : rawStatus.replace('_', ' '));
-            
+            const isOversightOpen = openOversightId === item._id;
+
             return (
-            <div key={item._id} className="card hover-lift" style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-              <div style={{ padding: '24px', flex: 1 }}>
-                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
-                   <div style={{ width: '60px', height: '60px', borderRadius: '12px', background: item.type === 'video' ? '#e0e7ff' : '#fef3c7', color: item.type === 'video' ? '#4f46e5' : '#d97706', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0 }}>
-                     {item.thumbnail ? (
-                       <img src={item.thumbnail} alt="Thumbnail preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                     ) : (
-                       item.type === 'video' ? <UploadCloud size={24} /> : <FileText size={24} />
-                     )}
-                   </div>
-                   <span style={{ padding: '4px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: 'bold', 
-                      background: displayStatus === 'approved' ? '#dcfce7' : displayStatus === 'rejected' ? '#fee2e2' : '#fef9c3', 
-                      color: displayStatus === 'approved' ? '#166534' : displayStatus === 'rejected' ? '#991b1b' : '#854d0e', textTransform: 'capitalize' 
-                   }}>
-                     {displayStatus}
-                   </span>
-                 </div>
-                 
-                 <h3 style={{ fontSize: '20px', fontWeight: '800', marginBottom: '8px', color: 'var(--color-text-primary)' }}>{item.title}</h3>
-                 <p style={{ fontSize: '14px', color: 'var(--color-text-secondary)', marginBottom: '16px' }}>
-                   {item.description || 'No description provided.'}
-                 </p>
+              <div key={item._id} className="card" style={{ overflow: 'hidden', padding: 0 }}>
+                {/* Card Body */}
+                <div style={{ padding: '20px 24px', display: 'flex', alignItems: 'center', gap: '16px' }}>
 
-                 {displayStatus === 'rejected' && item.rejectionReason && (
-                    <div style={{ marginBottom: '16px', padding: '12px', background: '#fff1f2', border: '1px solid #fecaca', borderRadius: '8px', fontSize: '13px', color: '#991b1b', display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
-                       <AlertCircle size={16} style={{ marginTop: '2px', flexShrink: 0 }} />
-                       <div>
-                          <strong>Reason:</strong> {item.rejectionReason}
-                          <div style={{ marginTop: '4px', fontWeight: 'bold', fontSize: '12px', opacity: 0.8 }}>Action: Please Review & Fix</div>
-                       </div>
+                  {/* Thumbnail / Icon */}
+                  <div style={{ width: '64px', height: '64px', borderRadius: '12px', background: item.type === 'video' ? '#e0e7ff' : '#fef3c7', color: item.type === 'video' ? '#4f46e5' : '#d97706', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0 }}>
+                    {item.thumbnail ? (
+                      <img src={item.thumbnail} alt="Thumbnail" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    ) : (
+                      item.type === 'video' ? <Play size={26} /> : <FileText size={26} />
+                    )}
+                  </div>
+
+                  {/* Meta */}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px' }}>
+                      <h3 style={{ fontSize: '16px', fontWeight: '800', margin: 0, color: 'var(--color-text-primary)', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>{item.title}</h3>
+                      <span style={{ padding: '3px 10px', borderRadius: '20px', fontSize: '11px', fontWeight: 'bold', flexShrink: 0,
+                        background: displayStatus === 'approved' ? '#dcfce7' : displayStatus === 'rejected' ? '#fee2e2' : '#fef9c3',
+                        color: displayStatus === 'approved' ? '#166534' : displayStatus === 'rejected' ? '#991b1b' : '#854d0e', textTransform: 'capitalize'
+                      }}>{displayStatus}</span>
                     </div>
-                 )}
+                    <p style={{ fontSize: '13px', color: 'var(--color-text-secondary)', margin: '0 0 6px', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
+                      {item.description || 'No description provided.'}
+                    </p>
+                    <div style={{ display: 'flex', gap: '16px', fontSize: '12px', color: 'var(--color-text-secondary)' }}>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><BookOpen size={12} /> {item.subject?.name || 'Unassigned'}</span>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><Clock size={12} /> {new Date(item.createdAt || item.uploadedAt || Date.now()).toLocaleDateString()}</span>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '4px', textTransform: 'capitalize' }}><Layers size={12} /> {item.type}</span>
+                    </div>
 
-                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: 'var(--color-primary)', fontWeight: 'bold' }}>
-                    Subject Map: {item.subject?.name || 'Unassigned'}
-                 </div>
-              </div>
-              <div style={{ padding: '16px 24px', background: 'var(--color-bg)', borderTop: '1px solid var(--color-border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '13px', color: 'var(--color-text-secondary)' }}>
-                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                   <Clock size={16} /> {new Date(item.createdAt || item.uploadedAt || Date.now()).toLocaleDateString()}
-                 </div>
-                 <div style={{ display: 'flex', gap: '8px' }}>
-                    <button onClick={() => setPreviewModal({ isOpen: true, url: item.url, title: item.title })} className="btn btn-ghost" style={{ padding: '6px', color: 'var(--color-primary)' }} title="Preview Document">
+                    {displayStatus === 'rejected' && item.rejectionReason && (
+                      <div style={{ marginTop: '8px', padding: '8px 12px', background: '#fff1f2', border: '1px solid #fecaca', borderRadius: '8px', fontSize: '12px', color: '#991b1b', display: 'flex', gap: '6px', alignItems: 'flex-start' }}>
+                        <AlertCircle size={14} style={{ marginTop: '2px', flexShrink: 0 }} />
+                        <span><strong>Rejected:</strong> {item.rejectionReason}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Actions */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+                    <button onClick={() => setPreviewModal({ isOpen: true, url: item.url, title: item.title })} className="btn btn-ghost" style={{ padding: '8px', color: 'var(--color-primary)' }} title="Preview Content">
                       <Eye size={16} />
                     </button>
                     {item.assignmentUrl && (
-                      <button onClick={() => setPreviewModal({ isOpen: true, url: item.assignmentUrl, title: `${item.title} (Exercise)` })} className="btn btn-ghost" style={{ padding: '6px', color: '#f59e0b' }} title="Preview Exercise">
+                      <button onClick={() => setPreviewModal({ isOpen: true, url: item.assignmentUrl, title: `${item.title} (Exercise)` })} className="btn btn-ghost" style={{ padding: '8px', color: '#f59e0b' }} title="Preview Exercise">
                         <FileText size={16} />
                       </button>
                     )}
                     {rawStatus === 'published' && (
-                      <Link href={`/faculty/content-oversight?item=${item._id}`} className="btn btn-ghost" style={{ padding: '6px', color: 'var(--color-primary)' }} title="Content Oversight">
-                        <BarChart2 size={16} />
-                      </Link>
+                      <button
+                        onClick={() => toggleOversight(item)}
+                        className={`btn ${isOversightOpen ? 'btn-primary' : 'btn-ghost'}`}
+                        style={{ padding: '8px 12px', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: '600', color: isOversightOpen ? 'white' : 'var(--color-primary)' }}
+                        title="Content Oversight"
+                      >
+                        <BarChart2 size={15} />
+                        {isOversightOpen ? 'Hide' : 'Oversight'}
+                        {isOversightOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                      </button>
                     )}
                     {(rawStatus === 'rejected' || rawStatus === 'draft' || rawStatus === 'published') && (
-                      <button onClick={() => openEditModal(item)} className="btn btn-ghost" style={{ padding: '6px', color: 'var(--color-primary)' }} title="Edit & Re-upload">
+                      <button onClick={() => openEditModal(item)} className="btn btn-ghost" style={{ padding: '8px', color: 'var(--color-primary)' }} title="Edit & Re-upload">
                         <Edit2 size={16} />
                       </button>
                     )}
                     {rawStatus !== 'pending_delete' && (
-                      <button onClick={() => handleDelete(item)} className="btn btn-ghost" style={{ padding: '6px', color: 'var(--color-error)' }} title={rawStatus === 'published' ? 'Request Deletion' : 'Delete'}>
+                      <button onClick={() => handleDelete(item)} className="btn btn-ghost" style={{ padding: '8px', color: 'var(--color-error)' }} title={rawStatus === 'published' ? 'Request Deletion' : 'Delete'}>
                         <Trash2 size={16} />
                       </button>
                     )}
-                 </div>
+                  </div>
+                </div>
+
+                {/* Inline Oversight Panel */}
+                {isOversightOpen && <OversightPanel item={item} />}
               </div>
-            </div>
-          )})}
+            );
+          })}
         </div>
       )}
 
-      {/* Analysis Modal Removed - Moved to Content Oversight */}
-
-      {/* Modal */}
+      {/* Upload / Edit Modal */}
       {showModal && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(15, 45, 107, 0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, backdropFilter: 'blur(4px)' }}>
           <div className="card" style={{ width: '90%', maxWidth: '500px', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
@@ -321,45 +564,31 @@ export default function FacultyContent() {
               <button onClick={() => setShowModal(false)} style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer' }}><X size={20} /></button>
             </div>
             <div style={{ padding: '24px', maxHeight: '70vh', overflowY: 'auto' }}>
-              
               <div className="grid-2-col" style={{ marginBottom: '16px' }}>
                 <div className="form-group">
-                  <label className="form-label">Material Target Subject <span style={{color: 'red'}}>*</span></label>
-                  <select className="form-select" value={form.subjectId || ''} onChange={e => setForm({...form, subjectId: e.target.value, chapterId: ''})}>
+                  <label className="form-label">Material Target Subject <span style={{ color: 'red' }}>*</span></label>
+                  <select className="form-select" value={form.subjectId || ''} onChange={e => setForm({ ...form, subjectId: e.target.value, chapterId: '' })}>
                     <option value="">Select subject to attach</option>
                     {subjects.map(s => <option key={s._id} value={s._id}>{s.name}</option>)}
                   </select>
                 </div>
                 <div className="form-group" style={{ position: 'relative' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '8px' }}>
-                     <label className="form-label" style={{ margin: 0 }}>Target Chapter <span style={{color: 'red'}}>*</span></label>
-                     {form.subjectId && !showAddChapter && (
-                       <button onClick={() => setShowAddChapter(true)} className="btn btn-ghost" style={{ padding: '0 4px', fontSize: '11px', color: 'var(--color-primary)', height: 'auto', fontWeight: 'bold' }}>
-                          + New Chapter
-                       </button>
-                     )}
+                    <label className="form-label" style={{ margin: 0 }}>Target Chapter <span style={{ color: 'red' }}>*</span></label>
+                    {form.subjectId && !showAddChapter && (
+                      <button onClick={() => setShowAddChapter(true)} className="btn btn-ghost" style={{ padding: '0 4px', fontSize: '11px', color: 'var(--color-primary)', height: 'auto', fontWeight: 'bold' }}>+ New Chapter</button>
+                    )}
                   </div>
-                  
                   {showAddChapter ? (
-                     <div style={{ display: 'flex', gap: '8px', animation: 'slideDown 0.2s ease-out' }}>
-                        <input 
-                           type="text" 
-                           className="form-input" 
-                           autoFocus
-                           placeholder="Chapter Name..." 
-                           value={newChapterName} 
-                           onChange={e => setNewChapterName(e.target.value)}
-                           style={{ flex: 1 }}
-                        />
-                        <button onClick={handleCreateChapter} disabled={isChapterSaving} className="btn btn-primary" style={{ padding: '0 12px' }}>
-                           {isChapterSaving ? '...' : <CheckCircle size={16} />}
-                        </button>
-                        <button onClick={() => { setShowAddChapter(false); setNewChapterName(''); }} className="btn btn-ghost" style={{ padding: '0 12px', color: 'var(--color-error)' }}>
-                           <X size={16} />
-                        </button>
-                     </div>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <input type="text" className="form-input" autoFocus placeholder="Chapter Name..." value={newChapterName} onChange={e => setNewChapterName(e.target.value)} style={{ flex: 1 }} />
+                      <button onClick={handleCreateChapter} disabled={isChapterSaving} className="btn btn-primary" style={{ padding: '0 12px' }}>
+                        {isChapterSaving ? '...' : <CheckCircle size={16} />}
+                      </button>
+                      <button onClick={() => { setShowAddChapter(false); setNewChapterName(''); }} className="btn btn-ghost" style={{ padding: '0 12px', color: 'var(--color-error)' }}><X size={16} /></button>
+                    </div>
                   ) : (
-                    <select className="form-select" value={form.chapterId || ''} onChange={e => setForm({...form, chapterId: e.target.value})} disabled={!form.subjectId}>
+                    <select className="form-select" value={form.chapterId || ''} onChange={e => setForm({ ...form, chapterId: e.target.value })} disabled={!form.subjectId}>
                       <option value="">Select chapter to attach</option>
                       {form.subjectId && subjects.find(s => s._id === form.subjectId)?.chapters?.map(c => <option key={c._id} value={c._id}>{c.name}</option>)}
                     </select>
@@ -368,37 +597,37 @@ export default function FacultyContent() {
               </div>
 
               <div className="grid-2-col" style={{ marginBottom: '16px' }}>
-                 <div className="form-group">
-                   <label className="form-label">Title <span style={{color: 'red'}}>*</span></label>
-                   <input type="text" className="form-input" value={form.title} onChange={e => setForm({...form, title: e.target.value})} placeholder="E.g. Algebra pt 1" />
-                 </div>
-                 <div className="form-group">
-                   <label className="form-label">Type <span style={{color: 'red'}}>*</span></label>
-                   <select className="form-select" value={form.type} onChange={e => setForm({...form, type: e.target.value, file: null, assignmentFile: null})}>
-                     <option value="video">Recorded Class</option>
-                     <option value="dpp">DPP</option>
-                     <option value="pyq">PYQ</option>
-                     <option value="assignment">Assignment</option>
-                     <option value="test">Test</option>
-                   </select>
-                 </div>
+                <div className="form-group">
+                  <label className="form-label">Title <span style={{ color: 'red' }}>*</span></label>
+                  <input type="text" className="form-input" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} placeholder="E.g. Algebra pt 1" />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Type <span style={{ color: 'red' }}>*</span></label>
+                  <select className="form-select" value={form.type} onChange={e => setForm({ ...form, type: e.target.value, file: null, assignmentFile: null })}>
+                    <option value="video">Recorded Class</option>
+                    <option value="dpp">DPP</option>
+                    <option value="pyq">PYQ</option>
+                    <option value="assignment">Assignment</option>
+                    <option value="test">Test</option>
+                  </select>
+                </div>
               </div>
 
               <div className="form-group" style={{ marginBottom: '16px' }}>
                 <label className="form-label">Description / Synopsis</label>
-                <textarea className="form-input" rows={3} value={form.description} onChange={e => setForm({...form, description: e.target.value})} />
+                <textarea className="form-input" rows={3} value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} />
               </div>
 
               <div className="form-group" style={{ marginBottom: '16px' }}>
-                <label className="form-label">{form.type === 'video' ? 'Upload Video File' : 'Upload PDF File'} {editItem ? <span style={{color:'var(--color-text-muted)'}}>(Optional - leave empty to keep existing)</span> : <span style={{color: 'red'}}>*</span>}</label>
+                <label className="form-label">{form.type === 'video' ? 'Upload Video File' : 'Upload PDF File'} {editItem ? <span style={{ color: 'var(--color-text-muted)' }}>(Optional)</span> : <span style={{ color: 'red' }}>*</span>}</label>
                 <div style={{ border: '2px dashed var(--color-border)', borderRadius: '12px', padding: '32px', textAlign: 'center', background: 'var(--color-bg)', cursor: form.file ? 'default' : 'pointer' }} onClick={() => !form.file && document.getElementById('content-upload').click()}>
                   <input type="file" id="content-upload" style={{ display: 'none' }} onChange={(e) => handleFileChange(e, 'file')} accept={form.type === 'video' ? 'video/mp4,video/mkv,video/avi' : 'application/pdf'} />
                   {form.file ? (
                     <div>
                       <CheckCircle size={32} color="var(--color-success)" style={{ margin: '0 auto 12px' }} />
                       <div style={{ fontWeight: 'bold' }}>{form.file.name}</div>
-                      <div style={{ fontSize: '13px', color: 'var(--color-text-secondary)', marginTop: '4px' }}>{(form.file.size / (1024*1024)).toFixed(2)} MB</div>
-                      <button className="btn btn-ghost" style={{ marginTop: '12px', color: 'var(--color-error)' }} onClick={(e) => { e.stopPropagation(); setForm({...form, file: null}); }}>Remove</button>
+                      <div style={{ fontSize: '13px', color: 'var(--color-text-secondary)', marginTop: '4px' }}>{(form.file.size / (1024 * 1024)).toFixed(2)} MB</div>
+                      <button className="btn btn-ghost" style={{ marginTop: '12px', color: 'var(--color-error)' }} onClick={(e) => { e.stopPropagation(); setForm({ ...form, file: null }); }}>Remove</button>
                     </div>
                   ) : (
                     <div>
@@ -413,15 +642,13 @@ export default function FacultyContent() {
               {form.type === 'video' && (
                 <>
                   <div className="form-group" style={{ marginBottom: '16px' }}>
-                    <label className="form-label">Video Thumbnail <span style={{color: 'var(--color-text-muted)'}}>(Max 2MB, Image only)</span></label>
+                    <label className="form-label">Video Thumbnail <span style={{ color: 'var(--color-text-muted)' }}>(Max 2MB)</span></label>
                     <div style={{ border: '2px dashed var(--color-border)', borderRadius: '12px', padding: '16px', textAlign: 'center', background: 'var(--color-bg)', cursor: form.thumbnail ? 'default' : 'pointer' }} onClick={() => !form.thumbnail && document.getElementById('thumbnail-upload').click()}>
                       <input type="file" id="thumbnail-upload" style={{ display: 'none' }} accept="image/*" onChange={(e) => handleFileChange(e, 'thumbnail')} />
                       {form.thumbnail ? (
                         <div style={{ position: 'relative', display: 'inline-block' }}>
                           <img src={URL.createObjectURL(form.thumbnail)} alt="Thumbnail preview" style={{ height: '100px', borderRadius: '8px', objectFit: 'cover' }} />
-                          <button className="btn btn-ghost" style={{ position: 'absolute', top: '-10px', right: '-10px', padding: '4px', background: 'white', borderRadius: '50%', color: 'var(--color-error)' }} onClick={(e) => { e.stopPropagation(); setForm({...form, thumbnail: null}); }}>
-                            <X size={16} />
-                          </button>
+                          <button className="btn btn-ghost" style={{ position: 'absolute', top: '-10px', right: '-10px', padding: '4px', background: 'white', borderRadius: '50%', color: 'var(--color-error)' }} onClick={(e) => { e.stopPropagation(); setForm({ ...form, thumbnail: null }); }}><X size={16} /></button>
                         </div>
                       ) : (
                         <div>
@@ -433,14 +660,14 @@ export default function FacultyContent() {
                   </div>
 
                   <div className="form-group" style={{ marginBottom: '16px' }}>
-                    <label className="form-label">Upload Exercise (PDF) <span style={{color: 'var(--color-text-muted)'}}>(Optional)</span></label>
+                    <label className="form-label">Upload Exercise (PDF) <span style={{ color: 'var(--color-text-muted)' }}>(Optional)</span></label>
                     <div style={{ border: '2px dashed var(--color-border)', borderRadius: '12px', padding: '16px', textAlign: 'center', background: 'var(--color-bg)', cursor: form.assignmentFile ? 'default' : 'pointer' }} onClick={() => !form.assignmentFile && document.getElementById('exercise-upload').click()}>
                       <input type="file" id="exercise-upload" style={{ display: 'none' }} accept="application/pdf" onChange={(e) => handleFileChange(e, 'assignmentFile')} />
                       {form.assignmentFile ? (
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px' }}>
                           <CheckCircle size={20} color="var(--color-success)" />
                           <div style={{ fontWeight: 'bold', fontSize: '14px' }}>{form.assignmentFile.name}</div>
-                          <button className="btn btn-ghost" style={{ padding: '4px 8px', color: 'var(--color-error)' }} onClick={(e) => { e.stopPropagation(); setForm({...form, assignmentFile: null}); }}>X</button>
+                          <button className="btn btn-ghost" style={{ padding: '4px 8px', color: 'var(--color-error)' }} onClick={(e) => { e.stopPropagation(); setForm({ ...form, assignmentFile: null }); }}>X</button>
                         </div>
                       ) : (
                         <div>
@@ -453,7 +680,7 @@ export default function FacultyContent() {
                 </>
               )}
             </div>
-            
+
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', padding: '24px', borderTop: '1px solid var(--color-border)', background: 'var(--color-bg)' }}>
               {saving && (
                 <div style={{ width: '100%', marginBottom: '8px' }}>
@@ -485,11 +712,11 @@ export default function FacultyContent() {
         </div>
       )}
 
-      <PdfPreviewModal 
-        isOpen={previewModal.isOpen} 
-        onClose={() => setPreviewModal({ ...previewModal, isOpen: false })} 
-        url={previewModal.url} 
-        title={previewModal.title} 
+      <PdfPreviewModal
+        isOpen={previewModal.isOpen}
+        onClose={() => setPreviewModal({ ...previewModal, isOpen: false })}
+        url={previewModal.url}
+        title={previewModal.title}
       />
     </div>
   );
