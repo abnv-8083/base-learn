@@ -158,9 +158,14 @@ export default function InstructorLiveClasses() {
 
   // --- Derived Data ---
 
+  const now = new Date();
+
   const filtered = classes.filter(c => {
-    const isUpcoming = ['upcoming', 'ongoing'].includes(c.status);
-    const tabMatch = activeTab === 'upcoming' ? isUpcoming : c.status === 'completed';
+    const scheduledDate = new Date(c.scheduledAt);
+    // A session belongs to 'Scheduled' if: upcoming/ongoing, OR accidentally marked completed but due in future
+    const isFutureScheduled = scheduledDate > now;
+    const isScheduled = ['upcoming', 'ongoing'].includes(c.status) || (c.status === 'completed' && isFutureScheduled);
+    const tabMatch = activeTab === 'upcoming' ? isScheduled : (c.status === 'completed' && !isFutureScheduled);
     const searchMatch =
       c.title?.toLowerCase().includes(search.toLowerCase()) ||
       c.faculty?.name?.toLowerCase().includes(search.toLowerCase());
@@ -169,8 +174,8 @@ export default function InstructorLiveClasses() {
 
   const stats = {
     total: classes.length,
-    today: classes.filter(c => c.status === 'upcoming' && new Date(c.scheduledAt).toDateString() === new Date().toDateString()).length,
-    pending: classes.filter(c => c.status === 'completed' && (!c.recording || c.recording.status !== 'published')).length,
+    today: classes.filter(c => ['upcoming', 'ongoing'].includes(c.status) && new Date(c.scheduledAt).toDateString() === new Date().toDateString()).length,
+    pending: classes.filter(c => c.status === 'completed' && new Date(c.scheduledAt) <= now && (!c.recording || c.recording.status !== 'published')).length,
   };
 
   // --- Render ---

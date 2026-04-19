@@ -1687,6 +1687,18 @@ exports.getLiveClasses = async (req, res) => {
             .populate('batches', 'name')
             .sort({ scheduledAt: -1 });
 
+        // Auto-heal: if a session is marked 'completed' but scheduledAt is in the future,
+        // reset it to 'upcoming' (catches accidental early endings or BBB false positives)
+        const now = new Date();
+        for (const cls of classes) {
+            if (cls.status === 'completed' && new Date(cls.scheduledAt) > now) {
+                cls.status = 'upcoming';
+                cls.processed = false;
+                await cls.save();
+                console.log(`[LiveClass Auto-Heal] Reset "${cls.title}" from completed → upcoming (scheduledAt is future)`);
+            }
+        }
+
         // Check for associated recordings and handle legacy string subjects defensively
         const RecordedClass = require('../models/RecordedClass');
         const results = await Promise.all(classes.map(async (cls) => {
