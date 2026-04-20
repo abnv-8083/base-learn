@@ -191,9 +191,9 @@ const processRecordingDraft = async (session) => {
         const bbbBase = (process.env.BBB_URL || 'https://test-install.blindsidenetworks.com/bigbluebutton/api')
             .replace('/bigbluebutton/api', '');
         
-        const autoNotesUrl = session.internalMeetingId
-            ? `${bbbBase}/pad/p/${session.internalMeetingId}`
-            : session.presentationUrl; // Fall back to manually provided URL if no internalMeetingId
+        const autoNotesUrl = session.presentationUrl || (session.internalMeetingId 
+            ? `${bbbBase}/pad/p/${session.internalMeetingId}` 
+            : null);
 
         if (autoNotesUrl) {
             const notesAlreadyDrafted = await RecordedClass.findOne({ 
