@@ -26,7 +26,7 @@ const findUserByEmail = async (email) => {
 
 const generateAccessToken = (id, role) => {
     return jwt.sign({ id, role }, process.env.JWT_ACCESS_SECRET || 'access_fallback', {
-        expiresIn: '15m',
+        expiresIn: '5h',
     });
 };
 
