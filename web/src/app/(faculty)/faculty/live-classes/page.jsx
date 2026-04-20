@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Video, Calendar, Clock, MapPin, Play, Plus, X, Trash2, BarChart2 } from 'lucide-react';
+import { Video, Calendar, Clock, MapPin, Play, Plus, X, Trash2, BarChart2, StopCircle, FileText, Info } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import { useConfirmStore } from '@/store/confirmStore';
 import toast from 'react-hot-toast';
@@ -21,6 +21,12 @@ export default function FacultyLiveClasses() {
   const [subjects, setSubjects] = useState([]);
   const [batches, setBatches] = useState([]);
   const [selectedAnalytics, setSelectedAnalytics] = useState(null);
+
+  // End Class modal state
+  const [showEndModal, setShowEndModal] = useState(false);
+  const [endingSessionId, setEndingSessionId] = useState(null);
+  const [notesUrl, setNotesUrl] = useState('');
+  const [ending, setEnding] = useState(false);
 
   useEffect(() => {
     let interval;
@@ -128,21 +134,27 @@ export default function FacultyLiveClasses() {
     }
   };
 
-  const handleEndSession = async (id) => {
-    confirm({
-      title: 'End Live Broadcast?',
-      message: 'Are you sure you want to end this live broadcast? This will kick all participants and move the session to the finished list.',
-      confirmText: 'End Sessions',
-      onConfirm: async () => {
-        try {
-          await axios.post(`/api/faculty/live-classes/${id}/end`);
-          toast.success('Broadcast ended successfully.');
-          fetchClasses();
-        } catch (err) {
-          toast.error(err.response?.data?.message || 'Failed to end session.');
-        }
-      }
-    });
+  const openEndModal = (id) => {
+    setEndingSessionId(id);
+    setNotesUrl('');
+    setShowEndModal(true);
+  };
+
+  const handleEndSession = async () => {
+    if (!endingSessionId) return;
+    setEnding(true);
+    try {
+      await axios.post(`/api/faculty/live-classes/${endingSessionId}/end`, { notesUrl });
+      toast.success('Class ended! Recording & notes sent to instructor for review.');
+      setShowEndModal(false);
+      setEndingSessionId(null);
+      setNotesUrl('');
+      fetchClasses();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to end session.');
+    } finally {
+      setEnding(false);
+    }
   };
 
   const getStatusStyle = (status) => {
@@ -226,11 +238,11 @@ export default function FacultyLiveClasses() {
                          <button onClick={() => handleStartSession(session._id)} className="btn btn-primary" style={{ flex: 2, display: 'flex', gap: '8px', alignItems: 'center', justifyContent: 'center', padding: '12px', borderRadius: '12px', fontWeight: '800' }}>
                            <Play size={18} /> {session.status === 'ongoing' ? 'Resume Class' : 'Start Studio'}
                          </button>
-                         {session.status === 'ongoing' && (
-                            <button onClick={() => handleEndSession(session._id)} className="btn btn-ghost" style={{ flex: 1, color: '#ef4444', border: '1.5px solid #fee2e2', borderRadius: '12px', fontWeight: '800', fontSize: '13px' }}>
-                               End
-                            </button>
-                         )}
+                          {session.status === 'ongoing' && (
+                             <button onClick={() => openEndModal(session._id)} className="btn btn-ghost" style={{ flex: 1, color: '#ef4444', border: '1.5px solid #fee2e2', borderRadius: '12px', fontWeight: '800', fontSize: '13px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                                <StopCircle size={15} /> End
+                             </button>
+                          )}
                          <button onClick={() => handleDelete(session._id, session.title)} className="btn" style={{ padding: '12px 14px', borderRadius: '12px', background: '#fff1f2', color: '#ef4444', border: '1.5px solid #fee2e2', cursor: 'pointer', display: 'flex', alignItems: 'center' }} title="Delete">
                            <Trash2 size={16} />
                          </button>
@@ -300,6 +312,62 @@ export default function FacultyLiveClasses() {
       )}
       
       {selectedAnalytics && <LiveAnalyticsModal session={selectedAnalytics} onClose={() => setSelectedAnalytics(null)} />}
+
+      {/* End Class Modal */}
+      {showEndModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100, backdropFilter: 'blur(8px)', padding: '20px' }}>
+          <div className="card fade-in" style={{ width: '100%', maxWidth: '460px', padding: 0, borderRadius: '24px', overflow: 'hidden', boxShadow: '0 25px 50px rgba(0,0,0,0.25)' }}>
+            {/* Header */}
+            <div style={{ padding: '22px 24px', background: '#fff1f2', borderBottom: '1px solid #fecdd3', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <StopCircle size={22} color="#dc2626" />
+                <h2 style={{ margin: 0, fontSize: '18px', fontWeight: '900', color: '#991b1b' }}>End Live Class</h2>
+              </div>
+              <button onClick={() => setShowEndModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444' }}><X size={20} /></button>
+            </div>
+
+            <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              {/* Info banner */}
+              <div style={{ display: 'flex', gap: '10px', padding: '14px 16px', background: '#eff6ff', borderRadius: '12px', border: '1px solid #bfdbfe' }}>
+                <Info size={18} color="#2563eb" style={{ flexShrink: 0, marginTop: '1px' }} />
+                <p style={{ margin: 0, fontSize: '13px', color: '#1e40af', lineHeight: 1.65 }}>
+                  After ending, the <strong>BBB recording</strong> will automatically be sent to your instructor for review. Students will only see it once it's approved.
+                </p>
+              </div>
+
+              {/* Notes URL field */}
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: '800', textTransform: 'uppercase', color: 'var(--color-text-secondary)', marginBottom: '8px', letterSpacing: '0.06em' }}>
+                  <FileText size={12} style={{ marginRight: '5px', verticalAlign: 'middle' }} />
+                  Class Notes / Slides URL <span style={{ fontWeight: '400', color: 'var(--color-text-muted)' }}>(optional)</span>
+                </label>
+                <input
+                  type="url"
+                  value={notesUrl}
+                  onChange={e => setNotesUrl(e.target.value)}
+                  placeholder="https://drive.google.com/slides-link or PDF URL"
+                  style={{ width: '100%', padding: '12px 14px', borderRadius: '12px', border: '1px solid var(--color-border)', fontSize: '13px', outline: 'none', boxSizing: 'border-box' }}
+                />
+                <p style={{ fontSize: '11px', color: 'var(--color-text-muted)', marginTop: '6px' }}>
+                  If provided, notes will also be sent to the instructor and published to students after approval.
+                </p>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div style={{ padding: '16px 24px', borderTop: '1px solid var(--color-border)', display: 'flex', gap: '12px', background: 'var(--color-bg)' }}>
+              <button onClick={() => setShowEndModal(false)} disabled={ending} className="btn btn-secondary" style={{ flex: 1, height: '44px', borderRadius: '12px' }}>Cancel</button>
+              <button
+                onClick={handleEndSession}
+                disabled={ending}
+                style={{ flex: 2, height: '44px', borderRadius: '12px', border: 'none', background: '#dc2626', color: 'white', fontWeight: '800', fontSize: '14px', cursor: ending ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', opacity: ending ? 0.7 : 1 }}
+              >
+                <StopCircle size={16} /> {ending ? 'Ending Class...' : 'End Class & Submit'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

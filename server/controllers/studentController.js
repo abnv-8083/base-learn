@@ -306,8 +306,8 @@ const getLiveClasses = asyncHandler(async (req, res) => {
 
   const batchId = studentBatch._id;
 
-  // Filter live classes where this batch is in the 'batches' array
-  const selectFields = 'title subject faculty scheduledAt duration status type meetingLink recordingUrl presentationUrl';
+  // Fields exposed — deliberately excludes raw recordingUrl/presentationUrl from LiveClass
+  const selectFields = 'title subject faculty scheduledAt duration status type batches';
 
   const upcoming = await LiveClass.find({ 
     status: { $in: ['upcoming', 'ongoing'] }, 
@@ -318,7 +318,7 @@ const getLiveClasses = asyncHandler(async (req, res) => {
     .sort('scheduledAt')
     .lean();
 
-  const past = await LiveClass.find({ 
+  const pastRaw = await LiveClass.find({ 
     status: { $in: ['completed', 'cancelled'] }, 
     batches: batchId 
   })
@@ -327,11 +327,38 @@ const getLiveClasses = asyncHandler(async (req, res) => {
     .sort('-scheduledAt')
     .lean();
 
+  // ── Gate: only expose recording/notes if instructor has APPROVED them ──
+  // Find all published RecordedClass entries linked to these past sessions
+  const pastLiveClassIds = pastRaw.map(c => c._id);
+  
+  const approvedContent = await RecordedClass.find({
+    liveClass: { $in: pastLiveClassIds },
+    status: 'published'
+  }).select('liveClass videoUrl contentType').lean();
+
+  // Build a map: liveClassId → { recordingUrl, notesUrl }
+  const contentMap = {};
+  for (const rc of approvedContent) {
+    const key = rc.liveClass.toString();
+    if (!contentMap[key]) contentMap[key] = {};
+    if (rc.contentType === 'liveRecording') contentMap[key].recordingUrl = rc.videoUrl;
+    if (rc.contentType === 'liveNotes')     contentMap[key].presentationUrl = rc.videoUrl;
+  }
+
+  // Attach approved content to past sessions
+  const past = pastRaw.map(cls => ({
+    ...cls,
+    recordingUrl:    contentMap[cls._id.toString()]?.recordingUrl    || null,
+    presentationUrl: contentMap[cls._id.toString()]?.presentationUrl || null,
+    recordingPending: !contentMap[cls._id.toString()]?.recordingUrl  // for UI hints
+  }));
+
   res.status(200).json({
     success: true,
     data: { upcoming, past }
   });
 });
+
 
 // @desc    Join a live BigBlueButton class (Get Viewer URL)
 // @route   GET /api/student/live-classes/:id/join

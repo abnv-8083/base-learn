@@ -4,6 +4,32 @@ const bbb = require('../utils/bbb');
 const Faculty = require('../models/Faculty');
 const Notification = require('../models/Notification');
 
+// ── Notify all assigned instructors for a faculty ─────────────────────────
+const notifyInstructors = async (facultyId, title, message, link) => {
+    try {
+        const faculty = await Faculty.findById(facultyId).select('assignedInstructors');
+        if (!faculty) return;
+
+        const instructors = Array.isArray(faculty.assignedInstructors) 
+            ? faculty.assignedInstructors 
+            : faculty.assignedInstructor ? [faculty.assignedInstructor] : [];
+
+        for (const instructorId of instructors) {
+            await Notification.create({
+                recipient: instructorId,
+                recipientModel: 'Instructor',
+                title,
+                message,
+                type: 'content_approval',
+                link
+            });
+        }
+    } catch (err) {
+        console.error('[Notify Instructors Error]:', err.message);
+    }
+};
+
+// ── Sync ongoing sessions → mark completed if BBB ended ──────────────────
 const syncLiveSessions = async () => {
     try {
         const ongoingSessions = await LiveClass.find({ status: 'ongoing' }).populate('faculty', 'name email');
@@ -39,42 +65,37 @@ const syncLiveSessions = async () => {
                             
                             if (studentIndex > -1) {
                                 updatedAttendance[studentIndex].attended = true;
-                                updatedAttendance[studentIndex].leaveTime = new Date(); // Approximate leave time if meeting just ended
+                                updatedAttendance[studentIndex].leaveTime = new Date();
                                 
                                 const sessionDurationSeconds = (session.duration || 60) * 60;
                                 const attendedSeconds = parseInt(att.totalTime) || sessionDurationSeconds;
-                                
                                 const attendancePercentage = (attendedSeconds / sessionDurationSeconds) * 100;
                                 
-                                if (attendancePercentage >= 80) {
-                                    updatedAttendance[studentIndex].status = 'present';
-                                } else {
-                                    updatedAttendance[studentIndex].status = 'late';
-                                }
+                                updatedAttendance[studentIndex].status = attendancePercentage >= 80 ? 'present' : 'late';
                                 updatedAttendance[studentIndex].totalDurationSeconds = attendedSeconds;
                             }
                         }
                         session.attendance = updatedAttendance;
                     }
 
-                    // 2. Mark session as completed (ESSENTIAL: Do this even if info fetch fails)
+                    // 2. Mark session as completed
                     session.status = 'completed';
                     await session.save();
                     console.log(`[JOB-DEBUG] Session "${session.title}" marked as COMPLETED.`);
 
-                    // 3. Process recording
-                    await processRecording(session);
+                    // 3. Process recording (creates draft RecordedClass for instructor review)
+                    await processRecordingDraft(session);
                 }
             } catch (sessionError) {
                 console.error(`[JOB-DEBUG] Error processing session ${session._id}:`, sessionError.message);
             }
         }
 
-        // Process pending completed sessions for recordings
+        // Also retry processing for any completed sessions not yet processed
         const pendingProcessing = await LiveClass.find({ status: 'completed', processed: false });
         for (const session of pendingProcessing) {
             try {
-                await processRecording(session);
+                await processRecordingDraft(session);
             } catch (e) {
                 console.error(`[JOB-DEBUG] Error processing recording for ${session._id}:`, e.message);
             }
@@ -85,58 +106,113 @@ const syncLiveSessions = async () => {
     }
 };
 
-const processRecording = async (session) => {
+// ── Create draft RecordedClass entries for instructor approval ────────────
+const processRecordingDraft = async (session) => {
     try {
+        // Check if already processed (avoid duplicates)
+        const existing = await RecordedClass.findOne({ liveClass: session._id });
+        if (existing) {
+            console.log(`[JOB-DEBUG] Draft already exists for "${session.title}", skipping.`);
+            // Still mark processed if somehow missed
+            if (!session.processed) {
+                session.processed = true;
+                await session.save();
+            }
+            return;
+        }
+
+        let recordingCreated = false;
+
+        // ── 1. BBB Auto-Recording ─────────────────────────────────────────
         const recordings = await bbb.getRecordings(session._id.toString());
         if (recordings && recordings.length > 0) {
-            const recording = recordings[0]; // Take the first recording
+            const recording = recordings[0];
             const playbackUrl = recording.playback?.format?.url || recording.playback?.recordings?.recording?.url;
 
             if (playbackUrl) {
-                console.log(`Recording found for ${session.title}. Creating RecordedClass draft...`);
-                
-                // Create RecordedClass draft for Instructor review
+                console.log(`[JOB-DEBUG] BBB recording found for "${session.title}". Creating draft for instructor review...`);
+
                 const recordedEntry = await RecordedClass.create({
                     title: `[LIVE] ${session.title}`,
-                    description: session.description || `Automated recording from live session on ${session.scheduledAt.toLocaleDateString()}`,
+                    description: session.description || `Live session recording from ${new Date(session.scheduledAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}`,
                     subject: session.subject,
-                    chapter: session.chapter,
+                    chapter: session.chapter || null,
                     videoUrl: playbackUrl,
-                    faculty: session.faculty,
+                    faculty: session.faculty?._id || session.faculty,
                     liveClass: session._id,
                     contentType: 'liveRecording',
-                    status: 'draft',
-                    assignedTo: session.batches // Copy original batches
+                    status: 'draft',              // ← PENDING instructor approval
+                    assignedTo: session.batches   // Pre-fill batch list from live class
                 });
 
-                // Mark LiveClass as processed
-                session.processed = true;
+                // Store URL on LiveClass too (for instructor portal reference)
                 session.recordingUrl = playbackUrl;
-                await session.save();
+                recordingCreated = true;
 
-                // Notify Instructor (find assigned instructor for this faculty)
-                const faculty = await Faculty.findById(session.faculty);
-                if (faculty && faculty.assignedInstructor) {
-                    await Notification.create({
-                        recipient: faculty.assignedInstructor,
-                        recipientModel: 'Instructor',
-                        title: 'New Live Recording Ready',
-                        message: `The live session "${session.title}" has ended and a recording is ready for review.`,
-                        type: 'content_approval',
-                        link: `/instructor/verification?id=${recordedEntry._id}`
-                    });
+                // Notify assigned instructors
+                await notifyInstructors(
+                    session.faculty?._id || session.faculty,
+                    '🎬 Live Recording Ready for Review',
+                    `The live session "${session.title}" has ended. A recording draft is waiting for your approval before students can access it.`,
+                    `/instructor/content`
+                );
+
+                console.log(`[JOB-DEBUG] Draft RecordedClass created: ${recordedEntry._id}`);
+            }
+        }
+
+        // ── 2. Manual Notes / Presentation URL ───────────────────────────
+        // If faculty submitted notes when ending the class, create a notes draft too
+        if (session.presentationUrl) {
+            const notesAlreadyDrafted = await RecordedClass.findOne({ 
+                liveClass: session._id, 
+                contentType: 'liveNotes' 
+            });
+
+            if (!notesAlreadyDrafted) {
+                await RecordedClass.create({
+                    title: `[NOTES] ${session.title}`,
+                    description: `Class notes/slides from live session on ${new Date(session.scheduledAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}`,
+                    subject: session.subject,
+                    chapter: session.chapter || null,
+                    videoUrl: session.presentationUrl, // Reuse videoUrl field for PDF/slide URL
+                    faculty: session.faculty?._id || session.faculty,
+                    liveClass: session._id,
+                    contentType: 'liveNotes',
+                    status: 'draft',
+                    assignedTo: session.batches
+                });
+
+                if (!recordingCreated) {
+                    // Notify only if no recording notification was sent yet
+                    await notifyInstructors(
+                        session.faculty?._id || session.faculty,
+                        '📄 Class Notes Ready for Review',
+                        `Faculty submitted notes for "${session.title}". Please review and approve before students can access them.`,
+                        `/instructor/content`
+                    );
                 }
             }
         }
+
+        // ── 3. Mark session as fully processed ───────────────────────────
+        if (recordingCreated || session.presentationUrl) {
+            session.processed = true;
+            await session.save();
+        } else {
+            // No recording available yet — will retry on next job cycle
+            console.log(`[JOB-DEBUG] No BBB recording available yet for "${session.title}". Will retry.`);
+        }
+
     } catch (error) {
-        console.error(`Process Recording Error for ${session._id}:`, error.message);
+        console.error(`[Process Recording Draft Error] for session ${session._id}:`, error.message);
     }
 };
 
-// Start the job
+// ── Start the polling job ─────────────────────────────────────────────────
 const startJob = () => {
-    console.log('Live Session Lifecycle Job Started.');
-    setInterval(syncLiveSessions, 30000); // Check every 30 seconds for faster synchronization
+    console.log('[LiveSessionJob] Live Session Lifecycle Job Started. Polling every 30s.');
+    setInterval(syncLiveSessions, 30000);
 };
 
 module.exports = { startJob };

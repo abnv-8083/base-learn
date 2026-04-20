@@ -422,6 +422,8 @@ exports.startLiveClass = asyncHandler(async (req, res) => {
 // POST /api/faculty/live-classes/:id/end
 exports.endLiveClass = asyncHandler(async (req, res) => {
     const { id } = req.params;
+    const { notesUrl } = req.body; // Optional: faculty can submit presentation/notes URL when ending
+    
     const liveClass = await LiveClass.findById(id).populate('faculty', 'name');
     if (!liveClass) return res.status(404).json({ message: 'Live class not found' });
     
@@ -436,12 +438,19 @@ exports.endLiveClass = asyncHandler(async (req, res) => {
     }
 
     liveClass.status = 'completed';
+    
+    // Store notes URL if provided — the job will create a notes draft for instructor review
+    if (notesUrl && notesUrl.trim()) {
+        liveClass.presentationUrl = notesUrl.trim();
+    }
+    
     await liveClass.save();
 
     await logAction(req, 'Ended Live Class', liveClass.title, { targetId: liveClass._id, targetModel: 'LiveClass' });
     
-    res.status(200).json({ success: true, message: 'Class ended and moved to results' });
+    res.status(200).json({ success: true, message: 'Class ended. The recording and notes will be sent to your instructor for review.' });
 });
+
 
 // DELETE /api/faculty/live-classes/:id
 exports.deleteLiveClass = asyncHandler(async (req, res) => {
