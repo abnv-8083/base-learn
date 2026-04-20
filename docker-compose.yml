@@ -12,6 +12,10 @@ services:
       - ./server/.env
     volumes:
       - ./server/public/uploads:/app/public/uploads
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
+      - 1.1.1.1
     restart: always
 
   # Frontend Service
@@ -25,6 +29,9 @@ services:
       - NEXT_PUBLIC_API_URL=https://api.baselearn.in
       - NEXT_PUBLIC_BACKEND_URL=https://api.baselearn.in
       - API_PROXY_TARGET=http://backend:5000
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
     depends_on:
       - backend
     restart: always
