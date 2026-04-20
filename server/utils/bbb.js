@@ -7,7 +7,10 @@ class BigBlueButton {
     this.url = process.env.BBB_URL || 'https://test-install.blindsidenetworks.com/bigbluebutton/api';
     this.secret = process.env.BBB_SECRET || '8cd8ef52e8e101574e400365b55e11a6';
     this.parser = new xml2js.Parser({ explicitArray: false });
+    const usingFallback = !process.env.BBB_URL;
+    console.log(`[BBB] Configured → ${this.url} ${usingFallback ? '(⚠ FALLBACK — set BBB_URL in .env)' : '✓'}`);
   }
+
 
   generateChecksum(apiMethod, query) {
     return crypto
