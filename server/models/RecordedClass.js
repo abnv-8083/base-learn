@@ -10,7 +10,7 @@ const recordedClassSchema = new mongoose.Schema({
   thumbnail: { type: String },
   faculty: { type: mongoose.Schema.Types.ObjectId, ref: 'Faculty', required: true },
   liveClass: { type: mongoose.Schema.Types.ObjectId, ref: 'LiveClass' },
-  contentType: { type: String, enum: ['lecture', 'faq', 'liveRecording'], default: 'lecture' },
+  contentType: { type: String, enum: ['lecture', 'faq', 'liveRecording', 'liveNotes'], default: 'lecture' },
   status: { type: String, enum: ['draft', 'published', 'rejected', 'archived', 'pending_delete'], default: 'draft' },
   totalViews: { type: Number, default: 0 },
   totalClicks: { type: Number, default: 0 },
