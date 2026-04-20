@@ -23,7 +23,7 @@ class BigBlueButton {
     const privacyParams = [
       'lockSettingsHideUserList=true',
       'webcamsOnlyForModerator=true',
-      'lockSettingsDisableCam=false', // Allow students to share cam (so moderator can see them)
+      'lockSettingsDisableCam=false',
       'lockSettingsDisablePublicChat=false',
       'lockSettingsDisablePrivateChat=false'
     ].join('&');
@@ -33,12 +33,15 @@ class BigBlueButton {
     const fullUrl = `${this.url}/create?${query}&checksum=${checksum}`;
 
     try {
-      const response = await axios.get(fullUrl);
+      const response = await axios.get(fullUrl, { timeout: 10000 });
       const result = await this.parser.parseStringPromise(response.data);
       return result.response;
     } catch (error) {
-      console.error('BBB Create Meeting Error:', error.message);
-      throw error;
+      const detail = error.response
+        ? `HTTP ${error.response.status}: ${String(error.response.data).slice(0, 200)}`
+        : `${error.code || error.name}: ${error.message}`;
+      console.error(`[BBB] createMeeting FAILED → ${detail} | URL: ${this.url}`);
+      throw new Error(`BBB unreachable: ${detail}`);
     }
   }
 
@@ -90,17 +93,19 @@ class BigBlueButton {
     const fullUrl = `${this.url}/getRecordings?${query}&checksum=${checksum}`;
 
     try {
-      const response = await axios.get(fullUrl);
+      const response = await axios.get(fullUrl, { timeout: 10000 });
       const result = await this.parser.parseStringPromise(response.data);
       if (result.response.returncode === 'SUCCESS' && result.response.recordings) {
-          // BBB returns an array even if one recording, but sometimes just an object if only one
           const recs = result.response.recordings.recording;
           return Array.isArray(recs) ? recs : [recs];
       }
       return [];
     } catch (error) {
-      console.error('BBB Get Recordings Error:', error.message);
-      return [];
+      const detail = error.response
+        ? `HTTP ${error.response.status}`
+        : `${error.code || error.name}: ${error.message}`;
+      console.error(`[BBB] getRecordings FAILED → ${detail}`);
+      return []; // Return empty instead of throwing — caller handles gracefully
     }
   }
   
