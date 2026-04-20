@@ -105,6 +105,19 @@ const syncLiveSessions = async () => {
         // Also retry processing for any completed sessions not yet processed
         const pendingProcessing = await LiveClass.find({ status: 'completed', processed: false });
         for (const session of pendingProcessing) {
+            // ── Retry cutoff: if session has been completed for > 2 hours with no recording,
+            //    stop retrying and mark it processed to halt the infinite loop.
+            //    Faculty can manually add the recording URL later via the instructor portal.
+            const completedFor = Date.now() - new Date(session.updatedAt).getTime();
+            const MAX_RETRY_MS = 2 * 60 * 60 * 1000; // 2 hours
+
+            if (completedFor > MAX_RETRY_MS) {
+                console.warn(`[JOB-DEBUG] Session "${session.title}" has been completed for ${Math.round(completedFor/60000)} min with no BBB recording. Giving up — marking processed. Faculty can add recording URL manually.`);
+                session.processed = true;
+                await session.save();
+                continue;
+            }
+
             try {
                 await processRecordingDraft(session);
             } catch (e) {
