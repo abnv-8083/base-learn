@@ -231,7 +231,7 @@ const processRecordingDraft = async (session) => {
         }
 
         // ── 3. Mark session as fully processed ───────────────────────────
-        if (recordingCreated || autoNotesUrl) {
+        if (recordingCreated) {
             session.processed = true;
             await session.save();
         } else {

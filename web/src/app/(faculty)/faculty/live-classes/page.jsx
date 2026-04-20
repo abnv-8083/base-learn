@@ -95,7 +95,6 @@ export default function FacultyLiveClasses() {
   const handleInstantSave = async () => {
     if (!instantForm.title?.trim()) return toast.error('Session title is required.');
     if (!instantForm.subject)       return toast.error('Please select a subject.');
-    if (!instantForm.batchId)       return toast.error('Please select a batch.');
     setInstantSaving(true);
     try {
       // Create with current time as scheduledAt
@@ -276,9 +275,21 @@ export default function FacultyLiveClasses() {
                 <div style={{ padding: '16px 24px', borderTop: '1px solid var(--color-border)', display: 'flex', gap: '10px', background: 'var(--color-surface)' }}>
                   {isCompleted ? (
                     <>
-                      <button onClick={() => setSelectedAnalytics(session)} className="btn btn-secondary" style={{ flex: 1, height: '42px', borderRadius: '10px', fontSize: '13px', fontWeight: '700', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
-                        <BarChart2 size={15} /> Analytics
-                      </button>
+                      {session.internalMeetingId ? (
+                        <a 
+                          href={`https://test-install.blindsidenetworks.com/learning-analytics-dashboard/?meeting=${session.internalMeetingId}`} 
+                          target="_blank" 
+                          rel="noopener noreferrer" 
+                          className="btn btn-secondary" 
+                          style={{ flex: 1, height: '42px', borderRadius: '10px', fontSize: '13px', fontWeight: '700', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', textDecoration: 'none' }}
+                        >
+                          <BarChart2 size={15} /> Analytics
+                        </a>
+                      ) : (
+                        <button onClick={() => setSelectedAnalytics(session)} className="btn btn-secondary" style={{ flex: 1, height: '42px', borderRadius: '10px', fontSize: '13px', fontWeight: '700', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                          <BarChart2 size={15} /> Local Analytics
+                        </button>
+                      )}
                       <button onClick={() => handleDelete(session._id, session.title)} style={{ padding: '0 14px', height: '42px', borderRadius: '10px', background: '#fee2e2', color: '#ef4444', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px', fontWeight: '700', fontSize: '13px' }}>
                         <Trash2 size={14} />
                       </button>
@@ -386,9 +397,9 @@ export default function FacultyLiveClasses() {
                 </select>
               </FormField>
 
-              <FormField label="Batch" required>
+              <FormField label="Batch (Optional)">
                 <select className="form-select" style={{ height: '46px', borderRadius: '12px' }} value={instantForm.batchId} onChange={e => setInstantForm({ ...instantForm, batchId: e.target.value })}>
-                  <option value="">Select batch...</option>
+                  <option value="">Studio Session (No Batch)</option>
                   {batches.map(b => <option key={b._id} value={b._id}>{b.name} ({b.studyClass?.name})</option>)}
                 </select>
               </FormField>
