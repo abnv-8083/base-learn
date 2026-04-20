@@ -58,7 +58,7 @@ export default function FacultyLiveClasses() {
   // ── End Class modal ──
   const [showEndModal,   setShowEndModal]   = useState(false);
   const [endingId,       setEndingId]       = useState(null);
-  const [notesUrl,       setNotesUrl]       = useState('');
+  const [notesPdf,       setNotesPdf]       = useState(null);
   const [ending,         setEnding]         = useState(false);
 
   const intervalRef = useRef(null);
@@ -154,9 +154,16 @@ export default function FacultyLiveClasses() {
     if (!endingId) return;
     setEnding(true);
     try {
-      await axios.post(`/api/faculty/live-classes/${endingId}/end`, { notesUrl });
+      const formData = new FormData();
+      if (notesPdf) formData.append('notesPdf', notesPdf);
+
+      await axios.post(
+        `/api/faculty/live-classes/${endingId}/end`,
+        formData,
+        { headers: { 'Content-Type': 'multipart/form-data' } }
+      );
       toast.success('Class ended! Recording & notes sent to instructor for review.');
-      setShowEndModal(false); setEndingId(null); setNotesUrl('');
+      setShowEndModal(false); setEndingId(null); setNotesPdf(null);
       fetchClasses();
     } catch (err) { toast.error(err.response?.data?.message || 'Failed to end session.'); }
     finally { setEnding(false); }
@@ -493,15 +500,42 @@ export default function FacultyLiveClasses() {
               <button onClick={() => setShowEndModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444' }}><X size={20} /></button>
             </div>
 
-            <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
               <div style={{ display: 'flex', gap: '10px', padding: '14px 16px', background: '#eff6ff', borderRadius: '12px', border: '1px solid #bfdbfe' }}>
                 <Info size={17} color="#2563eb" style={{ flexShrink: 0 }} />
                 <p style={{ margin: 0, fontSize: '13px', color: '#1e40af', lineHeight: 1.65 }}>
                   After ending:
                   <br />• The <strong>BBB recording</strong> will be sent to your instructor for review.
-                  <br />• The <strong>shared notes</strong> from this session are automatically captured.
+                  <br />• <strong>Shared notes</strong> from the session are captured automatically.
                   <br />Students will only see materials once the instructor approves them.
                 </p>
+              </div>
+
+              {/* Optional PDF Upload */}
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: '800', textTransform: 'uppercase', color: 'var(--color-text-secondary)', marginBottom: '8px', letterSpacing: '0.05em' }}>
+                  <FileText size={12} style={{ marginRight: '5px', verticalAlign: 'middle' }} />
+                  Upload Class Notes PDF
+                  <span style={{ marginLeft: '6px', fontWeight: '400', fontSize: '11px', color: 'var(--color-text-muted)', textTransform: 'none' }}>(optional)</span>
+                </label>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', borderRadius: '12px', border: `2px dashed ${notesPdf ? '#6366f1' : 'var(--color-border)'}`, background: notesPdf ? '#f5f3ff' : 'var(--color-bg)', cursor: 'pointer', transition: 'all .2s' }}>
+                  <input
+                    type="file"
+                    accept=".pdf,application/pdf"
+                    style={{ display: 'none' }}
+                    onChange={e => setNotesPdf(e.target.files[0] || null)}
+                  />
+                  <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: notesPdf ? '#6366f1' : 'var(--color-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <FileText size={18} color="white" />
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    {notesPdf
+                      ? <><div style={{ fontSize: '13px', fontWeight: '700', color: '#4338ca', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{notesPdf.name}</div><div style={{ fontSize: '11px', color: 'var(--color-text-muted)' }}>{(notesPdf.size / 1024).toFixed(1)} KB</div></>
+                      : <><div style={{ fontSize: '13px', fontWeight: '600', color: 'var(--color-text-secondary)' }}>Click to upload PDF notes</div><div style={{ fontSize: '11px', color: 'var(--color-text-muted)' }}>Max 10 MB • PDF only</div></>
+                    }
+                  </div>
+                  {notesPdf && <button type="button" onClick={e => { e.preventDefault(); setNotesPdf(null); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', padding: '4px' }}><X size={16} /></button>}
+                </label>
               </div>
             </div>
 

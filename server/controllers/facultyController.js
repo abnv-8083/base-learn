@@ -452,34 +452,48 @@ exports.startLiveClass = asyncHandler(async (req, res) => {
 // POST /api/faculty/live-classes/:id/end
 exports.endLiveClass = asyncHandler(async (req, res) => {
     const { id } = req.params;
-    const { notesUrl } = req.body; // Optional: faculty can submit presentation/notes URL when ending
     
     const liveClass = await LiveClass.findById(id).populate('faculty', 'name');
     if (!liveClass) return res.status(404).json({ message: 'Live class not found' });
-    
-    if (liveClass.faculty._id.toString() !== req.user.userId.toString()) {
+
+    const facultyId = liveClass.faculty?._id?.toString() || liveClass.faculty?.toString();
+    const requestingId = req.user.userId?.toString() || req.user._id?.toString();
+    if (facultyId !== requestingId) {
         return res.status(403).json({ message: 'Unauthorized to end this class' });
     }
 
+    // 1. End the BBB meeting
     try {
         await bbb.endMeeting(liveClass._id.toString(), 'mod123');
     } catch (err) {
-        console.warn('Meeting already ended or non-existent in BBB');
+        console.warn('[EndLiveClass] BBB endMeeting skipped (already ended or not running)');
     }
 
-    liveClass.status = 'completed';
-    
-    // Store notes URL if provided — the job will create a notes draft for instructor review
-    if (notesUrl && notesUrl.trim()) {
-        liveClass.presentationUrl = notesUrl.trim();
+    // 2. If faculty uploaded a PDF notes file, store it in S3
+    if (req.file) {
+        try {
+            const { uploadToS3 } = require('../utils/s3');
+            const pdfUrl = await uploadToS3(req.file, 'live-notes');
+            liveClass.presentationUrl = pdfUrl;
+            console.log(`[EndLiveClass] Notes PDF uploaded: ${pdfUrl}`);
+        } catch (uploadErr) {
+            console.error('[EndLiveClass] Notes PDF upload failed:', uploadErr.message);
+            // Don't fail the whole request — notes upload is optional
+        }
     }
-    
+
+    // 3. Immediately mark as completed so the card updates on refresh
+    liveClass.status = 'completed';
     await liveClass.save();
 
     await logAction(req, 'Ended Live Class', liveClass.title, { targetId: liveClass._id, targetModel: 'LiveClass' });
     
-    res.status(200).json({ success: true, message: 'Class ended. The recording and notes will be sent to your instructor for review.' });
+    res.status(200).json({ 
+        success: true, 
+        message: 'Class ended. The recording and notes will be sent to your instructor for review.' 
+    });
 });
+
 
 
 // DELETE /api/faculty/live-classes/:id

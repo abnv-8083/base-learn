@@ -28,7 +28,8 @@ router.post('/content/upload', localMixedUpload.fields([
 router.get('/live-classes', facultyController.getLiveClasses);
 router.post('/live-classes', facultyController.scheduleLiveClass);
 router.get('/live-classes/:id/start', facultyController.startLiveClass);
-router.post('/live-classes/:id/end', facultyController.endLiveClass);
+router.post('/live-classes/:id/end', localMixedUpload.single('notesPdf'), facultyController.endLiveClass);
+
 router.delete('/live-classes/:id', facultyController.deleteLiveClass);
 router.get('/batches', facultyController.getBatches);
 router.put('/profile', facultyController.updateProfile);
