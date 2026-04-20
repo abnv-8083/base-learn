@@ -165,7 +165,9 @@ exports.getPendingRecordedClasses = async (req, res) => {
         const recordings = await RecordedClass.find({ status: 'draft' })
             .populate('faculty', 'name email')
             .populate('subject', 'name')
-            .populate('chapter', 'name');
+            .populate('chapter', 'name')
+            .populate('liveClass', 'title scheduledAt')  // needed for DraftCard display
+            .sort({ createdAt: -1 });
         res.status(200).json({ success: true, data: recordings });
     } catch (error) {
         res.status(500).json({ success: false, message: 'Error fetching pending recordings', error: error.message });
@@ -1687,17 +1689,9 @@ exports.getLiveClasses = async (req, res) => {
             .populate('batches', 'name')
             .sort({ scheduledAt: -1 });
 
-        // Auto-heal: if a session is marked 'completed' but scheduledAt is in the future,
-        // reset it to 'upcoming' (catches accidental early endings or BBB false positives)
-        const now = new Date();
-        for (const cls of classes) {
-            if (cls.status === 'completed' && new Date(cls.scheduledAt) > now) {
-                cls.status = 'upcoming';
-                cls.processed = false;
-                await cls.save();
-                console.log(`[LiveClass Auto-Heal] Reset "${cls.title}" from completed → upcoming (scheduledAt is future)`);
-            }
-        }
+        // Note: auto-heal removed — the liveSessionJob grace period prevents premature
+        // completions at the source. Sessions keep their status as set by faculty.
+
 
         // Check for associated recordings and handle legacy string subjects defensively
         const RecordedClass = require('../models/RecordedClass');

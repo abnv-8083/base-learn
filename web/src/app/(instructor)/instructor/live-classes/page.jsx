@@ -127,7 +127,7 @@ export default function InstructorLiveClasses() {
     try {
       const [clsRes, draftRes] = await Promise.all([
         axios.get('/api/instructor/live-classes'),
-        axios.get('/api/instructor/recorded-classes?status=draft').catch(() => ({ data: { data: [] } })),
+        axios.get('/api/instructor/videos/pending'),  // RecordedClass drafts awaiting approval
       ]);
       setClasses(clsRes.data.data || []);
       setDrafts(draftRes.data.data || []);
