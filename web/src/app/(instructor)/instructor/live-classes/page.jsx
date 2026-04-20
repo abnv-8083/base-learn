@@ -346,7 +346,7 @@ export default function InstructorLiveClasses() {
                   </span>
                 </div>
                 {pendingDrafts.map(draft => (
-                  <DraftCard key={draft._id} draft={draft} onReview={() => openDraftModal(draft)} onDelete={() => deleteDraft(draft)} />
+                  <DraftCard key={draft._id} draft={draft} allDrafts={pendingDrafts} onReview={() => openDraftModal(draft)} onDelete={() => deleteDraft(draft)} />
                 ))}
               </div>
             )
@@ -595,9 +595,15 @@ function LiveClassCard({ cls, mode, onAssignBatches, onViewAnalytics, drafts = [
 // ─────────────────────────────────────────────────────────
 // Draft Card (for Pending Review tab)
 // ─────────────────────────────────────────────────────────
-function DraftCard({ draft, onReview, onDelete }) {
+function DraftCard({ draft, allDrafts = [], onReview, onDelete }) {
   const isRecording = draft.contentType === 'liveRecording';
   const accent = isRecording ? '#6366f1' : '#0ea5e9';
+
+  // Check if there is a twin draft (e.g. video + notes) for the same live class
+  const liveClassId = draft.liveClass?._id || draft.liveClass;
+  const hasTwin = liveClassId && allDrafts.some(d => 
+    (d.liveClass?._id || d.liveClass) === liveClassId && d._id !== draft._id
+  );
 
   return (
     <div className="card fade-in" style={{ padding: 0, borderRadius: '18px', overflow: 'hidden', border: `1px solid ${isRecording ? '#e0e7ff' : '#e0f2fe'}` }}>
@@ -612,6 +618,12 @@ function DraftCard({ draft, onReview, onDelete }) {
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px', flexWrap: 'wrap' }}>
             <span style={{ fontSize: '15px', fontWeight: '800', color: 'var(--color-text-primary)' }}>{draft.title}</span>
             <DraftBadge status={draft.status} />
+            {hasTwin && (
+              <span style={{ padding: '3px 8px', borderRadius: '6px', background: '#f3e8ff', color: '#7e22ce', fontSize: '10px', fontWeight: '800', letterSpacing: '0.05em', textTransform: 'uppercase', border: '1px solid #e9d5ff' }}>
+                <Layers size={10} style={{ display: 'inline', marginRight: '4px', verticalAlign: 'middle', marginTop: '-2px' }} />
+                Part of 2-Item Bundle
+              </span>
+            )}
           </div>
           <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)', display: 'flex', gap: '14px', flexWrap: 'wrap' }}>
             <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
