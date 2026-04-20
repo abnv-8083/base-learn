@@ -1,21 +1,15 @@
 services:
-  # Backend Service
+  # Backend Service — uses host networking so it can reach external services (BBB, S3, etc.)
+  # without Docker bridge/NAT issues on cloud providers.
   backend:
     build:
       context: ./server
       dockerfile: Dockerfile
-    ports:
-      - "5000:5000"
-      - "6000:6000"
-      - "8080:8080"
+    network_mode: "host"   # ← shares host network stack; ports below are for reference only
     env_file:
       - ./server/.env
     volumes:
       - ./server/public/uploads:/app/public/uploads
-    dns:
-      - 8.8.8.8
-      - 8.8.4.4
-      - 1.1.1.1
     restart: always
 
   # Frontend Service
@@ -28,10 +22,11 @@ services:
     environment:
       - NEXT_PUBLIC_API_URL=https://api.baselearn.in
       - NEXT_PUBLIC_BACKEND_URL=https://api.baselearn.in
-      - API_PROXY_TARGET=http://backend:5000
+      - API_PROXY_TARGET=http://localhost:5000   # backend is on host network now
     dns:
       - 8.8.8.8
       - 8.8.4.4
     depends_on:
       - backend
     restart: always
+
