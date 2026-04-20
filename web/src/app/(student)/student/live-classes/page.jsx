@@ -43,17 +43,33 @@ export default function StudentLiveClasses() {
     return () => clearInterval(intervalRef.current);
   }, []);
 
-  const handleJoinSession = async (id) => {
+  const handleJoinSession = async (id, retryCount = 0) => {
     try {
       const res = await axios.get(`/api/student/live-classes/${id}/join`);
       if (res.data.data?.joinUrl) {
         window.open(res.data.data.joinUrl, '_blank');
         toast.success('Joining BigBlueButton lobby...');
+        fetchClasses(); // Refresh to reflect new 'ongoing' status
       } else {
         toast.error('Meeting URL not generated.');
       }
     } catch (err) {
-      toast.error(err.response?.data?.message || 'The host may not have started the class yet.');
+      const msg = err.response?.data?.message || '';
+      const notStarted = msg.toLowerCase().includes('not started');
+
+      // Auto-retry up to 3 times (every 5s) if the instructor hasn't started yet
+      if (notStarted && retryCount < 3) {
+        const toastId = toast.loading(`Checking for instructor... (attempt ${retryCount + 1}/3)`);
+        setTimeout(async () => {
+          toast.dismiss(toastId);
+          await handleJoinSession(id, retryCount + 1);
+        }, 5000);
+      } else {
+        toast.error(notStarted 
+          ? 'The instructor has not started the class yet. Please try again in a moment.'
+          : (msg || 'Could not join. Please try again.')
+        );
+      }
     }
   };
 

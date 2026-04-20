@@ -339,14 +339,28 @@ const joinLiveClass = asyncHandler(async (req, res) => {
     const { id } = req.params;
     const studentId = req.user._id;
 
-    const liveClass = await LiveClass.findById(id).lean();
+    const liveClass = await LiveClass.findById(id);
     if (!liveClass) return res.status(404).json({ message: 'Live class not found' });
-    
+
+    // If DB says completed, reject immediately
+    if (liveClass.status === 'completed') {
+        return res.status(400).json({ message: 'This session has already ended.' });
+    }
+
+    // If DB says upcoming — verify with BBB directly, because faculty may have started
+    // without the DB being updated (e.g., direct BBB join or a missed status update)
     if (liveClass.status !== 'ongoing') {
-        const errorMsg = liveClass.status === 'upcoming' 
-            ? 'The instructor has not started the class yet. Please wait.' 
-            : 'This meeting has already ended.';
-        return res.status(400).json({ message: errorMsg });
+        const meetingActuallyRunning = await bbb.isMeetingRunning(liveClass._id.toString());
+        if (meetingActuallyRunning) {
+            // Auto-heal: faculty is in the room — sync the DB
+            liveClass.status = 'ongoing';
+            await liveClass.save();
+            console.log(`[Join Auto-Heal] "${liveClass.title}" set to ongoing — BBB confirms meeting is running.`);
+        } else {
+            return res.status(400).json({ 
+                message: 'The instructor has not started the class yet. Please wait.' 
+            });
+        }
     }
 
     // Verify the student is in one of the batches assigned to this live class
@@ -379,6 +393,7 @@ const joinLiveClass = asyncHandler(async (req, res) => {
 
     res.status(200).json({ success: true, data: { joinUrl } });
 });
+
 
 // @desc    Get student assignments
 const getAssignments = asyncHandler(async (req, res) => {
