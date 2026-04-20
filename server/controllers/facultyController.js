@@ -396,28 +396,50 @@ exports.scheduleLiveClass = asyncHandler(async (req, res) => {
 // GET /api/faculty/live-classes/:id/start
 exports.startLiveClass = asyncHandler(async (req, res) => {
     const { id } = req.params;
+    
+    console.log(`[StartLiveClass] Faculty ${req.user.userId} attempting to start session ${id}`);
+    
     const liveClass = await LiveClass.findById(id).populate('faculty', 'name');
     if (!liveClass) return res.status(404).json({ message: 'Live class not found' });
+
+    // Handle both populated and un-populated faculty field
+    const facultyId = liveClass.faculty?._id?.toString() || liveClass.faculty?.toString();
+    const requestingUserId = req.user.userId?.toString() || req.user._id?.toString();
     
-    if (liveClass.faculty._id.toString() !== req.user.userId.toString()) {
+    if (facultyId !== requestingUserId) {
+        console.warn(`[StartLiveClass] Auth mismatch — class faculty: ${facultyId}, requester: ${requestingUserId}`);
         return res.status(403).json({ message: 'Unauthorized to start this class' });
     }
 
     const meetingId = liveClass._id.toString();
-    const name = liveClass.title;
+    const meetingName = liveClass.title;
     const attendeePW = 'viewer123';
     const moderatorPW = 'mod123';
     
-    await bbb.createMeeting(meetingId, name, attendeePW, moderatorPW);
-    const joinUrl = bbb.getJoinUrl(meetingId, liveClass.faculty.name, moderatorPW, req.user.userId);
+    // Try to create BBB meeting — if it already exists BBB just returns the existing one
+    try {
+        await bbb.createMeeting(meetingId, meetingName, attendeePW, moderatorPW);
+        console.log(`[StartLiveClass] BBB meeting created/joined: ${meetingId}`);
+    } catch (bbbErr) {
+        console.error(`[StartLiveClass] BBB createMeeting failed for ${meetingId}:`, bbbErr.message);
+        return res.status(503).json({ 
+            message: 'Could not connect to the classroom server. Please try again in a moment.',
+            detail: bbbErr.message 
+        });
+    }
+
+    const facultyName = liveClass.faculty?.name || req.user.name || 'Faculty';
+    const joinUrl = bbb.getJoinUrl(meetingId, facultyName, moderatorPW, req.user.userId);
     
     liveClass.status = 'ongoing';
     await liveClass.save();
     
     await logAction(req, 'Started Live Class', liveClass.title, { targetId: liveClass._id, targetModel: 'LiveClass' });
     
+    console.log(`[StartLiveClass] Success — session ${meetingId} is now ONGOING`);
     res.status(200).json({ success: true, data: { joinUrl } });
 });
+
 
 // POST /api/faculty/live-classes/:id/end
 exports.endLiveClass = asyncHandler(async (req, res) => {
