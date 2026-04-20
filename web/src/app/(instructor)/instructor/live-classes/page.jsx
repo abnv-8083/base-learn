@@ -189,7 +189,11 @@ export default function InstructorLiveClasses() {
     if (!activeDraft) return;
     setIsSubmitting(true);
     try {
-      await axios.patch(`/api/instructor/content/${activeDraft._id}/status`, { status: 'published' });
+      await axios.patch(`/api/instructor/content/${activeDraft._id}/status`, { 
+        approvalStatus: 'approved',
+        itemModel: 'RecordedClass',
+        batchIds: activeDraft.assignedTo?.map(b => b._id || b) || []
+      });
       toast.success('✅ Content published to students!');
       setShowDraftModal(false);
       fetchAll(false);
@@ -202,7 +206,10 @@ export default function InstructorLiveClasses() {
     if (!activeDraft) return;
     setRejecting(true);
     try {
-      await axios.patch(`/api/instructor/content/${activeDraft._id}/status`, { status: 'rejected' });
+      await axios.patch(`/api/instructor/content/${activeDraft._id}/status`, { 
+        approvalStatus: 'rejected',
+        itemModel: 'RecordedClass'
+      });
       toast.success('Draft rejected.');
       setShowDraftModal(false);
       fetchAll(false);
