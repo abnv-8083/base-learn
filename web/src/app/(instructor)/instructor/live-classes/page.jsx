@@ -418,7 +418,7 @@ export default function InstructorLiveClasses() {
       {/* ══ DRAFT REVIEW MODAL ══════════════════════════════════ */}
       {showDraftModal && activeDraft && (
         <Overlay onClose={() => setShowDraftModal(false)}>
-          <div className="card fade-in" style={{ width: '100%', maxWidth: '520px', padding: 0, borderRadius: '22px', overflow: 'hidden' }}>
+          <div className="card fade-in" style={{ width: '100%', maxWidth: '520px', padding: 0, borderRadius: '22px', overflow: 'hidden', display: 'flex', flexDirection: 'column', maxHeight: '90vh' }}>
             <ModalHeader
               title={activeDraft.contentType === 'liveRecording' ? '🎬 Review Recording' : '📄 Review Class Notes'}
               subtitle={activeDraft.liveClass?.title || activeDraft.title}
@@ -427,7 +427,7 @@ export default function InstructorLiveClasses() {
               icon={activeDraft.contentType === 'liveRecording' ? <Video size={17} /> : <FileText size={17} />}
             />
 
-            <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '18px' }}>
+            <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '18px', overflowY: 'auto' }}>
               {/* Info row */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                 <InfoBox label="Faculty" value={activeDraft.faculty?.name || 'Unknown'} />
