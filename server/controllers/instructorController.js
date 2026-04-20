@@ -162,17 +162,35 @@ exports.getRecentVideos = async (req, res) => {
 // Get Pending Recorded Classes (Lectures & FAQ Sessions)
 exports.getPendingRecordedClasses = async (req, res) => {
     try {
-        const recordings = await RecordedClass.find({ status: 'draft' })
+        const userId = req.user.userId || req.user._id;
+
+        // Scope to faculty assigned to this instructor (or all for admin)
+        let facultyFilter = {};
+        if (req.user.role !== 'admin') {
+            const Faculty = require('../models/Faculty');
+            const assigned = await Faculty.find({ assignedInstructors: userId }).select('_id');
+            const facultyIds = assigned.map(f => f._id);
+            facultyFilter = { faculty: { $in: facultyIds } };
+        }
+
+        // Only return live session drafts — not regular uploaded content
+        const recordings = await RecordedClass.find({
+            status: 'draft',
+            contentType: { $in: ['liveRecording', 'liveNotes'] },
+            ...facultyFilter
+        })
             .populate('faculty', 'name email')
             .populate('subject', 'name')
             .populate('chapter', 'name')
-            .populate('liveClass', 'title scheduledAt')  // needed for DraftCard display
+            .populate('liveClass', 'title scheduledAt')
             .sort({ createdAt: -1 });
+
         res.status(200).json({ success: true, data: recordings });
     } catch (error) {
         res.status(500).json({ success: false, message: 'Error fetching pending recordings', error: error.message });
     }
 };
+
 
 // Assign Recorded Class (Lecture or FAQ)
 exports.assignRecordedClass = async (req, res) => {

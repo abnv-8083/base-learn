@@ -214,15 +214,21 @@ export default function InstructorLiveClasses() {
   // ── Derived data ──────────────────────────────────────
   const now = new Date();
 
-  const pendingDrafts = drafts.filter(d => d.status === 'draft');
+  // Only show live session drafts — not regular content review items
+  const pendingDrafts = drafts.filter(d =>
+    d.status === 'draft' &&
+    ['liveRecording', 'liveNotes'].includes(d.contentType)
+  );
 
   const upcomingClasses = classes.filter(c =>
     ['upcoming', 'ongoing'].includes(c.status) &&
     (c.title?.toLowerCase().includes(search.toLowerCase()) || c.faculty?.name?.toLowerCase().includes(search.toLowerCase()))
   );
 
+  // Include ALL completed sessions regardless of scheduledAt —
+  // faculty may end a session early (before its scheduled time)
   const pastClasses = classes.filter(c =>
-    c.status === 'completed' && new Date(c.scheduledAt) <= now &&
+    c.status === 'completed' &&
     (c.title?.toLowerCase().includes(search.toLowerCase()) || c.faculty?.name?.toLowerCase().includes(search.toLowerCase()))
   );
 
