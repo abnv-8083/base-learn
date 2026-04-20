@@ -42,6 +42,17 @@ const syncLiveSessions = async () => {
                 const isRunning = await bbb.isMeetingRunning(session._id.toString());
                 
                 if (!isRunning) {
+                    // Grace period: if the session JUST became 'ongoing' (within last 5 minutes),
+                    // don't mark it completed yet — faculty may have just created the BBB room
+                    // but hasn't clicked the join URL in their browser tab yet
+                    const ongoingFor = Date.now() - new Date(session.updatedAt).getTime();
+                    const GRACE_PERIOD_MS = 5 * 60 * 1000; // 5 minutes
+                    
+                    if (ongoingFor < GRACE_PERIOD_MS) {
+                        console.log(`[JOB-DEBUG] Session "${session.title}" BBB room is empty but just started ${Math.round(ongoingFor/1000)}s ago. Skipping (grace period).`);
+                        continue;
+                    }
+
                     console.log(`[JOB-DEBUG] Session "${session.title}" (${session._id}) ended in BBB. Closing platform status...`);
                     
                     // 1. Attempt to fetch detailed meeting info for attendance

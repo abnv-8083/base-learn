@@ -354,6 +354,19 @@ exports.getLiveClasses = asyncHandler(async (req, res) => {
             .populate('attendance.studentId', 'name email image')
             .sort({ scheduledAt: 1 });
 
+        // Auto-heal: if a session is marked 'completed' but scheduledAt is in the future,
+        // reset it to 'upcoming' — catches cases where liveSessionJob prematurely closed
+        // an empty BBB room before the faculty had a chance to join
+        const now = new Date();
+        for (const cls of classes) {
+            if (cls.status === 'completed' && new Date(cls.scheduledAt) > now) {
+                cls.status = 'upcoming';
+                cls.processed = false;
+                await cls.save();
+                console.log(`[Faculty Auto-Heal] "${cls.title}" reset from completed → upcoming (scheduledAt is in future)`);
+            }
+        }
+
         // Manually populate subjects only for those that have valid ObjectIDs
         // This avoids 500 errors when Mongoose tries to populate a string like "STANDARD MODULE"
         const populatedClasses = await Promise.all(classes.map(async (cls) => {
@@ -375,6 +388,7 @@ exports.getLiveClasses = asyncHandler(async (req, res) => {
         res.status(500).json({ success: false, message: 'Failed to retrieve live sessions', error: error.message });
     }
 });
+
 
 // POST /api/faculty/live-classes
 exports.scheduleLiveClass = asyncHandler(async (req, res) => {
