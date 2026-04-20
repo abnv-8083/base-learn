@@ -275,20 +275,20 @@ export default function FacultyLiveClasses() {
                 <div style={{ padding: '16px 24px', borderTop: '1px solid var(--color-border)', display: 'flex', gap: '10px', background: 'var(--color-surface)' }}>
                   {isCompleted ? (
                     <>
-                      {session.internalMeetingId ? (
+                      <button onClick={() => setSelectedAnalytics(session)} className="btn btn-secondary" style={{ flex: 1, height: '42px', borderRadius: '10px', fontSize: '13px', fontWeight: '700', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                        <BarChart2 size={15} /> Local Analytics
+                      </button>
+                      {session.internalMeetingId && (
                         <a 
                           href={`https://test-install.blindsidenetworks.com/learning-analytics-dashboard/?meeting=${session.internalMeetingId}`} 
                           target="_blank" 
                           rel="noopener noreferrer" 
                           className="btn btn-secondary" 
                           style={{ flex: 1, height: '42px', borderRadius: '10px', fontSize: '13px', fontWeight: '700', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', textDecoration: 'none' }}
+                          title="Premium BBB Feature"
                         >
-                          <BarChart2 size={15} /> Analytics
+                          <BarChart2 size={15} /> BBB Dashboard
                         </a>
-                      ) : (
-                        <button onClick={() => setSelectedAnalytics(session)} className="btn btn-secondary" style={{ flex: 1, height: '42px', borderRadius: '10px', fontSize: '13px', fontWeight: '700', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
-                          <BarChart2 size={15} /> Local Analytics
-                        </button>
                       )}
                       <button onClick={() => handleDelete(session._id, session.title)} style={{ padding: '0 14px', height: '42px', borderRadius: '10px', background: '#fee2e2', color: '#ef4444', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px', fontWeight: '700', fontSize: '13px' }}>
                         <Trash2 size={14} />

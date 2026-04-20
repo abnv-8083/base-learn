@@ -564,26 +564,28 @@ function LiveClassCard({ cls, mode, onAssignBatches, onViewAnalytics, drafts = [
           </button>
         )}
         
-        {/* BBB Learning Analytics Dashboard link (fallback to local if no meeting ID) */}
+        {/* Local Analytics (Primary Fallback) */}
         {mode === 'past' ? (
-          cls.internalMeetingId ? (
-            <a 
-              href={`https://test-install.blindsidenetworks.com/learning-analytics-dashboard/?meeting=${cls.internalMeetingId}`} 
-              target="_blank" 
-              rel="noopener noreferrer" 
-              style={{ flex: 1, height: '40px', borderRadius: '10px', border: '1px solid var(--color-border)', background: 'var(--color-surface)', color: 'var(--color-text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px', fontWeight: '700', fontSize: '13px', textDecoration: 'none' }}
-            >
-              <BarChart2 size={14} /> View Analytics
-            </a>
-          ) : (
-            <button onClick={onViewAnalytics} style={{ flex: 1, height: '40px', borderRadius: '10px', border: '1px solid var(--color-border)', background: 'var(--color-surface)', color: 'var(--color-text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px', fontWeight: '700', fontSize: '13px' }}>
-              <BarChart2 size={14} /> Local Analytics
-            </button>
-          )
+          <button onClick={onViewAnalytics} style={{ flex: 1, height: '40px', borderRadius: '10px', border: '1px solid var(--color-border)', background: 'var(--color-surface)', color: 'var(--color-text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px', fontWeight: '700', fontSize: '13px' }}>
+            <BarChart2 size={14} /> Local Analytics
+          </button>
         ) : (
           <button onClick={onViewAnalytics} style={{ padding: '0 14px', height: '40px', borderRadius: '10px', border: '1px solid var(--color-border)', background: 'var(--color-surface)', color: 'var(--color-text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px', fontWeight: '700', fontSize: '13px' }}>
             <BarChart2 size={14} />
           </button>
+        )}
+
+        {/* BBB Learning Analytics Dashboard link (Premium Feature) */}
+        {mode === 'past' && cls.internalMeetingId && (
+          <a 
+            href={`https://test-install.blindsidenetworks.com/learning-analytics-dashboard/?meeting=${cls.internalMeetingId}`} 
+            target="_blank" 
+            rel="noopener noreferrer" 
+            style={{ flex: 1, height: '40px', borderRadius: '10px', border: '1px solid var(--color-border)', background: 'var(--color-surface)', color: 'var(--color-text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px', fontWeight: '700', fontSize: '13px', textDecoration: 'none' }}
+            title="Premium BBB Feature"
+          >
+            <BarChart2 size={14} /> BBB Dashboard
+          </a>
         )}
       </div>
     </div>
