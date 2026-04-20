@@ -233,11 +233,13 @@ export default function Topbar() {
                   {idx > 0 && <ChevronRight size={12} color="var(--color-border-strong)" />}
                   {isLast ? (
                     <span style={{
+                      display: 'flex', alignItems: 'center',
                       fontSize: '13px', fontWeight: '700',
                       color: 'var(--color-text-primary)',
                       letterSpacing: '-0.01em',
                       maxWidth: '180px', overflow: 'hidden',
                       textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                      lineHeight: 1
                     }}>
                       {crumb.label}
                     </span>
@@ -245,10 +247,12 @@ export default function Topbar() {
                     <Link
                       href={crumb.href}
                       style={{
+                        display: 'flex', alignItems: 'center',
                         fontSize: '13px', fontWeight: '500',
                         color: idx === 0 ? roleColor : 'var(--color-text-muted)',
                         textDecoration: 'none', transition: 'color 0.15s',
                         whiteSpace: 'nowrap',
+                        lineHeight: 1
                       }}
                       onMouseEnter={e => e.currentTarget.style.color = 'var(--color-text-primary)'}
                       onMouseLeave={e => e.currentTarget.style.color = idx === 0 ? roleColor : 'var(--color-text-muted)'}
