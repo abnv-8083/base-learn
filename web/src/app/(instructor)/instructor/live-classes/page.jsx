@@ -211,6 +211,17 @@ export default function InstructorLiveClasses() {
     } finally { setRejecting(false); }
   };
 
+  const deleteDraft = async (draft) => {
+    if (!window.confirm(`Permanently delete "${draft.title}"? This cannot be undone.`)) return;
+    try {
+      await axios.delete(`/api/instructor/content/${draft._id}/manage?itemModel=RecordedClass`);
+      toast.success('Draft deleted.');
+      fetchAll(false);
+    } catch (err) {
+      toast.error(err?.response?.data?.message || 'Failed to delete draft');
+    }
+  };
+
   // ── Derived data ──────────────────────────────────────
   const now = new Date();
 
@@ -328,7 +339,7 @@ export default function InstructorLiveClasses() {
                   </span>
                 </div>
                 {pendingDrafts.map(draft => (
-                  <DraftCard key={draft._id} draft={draft} onReview={() => openDraftModal(draft)} />
+                  <DraftCard key={draft._id} draft={draft} onReview={() => openDraftModal(draft)} onDelete={() => deleteDraft(draft)} />
                 ))}
               </div>
             )
@@ -554,7 +565,7 @@ function LiveClassCard({ cls, mode, onAssignBatches, onViewAnalytics, drafts = [
 // ─────────────────────────────────────────────────────────
 // Draft Card (for Pending Review tab)
 // ─────────────────────────────────────────────────────────
-function DraftCard({ draft, onReview }) {
+function DraftCard({ draft, onReview, onDelete }) {
   const isRecording = draft.contentType === 'liveRecording';
   const accent = isRecording ? '#6366f1' : '#0ea5e9';
 
@@ -584,10 +595,15 @@ function DraftCard({ draft, onReview }) {
           </div>
         </div>
 
-        {/* Review button */}
-        <button onClick={onReview} style={{ padding: '10px 22px', borderRadius: '12px', border: 'none', background: accent, color: 'white', fontWeight: '800', fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '7px', flexShrink: 0 }}>
-          <Eye size={15} /> Review
-        </button>
+        {/* Actions */}
+        <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
+          <button onClick={onReview} style={{ padding: '10px 18px', borderRadius: '12px', border: 'none', background: accent, color: 'white', fontWeight: '800', fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '7px' }}>
+            <Eye size={15} /> Review
+          </button>
+          <button onClick={onDelete} title="Delete draft" style={{ padding: '10px 14px', borderRadius: '12px', border: '1.5px solid #fecdd3', background: '#fff1f2', color: '#dc2626', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
+            <XCircle size={16} />
+          </button>
+        </div>
       </div>
     </div>
   );
