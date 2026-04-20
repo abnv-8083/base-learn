@@ -292,7 +292,7 @@ export default function FacultyLiveClasses() {
                         {isOngoing ? <><Radio size={16} /> Resume Class</> : <><Play size={16} /> Start Studio</>}
                       </button>
                       {isOngoing && (
-                        <button onClick={() => { setEndingId(session._id); setNotesUrl(''); setShowEndModal(true); }} style={{ padding: '0 16px', height: '44px', borderRadius: '10px', border: '1.5px solid #fecdd3', background: '#fff1f2', color: '#dc2626', cursor: 'pointer', fontWeight: '700', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                        <button onClick={() => { setEndingId(session._id); setNotesPdf(null); setShowEndModal(true); }} style={{ padding: '0 16px', height: '44px', borderRadius: '10px', border: '1.5px solid #fecdd3', background: '#fff1f2', color: '#dc2626', cursor: 'pointer', fontWeight: '700', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '5px' }}>
                           <StopCircle size={15} /> End
                         </button>
                       )}
