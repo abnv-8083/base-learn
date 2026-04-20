@@ -1,10 +1,18 @@
-const crypto = require('crypto');
-const axios = require('axios');
-const xml2js = require('xml2js');
+const crypto  = require('crypto');
+const axios    = require('axios');
+const xml2js   = require('xml2js');
+const https    = require('https');
+
+// Force IPv4 — cloud providers often block IPv6 outbound.
+// Node.js prefers AAAA (IPv6) records but curl defaults to IPv4.
+const axiosInstance = axios.create({
+  timeout: 10000,
+  httpsAgent: new https.Agent({ family: 4 }),
+});
 
 class BigBlueButton {
   constructor() {
-    this.url = process.env.BBB_URL || 'https://test-install.blindsidenetworks.com/bigbluebutton/api';
+    this.url    = process.env.BBB_URL    || 'https://test-install.blindsidenetworks.com/bigbluebutton/api';
     this.secret = process.env.BBB_SECRET || '8cd8ef52e8e101574e400365b55e11a6';
     this.parser = new xml2js.Parser({ explicitArray: false });
     const usingFallback = !process.env.BBB_URL;
@@ -33,7 +41,7 @@ class BigBlueButton {
     const fullUrl = `${this.url}/create?${query}&checksum=${checksum}`;
 
     try {
-      const response = await axios.get(fullUrl, { timeout: 10000 });
+      const response = await axiosInstance.get(fullUrl);
       const result = await this.parser.parseStringPromise(response.data);
       return result.response;
     } catch (error) {
@@ -58,7 +66,7 @@ class BigBlueButton {
     const fullUrl = `${this.url}/getMeetingInfo?${query}&checksum=${checksum}`;
 
     try {
-      const response = await axios.get(fullUrl);
+      const response = await axiosInstance.get(fullUrl);
       const result = await this.parser.parseStringPromise(response.data);
       if (result.response.returncode === 'FAILED') return null;
       return result.response;
@@ -74,7 +82,7 @@ class BigBlueButton {
     const fullUrl = `${this.url}/isMeetingRunning?${query}&checksum=${checksum}`;
 
     try {
-      const response = await axios.get(fullUrl);
+      const response = await axiosInstance.get(fullUrl);
       const result = await this.parser.parseStringPromise(response.data);
       const isRunning = result.response.running === 'true';
       if (!isRunning) {
@@ -93,7 +101,7 @@ class BigBlueButton {
     const fullUrl = `${this.url}/getRecordings?${query}&checksum=${checksum}`;
 
     try {
-      const response = await axios.get(fullUrl, { timeout: 10000 });
+      const response = await axiosInstance.get(fullUrl);
       const result = await this.parser.parseStringPromise(response.data);
       if (result.response.returncode === 'SUCCESS' && result.response.recordings) {
           const recs = result.response.recordings.recording;
@@ -105,7 +113,7 @@ class BigBlueButton {
         ? `HTTP ${error.response.status}`
         : `${error.code || error.name}: ${error.message}`;
       console.error(`[BBB] getRecordings FAILED → ${detail}`);
-      return []; // Return empty instead of throwing — caller handles gracefully
+      return [];
     }
   }
   
@@ -115,7 +123,7 @@ class BigBlueButton {
       const fullUrl = `${this.url}/end?${query}&checksum=${checksum}`;
       
       try {
-          const response = await axios.get(fullUrl);
+          const response = await axiosInstance.get(fullUrl);
           const result = await this.parser.parseStringPromise(response.data);
           return result.response;
       } catch (error) {
