@@ -493,17 +493,16 @@ export default function FacultyLiveClasses() {
               <button onClick={() => setShowEndModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444' }}><X size={20} /></button>
             </div>
 
-            <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <div style={{ display: 'flex', gap: '10px', padding: '14px 16px', background: '#eff6ff', borderRadius: '12px', border: '1px solid #bfdbfe' }}>
                 <Info size={17} color="#2563eb" style={{ flexShrink: 0 }} />
                 <p style={{ margin: 0, fontSize: '13px', color: '#1e40af', lineHeight: 1.65 }}>
-                  After ending, the <strong>BBB recording</strong> is automatically sent to your instructor for review. Students see it only after approval.
+                  After ending:
+                  <br />• The <strong>BBB recording</strong> will be sent to your instructor for review.
+                  <br />• The <strong>shared notes</strong> from this session are automatically captured.
+                  <br />Students will only see materials once the instructor approves them.
                 </p>
               </div>
-
-              <FormField label="Class Notes / Slides URL" hint="If provided, notes will also be sent to the instructor for approval.">
-                <input type="url" value={notesUrl} onChange={e => setNotesUrl(e.target.value)} placeholder="https://drive.google.com/your-slides" style={{ width: '100%', padding: '12px 14px', borderRadius: '12px', border: '1px solid var(--color-border)', fontSize: '13px', outline: 'none', boxSizing: 'border-box' }} />
-              </FormField>
             </div>
 
             <div style={{ padding: '16px 24px', borderTop: '1px solid var(--color-border)', display: 'flex', gap: '12px' }}>

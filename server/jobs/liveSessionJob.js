@@ -185,21 +185,32 @@ const processRecordingDraft = async (session) => {
             }
         }
 
-        // ── 2. Manual Notes / Presentation URL ───────────────────────────
-        // If faculty submitted notes when ending the class, create a notes draft too
-        if (session.presentationUrl) {
+        // ── 2. BBB Shared Notes (auto-generated — no manual paste needed) ─
+        // BBB creates an Etherpad shared notes pad for every session.
+        // URL format: https://{bbb-server}/pad/p/{internalMeetingID}
+        const bbbBase = (process.env.BBB_URL || 'https://test-install.blindsidenetworks.com/bigbluebutton/api')
+            .replace('/bigbluebutton/api', '');
+        
+        const autoNotesUrl = session.internalMeetingId
+            ? `${bbbBase}/pad/p/${session.internalMeetingId}`
+            : session.presentationUrl; // Fall back to manually provided URL if no internalMeetingId
+
+        if (autoNotesUrl) {
             const notesAlreadyDrafted = await RecordedClass.findOne({ 
                 liveClass: session._id, 
                 contentType: 'liveNotes' 
             });
 
             if (!notesAlreadyDrafted) {
+                const notesSource = session.internalMeetingId ? 'BBB Shared Notes (auto)' : 'Manual submission';
+                console.log(`[JOB-DEBUG] Creating notes draft for "${session.title}" — ${notesSource}`);
+
                 await RecordedClass.create({
                     title: `[NOTES] ${session.title}`,
-                    description: `Class notes/slides from live session on ${new Date(session.scheduledAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}`,
+                    description: `Shared notes from live session on ${new Date(session.scheduledAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}`,
                     subject: session.subject,
                     chapter: session.chapter || null,
-                    videoUrl: session.presentationUrl, // Reuse videoUrl field for PDF/slide URL
+                    videoUrl: autoNotesUrl,
                     faculty: session.faculty?._id || session.faculty,
                     liveClass: session._id,
                     contentType: 'liveNotes',
@@ -208,11 +219,11 @@ const processRecordingDraft = async (session) => {
                 });
 
                 if (!recordingCreated) {
-                    // Notify only if no recording notification was sent yet
+                    // Send combined notification for notes if no recording notification was sent yet
                     await notifyInstructors(
                         session.faculty?._id || session.faculty,
                         '📄 Class Notes Ready for Review',
-                        `Faculty submitted notes for "${session.title}". Please review and approve before students can access them.`,
+                        `Shared notes from "${session.title}" are ready. Review and approve before students can access them.`,
                         `/instructor/content`
                     );
                 }
@@ -220,7 +231,7 @@ const processRecordingDraft = async (session) => {
         }
 
         // ── 3. Mark session as fully processed ───────────────────────────
-        if (recordingCreated || session.presentationUrl) {
+        if (recordingCreated || autoNotesUrl) {
             session.processed = true;
             await session.save();
         } else {

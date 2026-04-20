@@ -419,9 +419,10 @@ exports.startLiveClass = asyncHandler(async (req, res) => {
     const moderatorPW = 'mod123';
     
     // Try to create BBB meeting — if it already exists BBB just returns the existing one
+    let bbbMeetingData;
     try {
-        await bbb.createMeeting(meetingId, meetingName, attendeePW, moderatorPW);
-        console.log(`[StartLiveClass] BBB meeting created/joined: ${meetingId}`);
+        bbbMeetingData = await bbb.createMeeting(meetingId, meetingName, attendeePW, moderatorPW);
+        console.log(`[StartLiveClass] BBB meeting created/joined: ${meetingId} | internalID: ${bbbMeetingData?.internalMeetingID}`);
     } catch (bbbErr) {
         console.error(`[StartLiveClass] BBB createMeeting failed for ${meetingId}:`, bbbErr.message);
         return res.status(503).json({ 
@@ -434,6 +435,10 @@ exports.startLiveClass = asyncHandler(async (req, res) => {
     const joinUrl = bbb.getJoinUrl(meetingId, facultyName, moderatorPW, req.user.userId);
     
     liveClass.status = 'ongoing';
+    // Save the BBB internalMeetingID — used to auto-generate shared notes URL after session ends
+    if (bbbMeetingData?.internalMeetingID) {
+        liveClass.internalMeetingId = bbbMeetingData.internalMeetingID;
+    }
     await liveClass.save();
     
     await logAction(req, 'Started Live Class', liveClass.title, { targetId: liveClass._id, targetModel: 'LiveClass' });
@@ -441,6 +446,7 @@ exports.startLiveClass = asyncHandler(async (req, res) => {
     console.log(`[StartLiveClass] Success — session ${meetingId} is now ONGOING`);
     res.status(200).json({ success: true, data: { joinUrl } });
 });
+
 
 
 // POST /api/faculty/live-classes/:id/end

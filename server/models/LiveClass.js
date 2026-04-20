@@ -19,6 +19,7 @@ const liveClassSchema = new mongoose.Schema({
   chapter: { type: mongoose.Schema.Types.ObjectId, ref: 'Chapter' }, 
   recordingUrl: { type: String },
   presentationUrl: { type: String },
+  internalMeetingId: { type: String }, // BBB internalMeetingID — used to auto-generate shared notes URL
   processed: { type: Boolean, default: false }, // Flag for post-session automation
   attendance: [
     {
