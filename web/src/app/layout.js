@@ -37,7 +37,7 @@ export const metadata = {
   description:
     "Live classes, recordings, assignments, and progress tracking for students, faculty, instructors, and admins.",
   icons: {
-    icon: "/favicon.ico",
+    icon: "/favicon.jpg",
   },
 };
 
