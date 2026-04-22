@@ -31,6 +31,16 @@ const clearToken = (role) => {
   sessionStorage.removeItem(getTokenKey(role));
 };
 
+const clearAllTokens = () => {
+  if (typeof window === 'undefined') return;
+  // Wipe tokens for all known roles
+  ['student', 'faculty', 'instructor', 'admin'].forEach(r => {
+    localStorage.removeItem(getTokenKey(r));
+    sessionStorage.removeItem(getTokenKey(r));
+  });
+  localStorage.removeItem('last_active_role');
+};
+
 // Create an interceptor to insert Bearer Token
 axios.interceptors.request.use(config => {
   let token = useAuthStore.getState().token;
@@ -77,14 +87,18 @@ export const useAuthStore = create((set, get) => ({
   },
 
   logout: async (role) => {
+    // 1. Clear client state IMMEDIATELY — synchronous and reliable
+    clearAllTokens();
+    // 2. Strip the Authorization header from axios so no future request leaks the old token
+    delete axios.defaults.headers.common['Authorization'];
+    // 3. Wipe Zustand state right away so UI reflects logged-out state
+    set({ user: null, token: null });
+
+    // 4. Best-effort server-side session invalidation (fire-and-forget)
     try {
       await axios.post('/api/auth/logout', { role });
     } catch (err) {
-      console.error('Server logout failed:', err.message);
-    } finally {
-      clearToken(role);
-      localStorage.removeItem('last_active_role');
-      set({ user: null, token: null });
+      // Silent — client is already fully cleared regardless
     }
   },
 

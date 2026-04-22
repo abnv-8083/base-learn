@@ -32,7 +32,8 @@ export default function Sidebar({ menuItems, role }) {
 
 
   const handleLogout = async () => {
-    await logout(role);
+    // logout() clears state synchronously before the server call
+    logout(role); // intentionally not awaited — redirect happens immediately
     router.push(role === 'student' ? '/login' : '/staff-login');
   };
 
