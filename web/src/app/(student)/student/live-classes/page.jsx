@@ -311,28 +311,30 @@ export default function StudentLiveClasses() {
         .session-card-btn:hover:not(:disabled) { transform: translateY(-1px) !important; }
       `}</style>
 
-      {/* ── Page Header ── */}
-      <div style={{ marginBottom: '28px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '12px' }}>
-        <div>
-          <h1 style={{ fontSize: 'clamp(22px, 4vw, 30px)', fontWeight: '900', color: 'var(--color-text-primary)', margin: '0 0 6px', letterSpacing: '-0.03em' }}>
-            Live Sessions
-          </h1>
-          <p style={{ fontSize: '14px', color: 'var(--color-text-secondary)', margin: 0 }}>
-            Join your live classes and interact with your instructor in real time.
-          </p>
+      {/* ── Hero Header ── */}
+      <div style={{ background: 'linear-gradient(135deg, #1a0a0a 0%, #7f1d1d 55%, #1a0a0a 100%)', borderRadius: '28px', padding: '32px 40px', marginBottom: '28px', position: 'relative', overflow: 'hidden' }}>
+        <div style={{ position: 'absolute', top: '-60px', right: '-40px', width: '220px', height: '220px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(239,68,68,0.25) 0%, transparent 70%)' }} />
+        <style>{`@keyframes livePulseIcon { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(0.85)} }`}</style>
+        <div style={{ position: 'relative', zIndex: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '20px' }}>
+          <div>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '7px', background: 'rgba(239,68,68,0.18)', border: '1px solid rgba(239,68,68,0.35)', padding: '5px 13px', borderRadius: '99px', marginBottom: '12px' }}>
+              <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#ef4444', animation: 'livePulseIcon 1.4s ease infinite' }} />
+              <span style={{ fontSize: '11px', fontWeight: '800', color: '#fca5a5', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Live Classes</span>
+            </div>
+            <h1 style={{ margin: 0, fontSize: '28px', fontWeight: '900', color: 'white', letterSpacing: '-0.03em' }}>Live Sessions</h1>
+            <p style={{ margin: '8px 0 0', fontSize: '14px', color: 'rgba(252,165,165,0.75)' }}>
+              Join your live classes and interact with your instructor in real time.
+            </p>
+          </div>
+          <button onClick={() => fetchClasses(false)}
+            style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '11px 20px', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.85)', fontSize: '13px', fontWeight: '700', cursor: 'pointer', transition: 'all 0.2s', flexShrink: 0, backdropFilter: 'blur(6px)' }}
+            onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.15)'}
+            onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.08)'}>
+            <RefreshCw size={14} />
+            Refresh
+            {lastRefreshed && <span style={{ fontSize: '11px', opacity: 0.65 }}>{lastRefreshed.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>}
+          </button>
         </div>
-        <button
-          onClick={() => fetchClasses(false)}
-          style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '9px 16px', borderRadius: '10px', border: '1px solid var(--color-border)', background: 'var(--color-surface)', fontSize: '13px', fontWeight: '600', color: 'var(--color-text-secondary)', cursor: 'pointer', transition: 'all 0.2s', flexShrink: 0 }}
-        >
-          <RefreshCw size={13} />
-          Refresh
-          {lastRefreshed && (
-            <span style={{ fontSize: '11px', color: 'var(--color-text-muted)' }}>
-              {lastRefreshed.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-            </span>
-          )}
-        </button>
       </div>
 
       {/* ── Live Now Banner ── */}
