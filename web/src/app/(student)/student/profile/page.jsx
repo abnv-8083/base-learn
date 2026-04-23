@@ -14,35 +14,78 @@ const PROFILE_CSS = `
 
   .profile-hero {
     border-radius: 24px;
-    padding: 36px 40px;
+    padding: 32px 36px;
     margin-bottom: 28px;
   }
+  /* Stack: avatar | text | stats — all in one row on desktop */
   .profile-hero-inner {
     display: flex;
-    align-items: center;
-    gap: 24px;
+    align-items: flex-start;
+    gap: 20px;
     position: relative;
     z-index: 1;
+    flex-wrap: wrap;
+  }
+  .profile-hero-text {
+    flex: 1;
+    min-width: 0;
+  }
+  .profile-hero-name-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 8px;
+  }
+  .profile-hero-name {
+    font-size: clamp(18px, 4vw, 24px);
+    font-weight: 800;
+    color: white;
+    margin: 0;
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+    word-break: break-word;
+  }
+  .profile-hero-badge {
+    background: rgba(255,255,255,0.2);
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 700;
+    color: rgba(255,255,255,0.9);
+    white-space: nowrap;
+    flex-shrink: 0;
   }
   .profile-hero-meta {
     display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .profile-hero-meta-item {
+    display: flex;
     align-items: center;
-    gap: 16px;
-    flex-wrap: wrap;
+    gap: 6px;
+    font-size: 12px;
+    color: rgba(255,255,255,0.75);
+    font-weight: 500;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 100%;
   }
   .profile-hero-stats {
     display: flex;
-    gap: 12px;
-    margin-left: auto;
+    gap: 10px;
     flex-shrink: 0;
+    align-self: flex-start;
   }
   .profile-hero-stat {
     text-align: center;
     background: rgba(255,255,255,0.12);
-    padding: 12px 18px;
+    padding: 10px 16px;
     border-radius: 14px;
     backdrop-filter: blur(10px);
-    min-width: 80px;
+    min-width: 72px;
   }
   .profile-tab-bar {
     display: flex;
@@ -54,6 +97,7 @@ const PROFILE_CSS = `
     margin-bottom: 24px;
     box-shadow: 0 1px 4px rgba(0,0,0,0.04);
     width: fit-content;
+    max-width: 100%;
     overflow-x: auto;
     scrollbar-width: none;
   }
@@ -79,19 +123,25 @@ const PROFILE_CSS = `
   }
 
   @media (max-width: 768px) {
-    .profile-hero { padding: 24px 20px !important; border-radius: 18px !important; }
-    .profile-hero-inner { flex-wrap: wrap; gap: 16px; }
-    .profile-hero-stats { margin-left: 0; }
+    .profile-hero { padding: 22px 18px !important; border-radius: 18px !important; }
     .profile-form-grid { grid-template-columns: 1fr !important; gap: 16px; }
+    .profile-hero-stats { flex-direction: row; }
   }
-  @media (max-width: 540px) {
-    .profile-hero { padding: 20px 16px !important; }
-    .profile-hero-inner { flex-direction: column; align-items: flex-start; }
-    .profile-hero-meta { gap: 10px; }
-    .profile-hero-stats { flex-direction: row; width: 100%; }
-    .profile-hero-stat { flex: 1; padding: 10px 12px; min-width: 0; }
-    .profile-tab-btn { padding: 8px 14px; font-size: 12px; }
+  @media (max-width: 480px) {
+    .profile-hero { padding: 18px 14px !important; }
+    .profile-hero-inner { flex-direction: row; align-items: flex-start; gap: 14px; }
+    .profile-hero-stats { display: none !important; }  /* hide on very small, shown below */
+    .profile-hero-stats-mobile {
+      display: flex !important;
+      gap: 8px;
+      width: 100%;
+      margin-top: 12px;
+    }
+    .profile-hero-stat { flex: 1; padding: 8px 10px; min-width: 0; }
+    .profile-tab-btn { padding: 8px 12px; font-size: 12px; }
+    .profile-hero-meta { gap: 4px; }
   }
+  .profile-hero-stats-mobile { display: none; }
 `;
 
 function InputField({ icon: Icon, label, value, onChange, onBlur, type = 'text', placeholder, readOnly, error, id }) {
@@ -226,40 +276,50 @@ export default function StudentProfile() {
       {/* ── Hero Banner ── */}
       <div className="profile-hero" style={{ background: 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #6366f1 100%)', marginBottom: '28px', position: 'relative', overflow: 'hidden' }}>
         <div style={{ position: 'absolute', top: '-40px', right: '-40px', width: '200px', height: '200px', borderRadius: '50%', background: 'rgba(255,255,255,0.06)', pointerEvents: 'none' }} />
-        <div style={{ position: 'absolute', bottom: '-60px', right: '80px', width: '140px', height: '140px', borderRadius: '50%', background: 'rgba(255,255,255,0.04)', pointerEvents: 'none' }} />
+        <div style={{ position: 'absolute', bottom: '-60px', right: '60px', width: '140px', height: '140px', borderRadius: '50%', background: 'rgba(255,255,255,0.04)', pointerEvents: 'none' }} />
 
         <div className="profile-hero-inner">
           {/* Avatar */}
           <div style={{ position: 'relative', flexShrink: 0 }}>
-            <div style={{ width: '82px', height: '82px', borderRadius: '20px', background: 'rgba(255,255,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '30px', fontWeight: '800', color: 'white', backdropFilter: 'blur(10px)', border: '2px solid rgba(255,255,255,0.2)' }}>
-              {profile.profilePhoto ? <img src={profile.profilePhoto} alt="" style={{ width: '100%', height: '100%', borderRadius: '18px', objectFit: 'cover' }} /> : profile.name?.charAt(0)}
+            <div style={{ width: '76px', height: '76px', borderRadius: '18px', background: 'rgba(255,255,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '28px', fontWeight: '800', color: 'white', backdropFilter: 'blur(10px)', border: '2px solid rgba(255,255,255,0.2)' }}>
+              {profile.profilePhoto
+                ? <img src={profile.profilePhoto} alt="" style={{ width: '100%', height: '100%', borderRadius: '16px', objectFit: 'cover' }} />
+                : profile.name?.charAt(0)}
             </div>
-            <button style={{ position: 'absolute', bottom: '-4px', right: '-4px', width: '26px', height: '26px', borderRadius: '8px', background: 'white', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.2)', minHeight: '0' }}>
-              <Camera size={13} color={ACCENT} />
+            <button style={{ position: 'absolute', bottom: '-4px', right: '-4px', width: '24px', height: '24px', borderRadius: '7px', background: 'white', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.2)', minHeight: '0' }}>
+              <Camera size={12} color={ACCENT} />
             </button>
           </div>
 
-          {/* Name + meta */}
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px', flexWrap: 'wrap' }}>
-              <h1 style={{ fontSize: 'clamp(18px,4vw,26px)', fontWeight: '800', color: 'white', margin: 0, letterSpacing: '-0.02em', lineHeight: 1.2 }}>{profile.name}</h1>
-              <span style={{ background: 'rgba(255,255,255,0.2)', padding: '3px 10px', borderRadius: '20px', fontSize: '12px', fontWeight: '700', color: 'rgba(255,255,255,0.9)', flexShrink: 0 }}>Scholar</span>
+          {/* Name + meta — takes all remaining space */}
+          <div className="profile-hero-text">
+            <div className="profile-hero-name-row">
+              <h1 className="profile-hero-name">{profile.name}</h1>
+              <span className="profile-hero-badge">Scholar</span>
             </div>
             <div className="profile-hero-meta">
-              {[{ icon: Mail, text: profile.email }, { icon: GraduationCap, text: profile.studentClass ? `Class ${profile.studentClass}` : 'Class not set' }, { icon: Calendar, text: `Joined ${joinDate}` }].map(({ icon: Icon, text }) => (
-                <span key={text} style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '12px', color: 'rgba(255,255,255,0.75)', fontWeight: '500' }}>
-                  <Icon size={12} /> {text}
-                </span>
-              ))}
+              <span className="profile-hero-meta-item"><Mail size={11} style={{ flexShrink: 0 }} /> {profile.email}</span>
+              <span className="profile-hero-meta-item"><GraduationCap size={11} style={{ flexShrink: 0 }} /> {profile.studentClass ? `Class ${profile.studentClass}` : 'Class not set'}</span>
+              <span className="profile-hero-meta-item"><Calendar size={11} style={{ flexShrink: 0 }} /> Joined {joinDate}</span>
             </div>
           </div>
 
-          {/* Stats pills */}
+          {/* Stats pills — hidden on mobile, shown via mobile row below */}
           <div className="profile-hero-stats">
             {[{ label: 'Batch', value: profile.batchName || '—' }, { label: 'Status', value: 'Active' }].map(stat => (
               <div key={stat.label} className="profile-hero-stat">
-                <div style={{ fontSize: '15px', fontWeight: '800', color: 'white' }}>{stat.value}</div>
-                <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.65)', fontWeight: '600', marginTop: '2px' }}>{stat.label}</div>
+                <div style={{ fontSize: '14px', fontWeight: '800', color: 'white', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{stat.value}</div>
+                <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.65)', fontWeight: '600', marginTop: '2px' }}>{stat.label}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Stats pills — mobile only row */}
+          <div className="profile-hero-stats-mobile">
+            {[{ label: 'Batch', value: profile.batchName || '—' }, { label: 'Status', value: 'Active' }].map(stat => (
+              <div key={stat.label} className="profile-hero-stat">
+                <div style={{ fontSize: '13px', fontWeight: '800', color: 'white' }}>{stat.value}</div>
+                <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.65)', fontWeight: '600', marginTop: '2px' }}>{stat.label}</div>
               </div>
             ))}
           </div>
