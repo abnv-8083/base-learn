@@ -3943,3 +3943,520 @@ input, select, textarea {
   .text-center-mobile { text-align: center !important; }
   .p-mobile { padding: 16px !important; }
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   COMPREHENSIVE MOBILE RESPONSIVE POLISH — Base Learn
+   Covers all student/admin/faculty portal pages
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── 1. Hero Banners — reduce padding on small screens ───────── */
+@media (max-width: 640px) {
+  .dash-fade:first-child,
+  .asgn-fade:first-child,
+  .test-fade:first-child,
+  .cal-fade:first-child,
+  .rc-fade:first-child {
+    padding: 22px 18px !important;
+    border-radius: 18px !important;
+  }
+}
+
+/* ── 2. Dashboard: 4-col stat grid → 2-col → 1-col ──────────── */
+.dash-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+@media (max-width: 900px) {
+  .dash-stats-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 480px) {
+  .dash-stats-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+}
+
+/* ── 3. Dashboard / all pages: 2-col → 1-col ────────────────── */
+.dash-2col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+@media (max-width: 768px) {
+  .dash-2col { grid-template-columns: 1fr !important; }
+}
+
+/* ── 4. Session cards grid (Live Classes) ────────────────────── */
+.session-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 20px;
+}
+@media (max-width: 640px) {
+  .session-grid { grid-template-columns: 1fr; gap: 14px; }
+}
+
+/* ── 5. Recorded Classes: hub card grid ─────────────────────── */
+.hub-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 18px;
+}
+@media (max-width: 540px) {
+  .hub-grid { grid-template-columns: 1fr 1fr; gap: 12px; }
+}
+@media (max-width: 360px) {
+  .hub-grid { grid-template-columns: 1fr; }
+}
+
+/* ── 6. RC content card grid ────────────────────────────────── */
+.rc-content-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+}
+@media (max-width: 640px) {
+  .rc-content-grid { grid-template-columns: 1fr; gap: 14px; }
+}
+
+/* ── 7. Video Player meta ─────────────────────────────────────  */
+@media (max-width: 768px) {
+  .player-meta-grid {
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
+  }
+  .player-meta-container { padding: 20px 16px !important; }
+  .player-title           { font-size: 20px !important; }
+}
+
+/* ── 8. Profile form ─────────────────────────────────────────── */
+.profile-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+@media (max-width: 640px) {
+  .profile-form-grid { grid-template-columns: 1fr !important; }
+}
+
+/* ── 9. Progress card grid ───────────────────────────────────── */
+.progress-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+}
+@media (max-width: 540px) {
+  .progress-card-grid { grid-template-columns: 1fr; gap: 14px; }
+}
+
+/* ── 10. Admin table: horizontal scroll ──────────────────────── */
+.admin-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.admin-table-wrapper table { min-width: 700px; }
+
+/* ── 11. Modal: bottom-sheet on mobile ───────────────────────── */
+@media (max-width: 640px) {
+  .modal-overlay {
+    align-items: flex-end !important;
+    padding: 0 !important;
+  }
+  .modal-content {
+    border-radius: 20px 20px 0 0 !important;
+    max-height: 92vh !important;
+    padding: 20px 16px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+}
+
+/* ── 12. Topbar breadcrumb: only show last crumb ─────────────── */
+@media (max-width: 640px) {
+  .topbar { padding: 0 12px !important; }
+  .topbar-user-info { display: none !important; }
+}
+
+/* ── 13. Login page: right panel full-width on mobile ───────── */
+@media (max-width: 768px) {
+  .login-split-left { display: none !important; }
+  .login-split-right { padding: 32px 20px !important; }
+}
+
+/* ── 14. Page body: tighter on small phones ──────────────────── */
+@media (max-width: 480px) {
+  .page-body { padding: 16px 12px !important; }
+}
+
+/* ── 15. Notification dropdown: full-width on mobile ─────────── */
+@media (max-width: 480px) {
+  #notif-dropdown {
+    position: fixed !important;
+    top: 66px !important;
+    left: 8px !important;
+    right: 8px !important;
+    width: auto !important;
+    border-radius: 16px !important;
+  }
+}
+
+/* ── 16. Tab rows: horizontal scroll ────────────────────────── */
+.tab-scroll {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  flex-wrap: nowrap;
+  padding-bottom: 2px;
+}
+.tab-scroll::-webkit-scrollbar { display: none; }
+.tab-scroll > button, .tab-scroll > a { flex-shrink: 0; }
+
+/* ── 17. Hero stat pills row ─────────────────────────────────── */
+.hero-stats-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+@media (max-width: 400px) {
+  .hero-stats-row > div { padding: 8px 12px !important; }
+}
+
+/* ── 18. Admin Users hero ────────────────────────────────────── */
+@media (max-width: 640px) {
+  .admin-hero-illustration { display: none !important; }
+  .admin-hero-inner { padding: 24px 20px !important; }
+}
+
+/* ── 19. Admin Users: hide action button labels on mobile ───── */
+@media (max-width: 480px) {
+  .user-action-label { display: none !important; }
+  .user-action-btn   { padding: 7px !important; }
+}
+
+/* ── 20. Prevent horizontal overflow everywhere ──────────────── */
+body, #__next, main { overflow-x: hidden; }
+
+/* ── 21. Clamp hero h1 on very small screens ─────────────────── */
+@media (max-width: 480px) {
+  h1 { font-size: clamp(20px, 6vw, 26px) !important; }
+}
+
+/* ── 22. Calendar event rows compact on mobile ───────────────── */
+@media (max-width: 480px) {
+  .cal-event-row  { padding: 10px 10px !important; }
+  .cal-event-icon { width: 34px !important; height: 34px !important; }
+}
+
+/* ── 23. Sidebar shadow on drawer open ───────────────────────── */
+@media (max-width: 1023px) {
+  .sidebar { box-shadow: 0 0 48px rgba(0,0,0,0.25); }
+}
+
+/* ── 24. mobile-only: visible only below 1024px ─────────────── */
+.mobile-only { display: none; }
+@media (max-width: 1023px) {
+  .mobile-only { display: flex; }
+}
+
+/* ── 25. show-desktop: hidden below 640px ───────────────────── */
+.show-desktop { display: block; }
+@media (max-width: 640px) {
+  .show-desktop { display: none !important; }
+}
+
+/* ── 26. Safe area insets for notched phones ─────────────────── */
+.page-body {
+  padding-bottom: max(60px, env(safe-area-inset-bottom));
+}
+
+/* ── 27. Topbar user info: show on wide screens ─────────────── */
+.topbar-user-info { display: none; }
+@media (min-width: 640px) {
+  .topbar-user-info { display: block !important; }
+}
+
+/* ── 28. Sidebar backdrop scrolling fix ─────────────────────── */
+body.sidebar-open { overflow: hidden; }
+
+/* ── 29. Card grid: single column on tiny screens ────────────── */
+@media (max-width: 360px) {
+  .stats-grid  { grid-template-columns: 1fr !important; }
+  .dash-stats-grid { grid-template-columns: 1fr !important; }
+}
+
+/* ── 30. Breadcrumb scrollable pill ─────────────────────────── */
+.rc-breadcrumb {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  flex-shrink: 0;
+}
+.rc-breadcrumb::-webkit-scrollbar { display: none; }
+
+
+/* ── 1. Hero Banners — all pages use inline borderRadius:28px ── */
+@media (max-width: 640px) {
+  /* Tighten hero padding on mobile */
+  [style*="borderRadius: '28px'"],
+  [style*="border-radius: 28px"] {
+    border-radius: 18px !important;
+  }
+}
+
+/* ── 2. Dashboard: 4-col stat grid → 2-col → 1-col ──────────── */
+.dash-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+@media (max-width: 900px) {
+  .dash-stats-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 480px) {
+  .dash-stats-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+}
+
+/* ── 3. Dashboard: 2-col bottom row → 1-col ─────────────────── */
+.dash-2col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+@media (max-width: 768px) {
+  .dash-2col { grid-template-columns: 1fr !important; }
+}
+
+/* ── 4. Hero banner padding ──────────────────────────────────── */
+@media (max-width: 640px) {
+  .dash-fade[style*="padding: '36px 40px'"],
+  .asgn-fade[style*="padding: '32px 40px'"],
+  .test-fade[style*="padding: '32px 40px'"],
+  .cal-fade[style*="padding: '32px 40px'"],
+  .rc-fade[style*="padding: '36px 40px'"] {
+    padding: 22px 18px !important;
+  }
+}
+
+/* ── 5. Assignments / Tests: card grid ───────────────────────── */
+@media (max-width: 540px) {
+  .asgn-fade > div[style*="grid-template-columns"],
+  .test-fade > div[style*="grid-template-columns"] {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* ── 6. Calendar: tighten day card ──────────────────────────── */
+@media (max-width: 480px) {
+  .cal-fade .cal-day-header { flex-direction: column; align-items: flex-start; gap: 6px; }
+}
+
+/* ── 7. Live Classes: session card grid ─────────────────────── */
+.session-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 20px;
+}
+@media (max-width: 640px) {
+  .session-grid { grid-template-columns: 1fr; gap: 14px; }
+}
+
+/* ── 8. Recorded Classes: content card grid ─────────────────── */
+.rc-content-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+}
+@media (max-width: 640px) {
+  .rc-content-grid { grid-template-columns: 1fr; gap: 14px; }
+}
+
+/* ── 9. Hub card grid ────────────────────────────────────────── */
+.hub-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 18px;
+}
+@media (max-width: 540px) {
+  .hub-grid { grid-template-columns: 1fr 1fr; gap: 12px; }
+}
+@media (max-width: 360px) {
+  .hub-grid { grid-template-columns: 1fr; }
+}
+
+/* ── 10. Video Player meta grid ─────────────────────────────── */
+@media (max-width: 768px) {
+  .player-meta-grid {
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
+  }
+  .player-meta-container {
+    padding: 20px 16px !important;
+  }
+  .player-title { font-size: 20px !important; }
+}
+
+/* ── 11. Profile form 2-col → 1-col ─────────────────────────── */
+.profile-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+@media (max-width: 640px) {
+  .profile-form-grid { grid-template-columns: 1fr !important; }
+}
+
+/* ── 12. Admin Users table — horizontal scroll ───────────────── */
+.admin-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.admin-table-wrapper table {
+  min-width: 700px;
+}
+
+/* ── 13. Modal: slide up from bottom on mobile ───────────────── */
+@media (max-width: 640px) {
+  .modal-overlay {
+    align-items: flex-end !important;
+    padding: 0 !important;
+  }
+  .modal-content {
+    border-radius: 20px 20px 0 0 !important;
+    max-height: 92vh !important;
+    padding: 20px 16px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+}
+
+/* ── 14. Topbar: shrink breadcrumbs, hide user name on mobile ── */
+@media (max-width: 640px) {
+  .topbar-breadcrumb > span:not(:last-child) { display: none !important; }
+  .topbar-user-info { display: none !important; }
+  .topbar { padding: 0 12px !important; }
+}
+
+/* ── 15. Login / Staff-Login pages ──────────────────────────── */
+.login-split {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  min-height: 100vh;
+}
+@media (max-width: 768px) {
+  .login-split {
+    grid-template-columns: 1fr !important;
+  }
+  .login-split-left { display: none !important; }
+  .login-split-right { padding: 32px 20px !important; }
+}
+
+/* ── 16. Page body: tighter on mobile ───────────────────────── */
+@media (max-width: 480px) {
+  .page-body { padding: 16px 12px !important; }
+}
+
+/* ── 17. Notification dropdown: full-width on mobile ─────────── */
+@media (max-width: 480px) {
+  #notif-dropdown {
+    position: fixed !important;
+    top: 66px !important;
+    left: 8px !important;
+    right: 8px !important;
+    width: auto !important;
+    border-radius: 16px !important;
+  }
+}
+
+/* ── 18. Tab rows: horizontal scroll ────────────────────────── */
+.tab-scroll {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  flex-wrap: nowrap;
+  padding-bottom: 2px;
+}
+.tab-scroll::-webkit-scrollbar { display: none; }
+.tab-scroll > button, .tab-scroll > a { flex-shrink: 0; }
+
+/* ── 19. Stat mini-pills row (hero banner stat counts) ───────── */
+.hero-stats-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+@media (max-width: 400px) {
+  .hero-stats-row { gap: 8px; }
+  .hero-stats-row > div { padding: 8px 12px !important; }
+}
+
+/* ── 20. Progress card grid ─────────────────────────────────── */
+.progress-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+}
+@media (max-width: 540px) {
+  .progress-card-grid { grid-template-columns: 1fr; gap: 14px; }
+}
+
+/* ── 21. Admin Users hero: hide illustration on mobile ───────── */
+@media (max-width: 640px) {
+  .admin-hero-illustration { display: none !important; }
+  .admin-hero-inner { padding: 24px 20px !important; }
+}
+
+/* ── 22. Admin Users action buttons: icon-only on mobile ──────── */
+@media (max-width: 480px) {
+  .user-action-label { display: none !important; }
+  .user-action-btn   { padding: 7px !important; }
+}
+
+/* ── 23. Recorded Classes breadcrumb: wrap on mobile ─────────── */
+@media (max-width: 480px) {
+  .rc-breadcrumb { padding: 8px 12px !important; font-size: 12px !important; }
+}
+
+/* ── 24. Prevent horizontal overflow on all pages ────────────── */
+body, #__next, main { overflow-x: hidden; }
+
+/* ── 25. General: clamp hero titles on small screens ────────── */
+@media (max-width: 640px) {
+  h1 { font-size: clamp(20px, 6vw, 28px) !important; }
+}
+
+/* ── 26. Assessment card grid (assignments/tests) ────────────── */
+@media (max-width: 480px) {
+  .assessment-card-grid {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+}
+
+/* ── 27. Calendar day-card: compact event rows ───────────────── */
+@media (max-width: 480px) {
+  .cal-event-row { padding: 10px 10px !important; }
+  .cal-event-icon { width: 34px !important; height: 34px !important; }
+}
+
+/* ── 28. Sidebar always closes on small screen nav ───────────── */
+@media (max-width: 1023px) {
+  .sidebar { box-shadow: 0 0 48px rgba(0,0,0,0.25); }
+}
+
+/* ── 29. Video thumbnail: full height on mobile ──────────────── */
+@media (max-width: 480px) {
+  .video-thumb { aspect-ratio: 4/3 !important; }
+}
+
+/* ── 30. Stats hero row in page banners ─────────────────────── */
+@media (max-width: 360px) {
+  .banner-stat-chip {
+    padding: 6px 10px !important;
+    font-size: 10px !important;
+  }
+}
+
