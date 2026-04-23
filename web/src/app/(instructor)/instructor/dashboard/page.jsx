@@ -53,6 +53,13 @@ export default function InstructorDashboard() {
 
   return (
     <div style={{ paddingBottom: '60px' }}>
+      <style>{`
+        .instr-dash-stats { display: grid; grid-template-columns: repeat(4,1fr); gap: 16px; margin-bottom: 28px; }
+        .instr-dash-charts { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        @media (max-width: 900px) { .instr-dash-stats { grid-template-columns: 1fr 1fr; } }
+        @media (max-width: 768px) { .instr-dash-charts { grid-template-columns: 1fr !important; } }
+        @media (max-width: 480px) { .instr-dash-stats { grid-template-columns: 1fr 1fr; gap: 10px; } }
+      `}</style>
       <div className="page-header" style={{ marginBottom: 'var(--space-6)' }}>
         <div>
           <h1 className="page-title">Instructor Dashboard</h1>
@@ -60,7 +67,7 @@ export default function InstructorDashboard() {
         </div>
       </div>
 
-      <div className="stats-grid">
+      <div className="instr-dash-stats">
         {[
           { label: 'Assigned Batches', value: stats.totalBatches, icon: Layers, color: '#3b82f6', bg: '#eff6ff' },
           { label: 'Total Students', value: stats.totalStudents, icon: Users, color: '#10b981', bg: '#ecfdf5' },
@@ -79,7 +86,7 @@ export default function InstructorDashboard() {
         ))}
       </div>
 
-      <div className="dash-layout-grid">
+      <div className="instr-dash-charts">
         {/* Students per Batch Bar Chart (real data) */}
         <div className="card">
           <div className="card-header" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>

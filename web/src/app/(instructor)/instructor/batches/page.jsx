@@ -139,8 +139,19 @@ export default function InstructorBatches() {
 
   return (
     <div style={{ paddingBottom: '60px' }}>
+      <style>{`
+        .instr-batches-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 28px; flex-wrap: wrap; gap: 14px; }
+        .instr-search-bar2 { position: relative; width: 100%; max-width: 360px; margin-bottom: 28px; }
+        .instr-batches-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 24px; }
+        @media (max-width: 640px) {
+          .instr-search-bar2 { max-width: 100%; }
+          .instr-batches-grid { grid-template-columns: 1fr; gap: 16px; }
+          .instr-batches-header .btn { width: 100%; justify-content: center; }
+        }
+      `}</style>
+
       {/* ── Header ── */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '28px' }}>
+      <div className="instr-batches-header">
         <div>
           <h1 className="page-title">My Batches</h1>
           <p className="page-subtitle">Manage scheduling and student enrollments for your assigned cohorts.</p>
@@ -152,16 +163,16 @@ export default function InstructorBatches() {
       </div>
 
       {/* ── Search ── */}
-      <div style={{ position: 'relative', width: '360px', marginBottom: '28px' }}>
+      <div className="instr-search-bar2">
         <Search size={15} style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
         <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search batches…"
-          style={{ width: '100%', padding: '12px 14px 12px 42px', borderRadius: '12px', border: '1.5px solid var(--color-border)', fontSize: '14px', outline: 'none', background: 'white', transition: 'border-color 0.2s' }}
+          style={{ width: '100%', padding: '12px 14px 12px 42px', borderRadius: '12px', border: '1.5px solid var(--color-border)', fontSize: '14px', outline: 'none', background: 'white', transition: 'border-color 0.2s', boxSizing: 'border-box' }}
           onFocus={e => e.target.style.borderColor = 'var(--color-primary)'}
           onBlur={e => e.target.style.borderColor = 'var(--color-border)'} />
       </div>
 
       {loading ? <div className="spinner" style={{ margin: 'auto', display: 'block', marginTop: '20vh' }} /> : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: '24px' }}>
+        <div className="instr-batches-grid">
           {filtered.length === 0 ? (
             <div style={{ gridColumn: '1 / -1', padding: '60px', textAlign: 'center', background: 'white', borderRadius: '16px', border: '2px dashed var(--color-border)' }}>
               <Layers size={48} style={{ margin: '0 auto 16px', display: 'block', opacity: 0.3 }} />

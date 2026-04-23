@@ -285,7 +285,7 @@ export default function InstructorLiveClasses() {
       </div>
 
       {/* ── Stat Cards ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '32px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '16px', marginBottom: '32px' }}>
         <StatCard label="Live Now"        value={stats.liveNow}  sub="Currently broadcasting"  color="#ef4444" icon={Radio}      />
         <StatCard label="Pending Review"  value={stats.pending}  sub="Drafts awaiting approval" color="#f59e0b" icon={Inbox}      />
         <StatCard label="Scheduled"       value={stats.upcoming} sub="Upcoming sessions"        color="#6366f1" icon={Calendar}   />
@@ -294,15 +294,16 @@ export default function InstructorLiveClasses() {
 
       {/* ── Tabs + Search ── */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '14px' }}>
-        <div style={{ display: 'flex', gap: '6px', background: 'var(--color-bg)', padding: '4px', borderRadius: '14px', border: '1px solid var(--color-border)' }}>
+        <div style={{ display: 'flex', gap: '6px', background: 'var(--color-bg)', padding: '4px', borderRadius: '14px', border: '1px solid var(--color-border)', overflowX: 'auto', WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none', maxWidth: '100%' }}>
           {tabs.map(tab => (
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key)}
               style={{
-                display: 'flex', alignItems: 'center', gap: '7px', padding: '9px 18px', borderRadius: '10px', fontSize: '13px', fontWeight: '700', cursor: 'pointer', border: 'none', transition: 'all 0.2s',
+                display: 'flex', alignItems: 'center', gap: '7px', padding: '9px 18px', borderRadius: '10px', fontSize: '13px', fontWeight: '700', cursor: 'pointer', border: 'none', transition: 'all 0.2s', flexShrink: 0,
                 background: activeTab === tab.key ? 'var(--color-primary)' : 'transparent',
                 color: activeTab === tab.key ? 'white' : 'var(--color-text-secondary)',
+                whiteSpace: 'nowrap',
               }}
             >
               {tab.label}
@@ -316,16 +317,17 @@ export default function InstructorLiveClasses() {
         </div>
 
         {activeTab !== 'pending' && (
-          <div style={{ position: 'relative' }}>
+          <div style={{ position: 'relative', flex: '1 1 200px', maxWidth: '280px' }}>
             <Search size={15} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--color-text-muted)' }} />
             <input
               value={search} onChange={e => setSearch(e.target.value)}
               placeholder="Search sessions..."
-              style={{ padding: '10px 14px 10px 36px', borderRadius: '12px', border: '1px solid var(--color-border)', fontSize: '13px', outline: 'none', width: '260px' }}
+              style={{ padding: '10px 14px 10px 36px', borderRadius: '12px', border: '1px solid var(--color-border)', fontSize: '13px', outline: 'none', width: '100%', boxSizing: 'border-box' }}
             />
           </div>
         )}
       </div>
+
 
       {/* ── Content ── */}
       {loading ? (

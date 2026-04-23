@@ -51,78 +51,83 @@ export default function InstructorStudents() {
         </div>
       </div>
 
-      <div style={{ position: 'relative', width: '350px', marginBottom: '24px' }}>
+      <style>{`
+        .instr-search-bar { position: relative; width: 100%; max-width: 380px; margin-bottom: 24px; }
+        @media (max-width: 640px) { .instr-search-bar { max-width: 100%; } }
+      `}</style>
+      <div className="instr-search-bar">
         <Search size={16} style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'var(--color-text-secondary)' }} />
-        <input value={search} onChange={e => setSearch(e.target.value)} placeholder={`Search students...`}
-          style={{ width: '100%', padding: '14px 16px 14px 44px', borderRadius: '12px', border: '1px solid var(--color-border)', fontSize: '15px' }} />
+        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search students..."
+          style={{ width: '100%', padding: '14px 16px 14px 44px', borderRadius: '12px', border: '1px solid var(--color-border)', fontSize: '15px', boxSizing: 'border-box' }} />
       </div>
 
       {loading ? <div className="spinner" style={{ margin: 'auto', display: 'block', marginTop: '20vh' }}></div> : (
-        <div className="card" style={{ overflow: 'hidden' }}>
-          <table className="table" style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead>
-              <tr style={{ background: 'var(--color-bg)', fontSize: '12px', color: 'var(--color-text-secondary)', textTransform: 'uppercase' }}>
-                <th style={{ padding: '16px 20px', textAlign: 'left' }}>Student</th>
-                <th style={{ padding: '16px 20px', textAlign: 'left' }}>Contact</th>
-                <th style={{ padding: '16px 20px', textAlign: 'left' }}>Grade Level</th>
-                <th style={{ padding: '16px 20px', textAlign: 'center' }}>Status</th>
-                <th style={{ padding: '16px 20px', textAlign: 'center' }}>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.length === 0 ? (
-                <tr>
-                  <td colSpan={4} style={{ padding: '60px', textAlign: 'center', color: 'var(--color-text-secondary)' }}>
-                     No enrolled students match your filters.
-                  </td>
+        <div style={{ width: '100%', overflowX: 'auto', WebkitOverflowScrolling: 'touch', borderRadius: '16px' }}>
+          <div className="card" style={{ overflow: 'hidden', minWidth: '580px' }}>
+            <table className="table" style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr style={{ background: 'var(--color-bg)', fontSize: '12px', color: 'var(--color-text-secondary)', textTransform: 'uppercase' }}>
+                  <th style={{ padding: '16px 20px', textAlign: 'left' }}>Student</th>
+                  <th style={{ padding: '16px 20px', textAlign: 'left' }}>Contact</th>
+                  <th style={{ padding: '16px 20px', textAlign: 'left' }}>Grade Level</th>
+                  <th style={{ padding: '16px 20px', textAlign: 'center' }}>Status</th>
+                  <th style={{ padding: '16px 20px', textAlign: 'center' }}>Actions</th>
                 </tr>
-              ) : filtered.map(student => (
-                <tr key={student._id} style={{ borderTop: '1px solid var(--color-border)', transition: 'background 0.15s' }}
-                  onMouseOver={e => e.currentTarget.style.background = 'var(--color-bg)'}
-                  onMouseOut={e => e.currentTarget.style.background = 'white'}>
-                  <td style={{ padding: '16px 20px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                      <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'var(--color-primary-light)', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>
-                        {student.name?.charAt(0)}
+              </thead>
+              <tbody>
+                {filtered.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} style={{ padding: '60px', textAlign: 'center', color: 'var(--color-text-secondary)' }}>
+                       No enrolled students match your filters.
+                    </td>
+                  </tr>
+                ) : filtered.map(student => (
+                  <tr key={student._id} style={{ borderTop: '1px solid var(--color-border)', transition: 'background 0.15s' }}
+                    onMouseOver={e => e.currentTarget.style.background = 'var(--color-bg)'}
+                    onMouseOut={e => e.currentTarget.style.background = 'white'}>
+                    <td style={{ padding: '16px 20px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'var(--color-primary-light)', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', flexShrink: 0 }}>
+                          {student.name?.charAt(0)}
+                        </div>
+                        <div>
+                          <div style={{ fontWeight: '700', color: 'var(--color-text-primary)', whiteSpace: 'nowrap' }}>{student.name}</div>
+                          <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>{student.school || 'Unspecified School'}</div>
+                        </div>
                       </div>
-                      <div>
-                        <div style={{ fontWeight: '700', color: 'var(--color-text-primary)' }}>{student.name}</div>
-                        <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>{student.school || 'Unspecified School'}</div>
+                    </td>
+                    <td style={{ padding: '16px 20px' }}>
+                      <div style={{ fontSize: '14px', color: 'var(--color-text-primary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                         <Mail size={14} color="var(--color-text-muted)" /> {student.email}
                       </div>
-                    </div>
-                  </td>
-                  <td style={{ padding: '16px 20px' }}>
-                    <div style={{ fontSize: '14px', color: 'var(--color-text-primary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                       <Mail size={14} color="var(--color-text-muted)" /> {student.email}
-                    </div>
-                    {student.phone && (
-                      <div style={{ fontSize: '13px', color: 'var(--color-text-secondary)', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                         {student.phone}
+                      {student.phone && (
+                        <div style={{ fontSize: '13px', color: 'var(--color-text-secondary)', marginTop: '4px' }}>{student.phone}</div>
+                      )}
+                    </td>
+                    <td style={{ padding: '16px 20px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '14px', fontWeight: '500' }}>
+                         <School size={16} color="var(--color-success)" />
+                         {student.studentClass || 'N/A'}
                       </div>
-                    )}
-                  </td>
-                  <td style={{ padding: '16px 20px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '14px', fontWeight: '500' }}>
-                       <School size={16} color="var(--color-success)" />
-                       {student.studentClass || 'N/A'}
-                    </div>
-                  </td>
-                  <td style={{ padding: '16px 20px', textAlign: 'center' }}>
-                    <span style={{ padding: '4px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: 'bold', background: student.isActive ? '#dcfce7' : '#fee2e2', color: student.isActive ? '#166534' : '#991b1b' }}>
-                      {student.isActive ? 'Active' : 'Offline'}
-                    </span>
-                  </td>
-                  <td style={{ padding: '16px 20px', textAlign: 'center' }}>
-                    <button onClick={() => handleViewDetails(student)} className="btn btn-ghost" style={{ padding: '8px', color: '#6366f1' }} title="View Deep Analytics">
-                      <Activity size={18} />
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                    </td>
+                    <td style={{ padding: '16px 20px', textAlign: 'center' }}>
+                      <span style={{ padding: '4px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: 'bold', background: student.isActive ? '#dcfce7' : '#fee2e2', color: student.isActive ? '#166534' : '#991b1b', whiteSpace: 'nowrap' }}>
+                        {student.isActive ? 'Active' : 'Offline'}
+                      </span>
+                    </td>
+                    <td style={{ padding: '16px 20px', textAlign: 'center' }}>
+                      <button onClick={() => handleViewDetails(student)} className="btn btn-ghost" style={{ padding: '8px', color: '#6366f1' }} title="View Deep Analytics">
+                        <Activity size={18} />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </div>
   );
 }
+
