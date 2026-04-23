@@ -328,9 +328,9 @@ p {
   background: var(--sidebar-bg);
   display: flex;
   flex-direction: column;
-  z-index: var(--z-sticky); 
+  z-index: 300;  /* above backdrop (199) and topbar (100) */
   overflow: hidden;
-  transition: transform var(--transition-base), width var(--transition-base);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s;
   transform: translateX(-100%); /* Drawer: hidden by default */
 }
 
@@ -474,15 +474,30 @@ p {
   display: none;
   position: fixed;
   inset: 0;
-  background: rgba(11, 29, 74, 0.45);
-  z-index: 199;
-  backdrop-filter: blur(2px);
+  background: rgba(5, 10, 30, 0.6);
+  z-index: 250;  /* above topbar(100), below sidebar(300) */
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  cursor: pointer;
 }
 
-@media (max-width: 1024px) {
+/* Show backdrop whenever sidebar is open — on ANY screen < 1024px */
+@media (max-width: 1023px) {
   .sidebar-backdrop.open {
     display: block;
+    animation: backdropFadeIn 0.2s ease;
   }
+}
+
+@keyframes backdropFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* Lock background scroll when sidebar is open */
+body.sidebar-open {
+  overflow: hidden !important;
+  touch-action: none;
 }
 
 .sidebar-section-label {

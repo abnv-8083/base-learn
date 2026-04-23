@@ -92,25 +92,31 @@ const MOBILE_CSS = `
     .assess-row { flex-direction: column; align-items: flex-start; }
   }
   @media (max-width: 360px) {
-    .dash-stats-grid { grid-template-columns: 1fr; }
+    .dash-stats-grid { grid-template-columns: 1fr 1fr; }
+  }
+  .stat-card-arrow { display: flex; }
+  @media (max-width: 500px) {
+    .stat-card-arrow { display: none; }
   }
 `;
 
 function StatCard({ href, icon: Icon, value, label, color, grad }) {
   return (
     <Link href={href} style={{ textDecoration: 'none' }}>
-      <div style={{ background: 'white', borderRadius: '18px', padding: '18px 20px', border: '1px solid #e8edf5', boxShadow: '0 2px 12px rgba(15,23,42,0.05)', display: 'flex', gap: '14px', alignItems: 'center', position: 'relative', overflow: 'hidden', transition: 'transform 0.2s, box-shadow 0.2s', cursor: 'pointer', height: '100%' }}
-        onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = `0 12px 28px ${color}22`; }}
+      <div style={{ background: 'white', borderRadius: '16px', padding: 'clamp(12px,2.5vw,18px) clamp(12px,2.5vw,18px)', border: '1px solid #e8edf5', boxShadow: '0 2px 12px rgba(15,23,42,0.05)', display: 'flex', gap: '10px', alignItems: 'center', position: 'relative', overflow: 'hidden', transition: 'transform 0.2s, box-shadow 0.2s', cursor: 'pointer', height: '100%', minWidth: 0 }}
+        onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = `0 10px 24px ${color}22`; }}
         onMouseLeave={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = '0 2px 12px rgba(15,23,42,0.05)'; }}>
         <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: grad }} />
-        <div style={{ width: '46px', height: '46px', borderRadius: '14px', background: `${color}12`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-          <Icon size={22} color={color} />
+        <div style={{ width: '38px', height: '38px', borderRadius: '12px', background: `${color}12`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+          <Icon size={18} color={color} />
         </div>
-        <div style={{ minWidth: 0 }}>
-          <div style={{ fontSize: 'clamp(22px,4vw,30px)', fontWeight: '900', color: '#0f172a', lineHeight: 1, letterSpacing: '-0.04em' }}>{value}</div>
-          <div style={{ fontSize: '12px', fontWeight: '600', color: '#64748b', marginTop: '4px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{label}</div>
+        <div style={{ minWidth: 0, flex: 1 }}>
+          <div style={{ fontSize: 'clamp(18px,3.5vw,26px)', fontWeight: '900', color: '#0f172a', lineHeight: 1, letterSpacing: '-0.03em' }}>{value}</div>
+          <div style={{ fontSize: '11px', fontWeight: '600', color: '#64748b', marginTop: '4px', lineHeight: 1.3, wordBreak: 'break-word' }}>{label}</div>
         </div>
-        <ArrowRight size={14} color={color} style={{ marginLeft: 'auto', opacity: 0.5, flexShrink: 0 }} />
+        <div className="stat-card-arrow" style={{ marginLeft: 'auto', flexShrink: 0 }}>
+          <ArrowRight size={13} color={color} style={{ opacity: 0.5 }} />
+        </div>
       </div>
     </Link>
   );
