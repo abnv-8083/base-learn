@@ -325,14 +325,16 @@ p {
   left: 0;
   width: var(--sidebar-width);
   height: 100vh;
+  height: 100dvh; /* dynamic viewport height — handles mobile browser chrome */
   background: var(--sidebar-bg);
   display: flex;
   flex-direction: column;
-  z-index: 300;  /* above backdrop (199) and topbar (100) */
+  z-index: 300;
   overflow: hidden;
   transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s;
-  transform: translateX(-100%); /* Drawer: hidden by default */
+  transform: translateX(-100%);
 }
+
 
 .sidebar.open {
   transform: translateX(0);

@@ -116,14 +116,16 @@ export default function Sidebar({ menuItems, role }) {
         })}
       </nav>
 
-      {/* User Footer */}
+      {/* User Footer — always pinned to bottom */}
       <div style={{
-        margin: '8px 12px',
+        flexShrink: 0,
+        margin: '0 12px',
         borderTop: '1px solid rgba(255,255,255,0.06)',
         paddingTop: '12px',
+        paddingBottom: 'max(12px, env(safe-area-inset-bottom))',
       }}>
         {/* User info row — links to profile */}
-        <Link href={`/${role}/profile`} style={{ textDecoration: 'none' }}>
+        <Link href={`/${role}/profile`} style={{ textDecoration: 'none' }} onClick={() => setSidebarOpen(false)}>
           <div
             style={{
               display: 'flex', alignItems: 'center', gap: '10px',
@@ -161,17 +163,19 @@ export default function Sidebar({ menuItems, role }) {
           onClick={handleLogout}
           style={{
             width: '100%', display: 'flex', alignItems: 'center', gap: '8px',
-            padding: '9px 12px', borderRadius: '8px', border: 'none', cursor: 'pointer',
-            background: 'rgba(239,68,68,0.08)', color: '#fca5a5',
-            fontSize: '13px', fontWeight: '500', transition: 'all 0.2s'
+            padding: '11px 12px', borderRadius: '10px', border: 'none', cursor: 'pointer',
+            background: 'rgba(239,68,68,0.1)', color: '#fca5a5',
+            fontSize: '13px', fontWeight: '600', transition: 'all 0.2s',
+            marginTop: '2px',
           }}
-          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.18)'; e.currentTarget.style.color = '#fecaca'; }}
-          onMouseLeave={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.08)'; e.currentTarget.style.color = '#fca5a5'; }}
+          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.2)'; e.currentTarget.style.color = '#fecaca'; }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.1)'; e.currentTarget.style.color = '#fca5a5'; }}
         >
-          <LogOut size={14} />
+          <LogOut size={15} />
           Sign Out
         </button>
       </div>
     </aside>
   );
 }
+
